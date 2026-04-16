@@ -115,6 +115,39 @@ export function calculateScores(
   if (job.urgencySignals) process -= 6;
   if (job.salaryMentioned) process -= 2; // minor flag
 
+  // Analyze sample message for process legitimacy
+  if (recruiter.sampleMessage) {
+    const message = recruiter.sampleMessage.toLowerCase();
+    
+    // Check for suspicious process patterns
+    const processFlags = [
+      'technical assessment',
+      'culture fit interview', 
+      'background verification',
+      'hiring process includes',
+      'move to next step'
+    ];
+    
+    const foundFlags = processFlags.filter(flag => message.includes(flag));
+    process -= foundFlags.length * 4;
+    
+    // Check for generic company descriptions
+    if (message.includes('leading custom development company') || 
+        message.includes('advanced defi ecosystem solutions') ||
+        message.includes('innovative defi projects')) {
+      process -= 6;
+    }
+    
+    // Check for vague role descriptions
+    if (message.includes('various roles') || 
+        message.includes('please find roles details in form')) {
+      process -= 4;
+    }
+    
+    // Bonus for detailed job descriptions
+    if (message.length > 300) process += 3;
+  }
+
   if (recruiter.recruiterMessages && recruiter.recruiterMessages.length > 100) process += 3;
   else if (recruiter.recruiterMessages && recruiter.recruiterMessages.length < 30) process -= 5;
 
@@ -163,6 +196,53 @@ export function generateRedFlags(
       explanation: 'Legitimate employers never ask for crypto wallet access, seed phrases or sensitive documents during initial recruitment.',
       recommendation: 'Immediately stop communication and do not share any credentials.',
     });
+  }
+
+  // Analyze sample message for red flags
+  if (recruiter.sampleMessage) {
+    const message = recruiter.sampleMessage.toLowerCase();
+    
+    // Check for suspicious process descriptions
+    if (message.includes('technical assessment') || message.includes('culture fit interview')) {
+      flags.push({
+        category: 'process', severity: 'red_flag',
+        signal: 'Suspicious hiring process description',
+        explanation: 'Fake recruiters often describe elaborate multi-step processes with technical assessments and culture fit interviews.',
+        recommendation: 'Legitimate companies typically have straightforward hiring processes without excessive initial assessments.',
+      });
+    }
+
+    // Check for generic company descriptions
+    if (message.includes('leading custom development company') || 
+        message.includes('advanced defi ecosystem solutions')) {
+      flags.push({
+        category: 'employer', severity: 'red_flag',
+        signal: 'Generic company description with buzzwords',
+        explanation: 'Scammers often use vague but impressive-sounding company descriptions with industry buzzwords.',
+        recommendation: 'Research the company independently and verify its existence and reputation.',
+      });
+    }
+
+    // Check for vague role descriptions
+    if (message.includes('various roles') || 
+        message.includes('please find roles details in form')) {
+      flags.push({
+        category: 'process', severity: 'warning',
+        signal: 'Vague job description with external form',
+        explanation: 'Legitimate recruiters provide specific job details rather than directing to forms for "various roles".',
+        recommendation: 'Ask for specific job details before completing any forms or assessments.',
+      });
+    }
+
+    // Check for immediate form submission requests
+    if (message.includes('submit above form to move to next step')) {
+      flags.push({
+        category: 'process', severity: 'red_flag',
+        signal: 'Pressure to complete forms without proper screening',
+        explanation: 'Scammers often rush victims to complete forms to collect personal information quickly.',
+        recommendation: 'Never complete forms without proper job screening and interview process.',
+      });
+    }
   }
   if (job.runCodeLocally) {
     flags.push({
