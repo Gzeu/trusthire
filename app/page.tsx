@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Shield, AlertTriangle, Search, FileText, ChevronRight, Lock, Eye, Zap, Github, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import QuickLinkedInCheck from '@/components/QuickLinkedInCheck';
 
 export default function HomePage() {
   const [quickScanUrl, setQuickScanUrl] = useState('');
@@ -220,6 +221,9 @@ export default function HomePage() {
             </div>
           )}
         </div>
+
+        {/* Quick LinkedIn Profile Check */}
+        <QuickLinkedInCheck />
 
         <div className="flex flex-col sm:flex-row gap-4 mb-20">
           <Link
