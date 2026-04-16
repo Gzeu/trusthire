@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { Shield, AlertTriangle, Search, FileText, ChevronRight, Lock, Eye, Zap, Github, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import QuickLinkedInCheck from '@/components/QuickLinkedInCheck';
+import QuickScanCards from '@/components/QuickScanCards';
+import EnhancedActionButtons from '@/components/EnhancedActionButtons';
 
 export default function HomePage() {
   const [quickScanUrl, setQuickScanUrl] = useState('');
@@ -99,146 +100,11 @@ export default function HomePage() {
           <strong className="text-white/80">One postinstall script later — your .env is gone.</strong>
         </p>
 
-        {/* Quick Scan */}
-        <div className="bg-[#111113] border border-white/5 rounded-xl p-8 mb-20">
-          <div className="flex items-center gap-2 mb-6">
-            <Search className="w-5 h-5 text-red-500" />
-            <h2 className="text-xl font-mono font-bold">Quick Scan</h2>
-            <span className="text-xs bg-red-500/20 border border-red-500/40 text-red-400 px-2 py-1 rounded font-mono">NEW</span>
-          </div>
-          
-          <p className="text-white/60 mb-6">
-            Paste a GitHub repository URL for instant security analysis. No signup required.
-          </p>
+        {/* Unified Quick Scan Cards */}
+        <QuickScanCards />
 
-          <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <div className="flex-1 relative">
-              <Github className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
-              <input
-                type="text"
-                value={quickScanUrl}
-                onChange={(e) => setQuickScanUrl(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleQuickScan()}
-                placeholder="https://github.com/user/repo"
-                className="w-full bg-white/5 border border-white/10 rounded-lg pl-12 pr-4 py-3 text-white placeholder-white/40 font-mono focus:outline-none focus:border-red-500/50 focus:bg-white/10 transition-all"
-                disabled={isScanning}
-              />
-            </div>
-            <button
-              onClick={handleQuickScan}
-              disabled={isScanning || !quickScanUrl.trim()}
-              className="bg-red-600 hover:bg-red-700 disabled:bg-white/10 disabled:border-white/20 text-white font-mono font-bold px-6 py-3 rounded-lg transition-all disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isScanning ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Scanning...
-                </>
-              ) : (
-                <>
-                  <Search className="w-4 h-4" />
-                  Quick Scan
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Quick Scan Results */}
-          {scanResult && (
-            <div className="bg-[#0A0A0B] border border-white/10 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-mono font-bold">Scan Results</h3>
-                <div className={`text-2xl font-mono font-bold ${getScoreColor(getQuickScanScore()!)}`}>
-                  {getQuickScanScore()}/100
-                </div>
-              </div>
-              
-              <div className="grid sm:grid-cols-3 gap-4 mb-4">
-                <div className="text-center">
-                  <div className={`text-lg font-mono font-bold ${
-                    scanResult.dangerousScripts?.length > 0 ? 'text-red-400' : 'text-green-400'
-                  }`}>
-                    {scanResult.dangerousScripts?.length || 0}
-                  </div>
-                  <div className="text-xs text-white/40 font-mono">Dangerous Scripts</div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-lg font-mono font-bold ${
-                    scanResult.suspiciousFiles?.length > 0 ? 'text-orange-400' : 'text-green-400'
-                  }`}>
-                    {scanResult.suspiciousFiles?.length || 0}
-                  </div>
-                  <div className="text-xs text-white/40 font-mono">Suspicious Files</div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-lg font-mono font-bold ${
-                    scanResult.riskLevel === 'safe' ? 'text-green-400' : 
-                    scanResult.riskLevel === 'warning' ? 'text-yellow-400' : 'text-red-400'
-                  }`}>
-                    {scanResult.riskLevel?.toUpperCase() || 'UNKNOWN'}
-                  </div>
-                  <div className="text-xs text-white/40 font-mono">Risk Level</div>
-                </div>
-              </div>
-
-              {(scanResult.dangerousScripts?.length > 0 || scanResult.suspiciousFiles?.length > 0) && (
-                <div className="border-t border-white/10 pt-4">
-                  <p className="text-white/60 text-sm mb-2">⚠️ Issues found:</p>
-                  <ul className="space-y-1">
-                    {scanResult.dangerousScripts?.map((script: string, i: number) => (
-                      <li key={i} className="text-red-400 text-sm font-mono">• {script}</li>
-                    ))}
-                    {scanResult.suspiciousFiles?.map((file: string, i: number) => (
-                      <li key={i} className="text-orange-400 text-sm font-mono">• {file}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="flex gap-3 mt-4">
-                <Link
-                  href="/assess"
-                  className="text-xs bg-red-600 hover:bg-red-700 text-white font-mono px-3 py-2 rounded transition-colors"
-                >
-                  Run Full Assessment
-                </Link>
-                <button
-                  onClick={() => {
-                    setScanResult(null);
-                    setQuickScanUrl('');
-                  }}
-                  className="text-xs bg-white/5 hover:bg-white/10 border border-white/10 text-white font-mono px-3 py-2 rounded transition-colors"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-          )}
-
-          {scanError && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-              <p className="text-red-400 text-sm font-mono">❌ {scanError}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Quick LinkedIn Profile Check */}
-        <QuickLinkedInCheck />
-
-        <div className="flex flex-col sm:flex-row gap-4 mb-20">
-          <Link
-            href="/assess"
-            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-mono font-bold px-8 py-4 rounded transition-colors text-lg"
-          >
-            Start Free Assessment <ChevronRight className="w-5 h-5" />
-          </Link>
-          <Link
-            href="/patterns"
-            className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-mono px-8 py-4 rounded transition-colors text-lg"
-          >
-            Browse Threat DB
-          </Link>
-        </div>
+        {/* Enhanced Action Buttons */}
+        <EnhancedActionButtons />
 
         {/* Attack flow */}
         <div className="bg-[#111113] border border-white/5 rounded-xl p-8 mb-20">
