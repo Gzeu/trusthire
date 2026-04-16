@@ -41,6 +41,8 @@ export default function QuickScanCards() {
   // LinkedIn advanced details state
   const [showLinkedinDetails, setShowLinkedinDetails] = useState(false);
   const [linkedinDetails, setLinkedinDetails] = useState({
+    name: '',
+    company: '',
     joinedDate: '',
     connections: 0,
     jobTitle: '',
@@ -501,11 +503,97 @@ export default function QuickScanCards() {
 
             {/* Actions */}
             <div className="flex gap-2 mt-3">
-              <button className="text-xs bg-red-600 hover:bg-red-700 text-white font-mono px-3 py-2 rounded transition-colors">
+              <button 
+                onClick={() => {
+                  // Pre-fill assessment with scanned data and navigate
+                  if (typeof window !== 'undefined') {
+                    const assessmentData = {
+                      recruiter: title.includes('GitHub') ? {
+                        name: '',
+                        claimedCompany: '',
+                        linkedinUrl: '',
+                        emailReceived: '',
+                        profileAge: '',
+                        connections: 0,
+                        jobTitle: '',
+                        location: '',
+                        hasVerifiedBadge: false,
+                        sampleMessage: ''
+                      } : title.includes('LinkedIn') ? {
+                        name: linkedinDetails.name || '',
+                        claimedCompany: linkedinDetails.company || '',
+                        linkedinUrl: linkedinUrl || '',
+                        emailReceived: linkedinDetails.email || '',
+                        profileAge: linkedinDetails.joinedDate || '',
+                        connections: linkedinDetails.connections || 0,
+                        jobTitle: linkedinDetails.jobTitle || '',
+                        location: linkedinDetails.location || '',
+                        hasVerifiedBadge: linkedinDetails.hasVerifiedBadge || false,
+                        sampleMessage: linkedinDetails.sampleMessage || ''
+                      } : {
+                        name: '',
+                        claimedCompany: '',
+                        linkedinUrl: '',
+                        emailReceived: '',
+                        profileAge: '',
+                        connections: 0,
+                        jobTitle: '',
+                        location: '',
+                        hasVerifiedBadge: false,
+                        sampleMessage: ''
+                      },
+                      job: {
+                        jobDescription: '',
+                        recruiterMessages: title.includes('LinkedIn') ? linkedinDetails.sampleMessage || '' : '',
+                        salaryMentioned: false,
+                        urgencySignals: false,
+                        walletSeedKycRequest: false,
+                        runCodeLocally: false,
+                        googleFormsUrl: title.includes('Form') ? googleFormUrl : '',
+                        suspiciousKeywords: []
+                      },
+                      artifacts: title.includes('GitHub') && githubUrl ? [{ url: githubUrl, type: 'github' as const }] : 
+                                 title.includes('Form') && googleFormUrl ? [{ url: googleFormUrl, type: 'forms' as const }] : []
+                    };
+                    
+                    // Store in sessionStorage and navigate
+                    sessionStorage.setItem('quickScanAssessmentData', JSON.stringify(assessmentData));
+                    window.open('/assess', '_blank');
+                  }
+                }}
+                className="text-xs bg-red-600 hover:bg-red-700 text-white font-mono px-3 py-2 rounded transition-colors"
+              >
                 Run Full Assessment
               </button>
               <button 
-                onClick={() => setShowResult(false)}
+                onClick={() => {
+                  setShowResult(false);
+                  // Clear all related data
+                  if (title.includes('GitHub')) {
+                    setGithubResult(null);
+                    setGithubError('');
+                    setGithubUrl('');
+                  } else if (title.includes('LinkedIn')) {
+                    setLinkedinResult(null);
+                    setLinkedinError('');
+                    setLinkedinUrl('');
+                    setLinkedinDetails({
+                      name: '',
+                      company: '',
+                      email: '',
+                      joinedDate: '',
+                      connections: 0,
+                      jobTitle: '',
+                      location: '',
+                      hasVerifiedBadge: false,
+                      sampleMessage: ''
+                    });
+                  } else if (title.includes('Form')) {
+                    setFormResult(null);
+                    setFormError('');
+                    setGoogleFormUrl('');
+                  }
+                }}
                 className="text-xs bg-white/5 hover:bg-white/10 border border-white/10 text-white font-mono px-3 py-2 rounded transition-colors"
               >
                 Clear

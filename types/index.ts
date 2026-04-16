@@ -4,6 +4,12 @@ export interface RecruiterInput {
   claimedCompany: string;
   emailReceived?: string;
   recruiterMessages?: string;
+  profileAge?: string;
+  connections?: number;
+  jobTitle?: string;
+  location?: string;
+  hasVerifiedBadge?: boolean;
+  sampleMessage?: string;
 }
 
 export interface JobInput {

@@ -28,8 +28,59 @@ export function calculateScores(
     } else {
       identity += 2;
     }
+    
+    // Check for suspicious email patterns
+    if (/20(24|25|26)/.test(email)) identity -= 8; // Years in email
+    if (email.includes('recruiter') || email.includes('hr')) identity -= 3; // Generic role emails
+    if (email.includes('temp') || email.includes('test')) identity -= 10; // Temporary emails
   } else {
     identity -= 3;
+  }
+
+  // LinkedIn profile analysis
+  if (recruiter.profileAge) {
+    const joinedDate = new Date(recruiter.profileAge);
+    const now = new Date();
+    const profileAgeMonths = (now.getFullYear() - joinedDate.getFullYear()) * 12 + 
+                            (now.getMonth() - joinedDate.getMonth());
+    
+    if (profileAgeMonths < 3) identity -= 15;
+    else if (profileAgeMonths < 6) identity -= 10;
+    else if (profileAgeMonths < 12) identity -= 5;
+    else identity += 5;
+  }
+
+  // Connections analysis
+  if (recruiter.connections && recruiter.connections > 0) {
+    const isSeniorRecruiter = recruiter.jobTitle?.toLowerCase().includes('senior') || 
+                            recruiter.jobTitle?.toLowerCase().includes('lead') || 
+                            recruiter.jobTitle?.toLowerCase().includes('principal');
+    
+    if (isSeniorRecruiter) {
+      if (recruiter.connections < 300) identity -= 10;
+      else if (recruiter.connections < 500) identity += 0;
+      else identity += 5;
+    } else {
+      if (recruiter.connections < 100) identity -= 8;
+      else if (recruiter.connections < 300) identity -= 3;
+      else identity += 3;
+    }
+  }
+
+  // Verification badge
+  if (recruiter.hasVerifiedBadge) identity += 5;
+  else identity -= 3;
+
+  // Sample message analysis
+  if (recruiter.sampleMessage) {
+    const message = recruiter.sampleMessage.toLowerCase();
+    const scamKeywords = [
+      'technical assessment', 'culture fit', 'growth strategies', 
+      'defi ecosystem', 'innovative solutions', 'urgent opportunity',
+      'immediate start', 'competitive package', 'revolutionary'
+    ];
+    const foundKeywords = scamKeywords.filter(keyword => message.includes(keyword));
+    identity -= foundKeywords.length * 3;
   }
 
   identity = Math.min(25, Math.max(0, identity));

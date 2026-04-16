@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, ChevronRight, ChevronLeft, Plus, X, Loader2, Linkedin, Github, FileText, AlertTriangle, User, Briefcase, Code, Zap, XCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -18,6 +18,20 @@ export default function AssessPage() {
     github: null as any,
     forms: null as any
   });
+
+  // Pre-fill data from quick scan if available
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const quickScanData = sessionStorage.getItem('quickScanAssessmentData');
+      if (quickScanData) {
+        const data = JSON.parse(quickScanData);
+        setRecruiter(prev => ({ ...prev, ...data.recruiter }));
+        setJob(prev => ({ ...prev, ...data.job }));
+        setArtifacts(data.artifacts || []);
+        sessionStorage.removeItem('quickScanAssessmentData');
+      }
+    }
+  }, []);
 
   const [recruiter, setRecruiter] = useState({
     name: '',
