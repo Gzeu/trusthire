@@ -1,106 +1,94 @@
-import type { AssessmentResult } from './scoring'
-import type { RepoScanResult } from './repoScanner'
-import type { DomainCheckResult } from './domainChecker'
+import { AssessmentResult } from '@/types';
 
-export function generateIncidentReport(params: {
-  recruiterName: string
-  company: string
-  assessment: AssessmentResult
-  repoScans?: RepoScanResult[]
-  domainChecks?: DomainCheckResult[]
-}): string {
-  const { recruiterName, company, assessment, repoScans, domainChecks } = params
-  const date = new Date().toISOString().split('T')[0]
-  const time = new Date().toLocaleTimeString('en-US', { hour12: false })
-
+export function generateIncidentReport(assessment: AssessmentResult): string {
+  const date = new Date(assessment.createdAt).toUTCString();
   const verdictLabel = {
-    low_risk: 'LOW RISK',
-    caution: 'CAUTION',
+    critical: 'CRITICAL',
     high_risk: 'HIGH RISK',
-    critical: 'CRITICAL'
-  }[assessment.verdict]
+    caution: 'CAUTION',
+    low_risk: 'LOW RISK',
+  }[assessment.verdict];
 
-  const lines: string[] = [
-    '='.repeat(60),
-    'TRUSTHIRE SECURITY ASSESSMENT REPORT',
-    `Generated: ${date} at ${time} UTC`,
-    '='.repeat(60),
-    '',
-    `SUBJECT: ${recruiterName} — ${company}`,
-    `FINAL SCORE: ${assessment.finalScore}/100`,
-    `VERDICT: ${verdictLabel}`,
-    '',
-    'SCORE BREAKDOWN',
-    '-'.repeat(40),
-    `Identity Confidence:  ${assessment.scores.identityConfidence}/25`,
-    `Employer Legitimacy:  ${assessment.scores.employerLegitimacy}/25`,
-    `Process Legitimacy:   ${assessment.scores.processLegitimacy}/25`,
-    `Technical Safety:     ${assessment.scores.technicalSafety}/25`,
-    ''
-  ]
+  const criticalFlags = assessment.redFlags.filter((f) => f.severity === 'critical');
+  const redFlags = assessment.redFlags.filter((f) => f.severity === 'red_flag');
+  const warnings = assessment.redFlags.filter((f) => f.severity === 'warning');
 
-  if (assessment.redFlags.length > 0) {
-    lines.push('RED FLAGS DETECTED')
-    lines.push('-'.repeat(40))
-    for (const flag of assessment.redFlags) {
-      const icon = flag.severity === 'critical' ? '🚨' : flag.severity === 'red_flag' ? '⚠️' : '⚡'
-      lines.push(`${icon} [${flag.severity.toUpperCase()}] ${flag.signal}`)
-      lines.push(`   ${flag.explanation}`)
-      lines.push(`   → ${flag.recommendation}`)
-      lines.push('')
+  let report = `TRUSTHIRE SECURITY ASSESSMENT REPORT
+=====================================
+Generated: ${date}
+Assessment ID: ${assessment.id}
+Report URL: ${process.env.NEXT_PUBLIC_APP_URL || 'https://trusthire.app'}/results/${assessment.id}
+
+SUBJECT
+-------
+Recruiter Name: ${assessment.recruiterName}
+Claimed Company: ${assessment.company}
+
+RISK VERDICT: ${verdictLabel}
+Final Score: ${assessment.finalScore}/100
+
+SCORE BREAKDOWN
+---------------
+Identity Confidence:  ${assessment.scores.identityConfidence}/25
+Employer Legitimacy:  ${assessment.scores.employerLegitimacy}/25
+Process Legitimacy:   ${assessment.scores.processLegitimacy}/25
+Technical Safety:     ${assessment.scores.technicalSafety}/25
+`;
+
+  if (criticalFlags.length > 0) {
+    report += `
+CRITICAL FLAGS (${criticalFlags.length})
+${'='.repeat(40)}
+`;
+    for (const f of criticalFlags) {
+      report += `[!] ${f.signal}\n    ${f.explanation}\n    Action: ${f.recommendation}\n\n`;
     }
   }
 
-  if (repoScans && repoScans.length > 0) {
-    lines.push('REPOSITORY SCAN RESULTS')
-    lines.push('-'.repeat(40))
-    for (const scan of repoScans) {
-      lines.push(`Repo: ${scan.owner}/${scan.repo} — Risk: ${scan.riskLevel.toUpperCase()}`)
-      if (scan.repoAgeDays !== undefined) lines.push(`  Age: ${scan.repoAgeDays} days`)
-      if (scan.dangerousScripts.length > 0) {
-        lines.push(`  🚨 Dangerous lifecycle scripts:`)
-        for (const s of scan.dangerousScripts) lines.push(`    - ${s}`)
-      }
-      if (scan.envExfiltrationRisk) lines.push('  🚨 Environment variable exfiltration pattern detected')
-      if (scan.dynamicExecutionRisk) lines.push('  🚨 Dynamic code execution pattern detected')
-      if (scan.typosquattedPackages.length > 0) lines.push(`  ⚠️ Possible typosquatted packages: ${scan.typosquattedPackages.join(', ')}`)
-      lines.push('')
+  if (redFlags.length > 0) {
+    report += `
+RED FLAGS (${redFlags.length})
+${'='.repeat(40)}
+`;
+    for (const f of redFlags) {
+      report += `[>] ${f.signal}\n    ${f.explanation}\n    Action: ${f.recommendation}\n\n`;
     }
   }
 
-  if (domainChecks && domainChecks.length > 0) {
-    lines.push('DOMAIN / URL CHECKS')
-    lines.push('-'.repeat(40))
-    for (const check of domainChecks) {
-      lines.push(`Domain: ${check.domain} — Risk: ${check.riskLevel.toUpperCase()}`)
-      for (const flag of check.riskFlags) lines.push(`  ⚠️ ${flag}`)
-      if (check.vtPermalink) lines.push(`  VT Report: ${check.vtPermalink}`)
-      lines.push('')
+  if (warnings.length > 0) {
+    report += `
+WARNINGS (${warnings.length})
+${'='.repeat(40)}
+`;
+    for (const f of warnings) {
+      report += `[-] ${f.signal}\n    ${f.explanation}\n\n`;
     }
   }
 
-  lines.push('RECOMMENDED ACTIONS')
-  lines.push('-'.repeat(40))
+  report += `
+RECOMMENDED ACTIONS
+-------------------
+`;
   for (const step of assessment.workflowAdvice) {
-    lines.push(`${step.icon} [${step.priority.toUpperCase()}] ${step.title}`)
-    lines.push(`   ${step.description}`)
-    lines.push('')
+    report += `[${step.priority.toUpperCase()}] ${step.description}\n`;
   }
 
-  lines.push('REPORT TO')
-  lines.push('-'.repeat(40))
-  lines.push('• GitHub abuse: https://github.com/contact/report-abuse')
-  lines.push('• LinkedIn: Use "Report" button on the recruiter profile')
-  lines.push('• Romania DNSC: https://dnsc.ro')
-  lines.push('• USA CISA: https://www.cisa.gov/report')
-  lines.push('• UK NCSC: https://www.ncsc.gov.uk/section/about-ncsc/report-incident')
-  lines.push('')
-  lines.push('DISCLAIMER')
-  lines.push('-'.repeat(40))
-  lines.push('This report provides risk signals, not legal verdicts.')
-  lines.push('TrustHire does not access private data or verify identity definitively.')
-  lines.push('Use this report as due diligence input, not as accusation evidence.')
-  lines.push('='.repeat(60))
+  report += `
+REPORTING RESOURCES
+-------------------
+- GitHub Abuse: https://github.com/contact/report-abuse
+- LinkedIn Report: https://www.linkedin.com/help/linkedin/answer/a1340567
+- DNSC Romania: https://dnsc.ro
+- CISA USA: https://www.cisa.gov/report
+- FBI IC3: https://www.ic3.gov
 
-  return lines.join('\n')
+DISCLAIMER
+----------
+This report is generated by TrustHire based on heuristic analysis and
+manual input. It represents a risk assessment, not a legal verdict.
+Scores indicate confidence levels, not definitive proof of malicious intent.
+Always verify information through official channels before taking action.
+`;
+
+  return report;
 }
