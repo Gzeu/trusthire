@@ -1,12 +1,14 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js" alt="Next.js" />
+  <img src="https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js" alt="Next.js" />
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Prisma-ORM-2D3748?style=flat-square&logo=prisma" alt="Prisma" />
+  <img src="https://img.shields.io/badge/Turso-SQLite-0066CC?style=flat-square&logo=sqlite&logoColor=white" alt="Turso SQLite" />
   <img src="https://img.shields.io/badge/VirusTotal-API-394EFF?style=flat-square" alt="VirusTotal" />
+  <img src="https://img.shields.io/badge/Vercel_Sandbox-000000?style=flat-square&logo=vercel" alt="Vercel Sandbox" />
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License" />
+  <img src="https://img.shields.io/badge/version-1.0.0-blue?style=flat-square" alt="Version 1.0.0" />
 </p>
 
-<h1 align="center">🔐 TrustHire</h1>
+<h1 align="center">ð TrustHire</h1>
 
 <p align="center">
   <b>Security due diligence tool for developers.</b><br/>
@@ -15,12 +17,16 @@
 </p>
 
 <p align="center">
-  Built for <strong>blockchain/Web3 developers</strong> — the primary targets of fake recruiter attacks.
+  <strong>Production Live:</strong> <a href="https://trusthire-five.vercel.app">https://trusthire-five.vercel.app</a>
+</p>
+
+<p align="center">
+  Built for <strong>blockchain/Web3 developers</strong> â the primary targets of fake recruiter attacks.
 </p>
 
 ---
 
-## 🎯 What is TrustHire?
+## ðŸŽ¯ What is TrustHire?
 
 TrustHire is a **risk assessment platform** that helps developers verify the legitimacy of recruiters and job offers before engaging further or running any provided code.
 
@@ -97,13 +103,14 @@ TrustHire automates the detection of these patterns before you become a victim.
 
 | Layer | Technology |
 |-------|------------|
-| Framework | Next.js 15 (App Router) |
+| Framework | Next.js 14 (App Router) |
 | Language | TypeScript 5 |
-| Styling | Tailwind CSS v4 |
-| Database | PostgreSQL via Prisma ORM |
+| Styling | Tailwind CSS |
+| Database | Turso SQLite (Serverless) |
 | Security APIs | VirusTotal API v3 |
 | Code Scanning | GitHub REST API |
-| Hosting | Vercel (recommended) |
+| Sandboxes | Vercel Sandboxes |
+| Hosting | Vercel (Production) |
 
 ---
 
@@ -112,11 +119,19 @@ TrustHire automates the detection of these patterns before you become a victim.
 ```
 trusthire/
 ├── app/
-│   ├── page.tsx                    # Home — assessment input form
+│   ├── page.tsx                    # Home — hero section and overview
 │   ├── assess/
-│   │   └── page.tsx                # Assess page — processing & progress
+│   │   └── page.tsx                # Main security assessment tool
 │   ├── results/
-│   │   └── [id]/page.tsx           # Full results dashboard
+│   │   └── [id]/page.tsx           # Assessment results dashboard
+│   ├── patterns/
+│   │   └── page.tsx                # Scam patterns database
+│   ├── sandbox/
+│   │   └── page.tsx                # Vercel Sandboxes demo
+│   ├── privacy/
+│   │   └── page.tsx                # Privacy policy page
+│   ├── disclaimer/
+│   │   └── page.tsx                # Terms and conditions
 │   └── api/
 │       ├── assessment/
 │       │   ├── create/route.ts     # POST — runs full assessment
@@ -124,7 +139,9 @@ trusthire/
 │       ├── scan/
 │       │   ├── repo/route.ts       # POST — scan GitHub repository
 │       │   └── url/route.ts        # POST — scan URL via VirusTotal
-│       └── patterns/route.ts       # GET — known scam patterns DB
+│       ├── patterns/route.ts       # GET — known scam patterns DB
+│       └── sandbox/
+│           └── analyze/route.ts    # POST — sandbox analysis endpoint
 ├── components/
 │   ├── ScoreGauge.tsx              # Animated half-circle score arc
 │   ├── ScoreCard.tsx               # Per-category score card
@@ -152,53 +169,61 @@ trusthire/
 
 ---
 
-## 🚀 Getting Started
+## ð Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- PostgreSQL database
+- Turso SQLite account (free at [turso.tech](https://turso.tech))
 - VirusTotal API key (free at [virustotal.com/gui/join-us](https://www.virustotal.com/gui/join-us))
+- Vercel account (for deployment)
 
-### 1. Clone & Install
+### Quick Start
 
-```bash
-git clone https://github.com/Gzeu/trusthire.git
-cd trusthire
-npm install
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Gzeu/trusthire.git
+   cd trusthire
+   ```
 
-### 2. Configure Environment
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-```bash
-cp .env.example .env.local
-```
+3. **Configure environment**
+   ```bash
+   cp .env.example .env.local
+   ```
 
-Edit `.env.local`:
+   Edit `.env.local`:
+   ```env
+   # Database
+   TURSO_DATABASE_URL="libsql://your-turso-db-url"
+   TURSO_AUTH_TOKEN="your-turso-auth-token"
+   
+   # Security APIs
+   VIRUSTOTAL_API_KEY="your_vt_api_key_here"
+   
+   # Application
+   NEXT_PUBLIC_APP_URL="http://localhost:3000"
+   ```
 
-```env
-# Required
-DATABASE_URL="postgresql://user:password@localhost:5432/trusthire"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
+4. **Run development server**
+   ```bash
+   npm run dev
+   ```
 
-# Required for URL scanning
-VIRUSTOTAL_API_KEY="your_vt_api_key_here"
+5. **Open [http://localhost:3000](http://localhost:3000)**
 
-# Optional — increases GitHub API rate limit from 60 to 5000 req/hr
-GITHUB_TOKEN="ghp_your_token_here"
-```
+### Production Deployment
 
-### 3. Set Up Database
+1. **Push to GitHub**
+2. **Connect to Vercel**
+3. **Configure environment variables**
+4. **Deploy automatically**
 
-```bash
-npx prisma db push
-```
-
-### 4. Run Development Server
-
-```bash
-npm run dev
-```
+**Live Demo**: https://trusthire-five.vercel.app
 
 Open [http://localhost:3000](http://localhost:3000).
 
@@ -257,6 +282,60 @@ Scan a URL via VirusTotal.
 ### `GET /api/patterns`
 
 Returns known scam patterns from the community database.
+
+### `POST /api/sandbox/analyze`
+
+Analyze code, repositories, or URLs in isolated Vercel Sandboxes.
+
+```json
+{
+  "type": "repository|url|code",
+  "data": {
+    "repoUrl": "https://github.com/user/repo",
+    "url": "https://example.com",
+    "code": "console.log('test');",
+    "language": "node"
+  }
+}
+```
+
+---
+
+## ð¡ Vercel Sandboxes Integration
+
+### What are Sandboxes?
+
+Vercel Sandboxes provide isolated Linux environments for secure code execution. Perfect for:
+- **Repository Analysis**: Clone and scan repos safely
+- **Code Testing**: Execute suspicious code in isolation
+- **URL Verification**: Test domains without risk
+- **Pattern Detection**: Analyze code patterns securely
+
+### Setup Instructions
+
+1. **Install Sandbox CLI**
+   ```bash
+   npm i -g sandbox
+   sandbox login
+   ```
+
+2. **Create Sandbox**
+   ```bash
+   sandbox create --timeout 15m
+   ```
+
+3. **Execute Commands**
+   ```bash
+   sandbox exec sb_abc123 "git clone https://github.com/user/repo.git"
+   sandbox exec sb_abc123 "node analyze-repo.js"
+   ```
+
+### Demo Implementation
+
+The `/sandbox` page provides a complete demo of sandbox capabilities:
+- **Repository Analysis**: Safe GitHub repo scanning
+- **URL Testing**: Domain safety verification
+- **Code Execution**: Pattern detection in isolation
 
 ---
 
@@ -334,10 +413,84 @@ git push origin feat/new-pattern
 
 ## 📜 License
 
-MIT — see [LICENSE](./LICENSE).
+### For Developers
+- **Prevention**: Detect scams before victimization
+- **Education**: Learn about common attack vectors
+- **Evidence**: Generate reports for authorities
+- **Community**: Share warnings with others
+
+### For Organizations
+- **Security**: Protect development teams
+- **Compliance**: Security due diligence tools
+- **Training**: Educational resources
+- **Threat Intel**: Community-driven database
+
+### Real-World Impact
+- **Credential Protection**: Prevent .env and key theft
+- **Financial Security**: Avoid wallet and fund loss
+- **Reputation Protection**: Prevent compromised systems
+- **Community Safety**: Share threat intelligence
+
+---
+
+## ð¡ Production Features
+
+### Live Application
+- **URL**: https://trusthire-five.vercel.app
+- **Status**: Production ready with all features
+- **Pages**: 7 complete pages with full functionality
+- **APIs**: 7 endpoints for comprehensive analysis
+
+### All Pages Available
+- **Homepage** (`/`) - Hero section and overview
+- **Assessment Tool** (`/assess`) - Main security assessment
+- **Results Dashboard** (`/results/[id]`) - Detailed reports
+- **Threat Database** (`/patterns`) - Scam patterns library
+- **Sandbox Demo** (`/sandbox`) - Vercel Sandboxes showcase
+- **Privacy Policy** (`/privacy`) - Data protection
+- **Disclaimer** (`/disclaimer`) - Legal terms
+
+---
+
+## ð Support & Community
+
+### Getting Help
+- **Documentation**: Complete guides and examples
+- **GitHub Issues**: Bug reports and feature requests
+- **Community**: Contribute patterns and improvements
+- **Security**: Report security issues privately
+
+### Contact
+- **GitHub**: https://github.com/Gzeu/trusthire
+- **Live Demo**: https://trusthire-five.vercel.app
+- **Issues**: https://github.com/Gzeu/trusthire/issues
+
+---
+
+## ð License
+
+MIT License - see [LICENSE](./LICENSE) for details.
 
 ---
 
 <p align="center">
-  Built by <a href="https://github.com/Gzeu">@Gzeu</a> · If this helped you avoid a scam, ⭐ the repo
+  <strong>TrustHire - Protecting developers from recruitment scams</strong>
 </p>
+
+<p align="center">
+  <a href="https://trusthire-five.vercel.app">Live Demo</a> ·
+  <a href="https://github.com/Gzeu/trusthire">GitHub</a> ·
+  <a href="https://vercel.com/docs/concepts/functions/serverless-functions">Vercel Functions</a> ·
+  <a href="https://vercel.com/docs/vercel-sandbox">Vercel Sandboxes</a>
+</p>
+
+<p align="center">
+  Built with <a href="https://nextjs.org/">Next.js</a>, <a href="https://www.turso.tech/">Turso</a>, and <a href="https://vercel.com/">Vercel</a>
+</p>
+
+<p align="center">
+  If this helped you avoid a scam, consider <a href="https://github.com/Gzeu/trusthire">starring the repo</a> or contributing to the community database.
+</p>
+
+---
+*Last updated: April 2026*
