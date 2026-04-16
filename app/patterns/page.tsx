@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle, Search } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Search, Home } from 'lucide-react';
+import Link from 'next/link';
 
 interface ScamPattern {
   id: string;
@@ -46,7 +47,7 @@ export default function PatternsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#0A0A0B] text-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p>Loading scam patterns...</p>
@@ -56,8 +57,26 @@ export default function PatternsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-[#0A0A0B] text-white">
+      {/* Navigation */}
+      <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-4xl mx-auto">
+        <Link href="/" className="flex items-center gap-2">
+          <Shield className="w-5 h-5 text-red-500" />
+          <span className="font-mono font-bold">TrustHire</span>
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link 
+            href="/" 
+            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-mono"
+          >
+            <Home className="w-4 h-4" />
+            Home
+          </Link>
+          <span className="text-red-500 text-sm font-mono">Threat DB</span>
+        </div>
+      </nav>
+
+      <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-4">
@@ -66,7 +85,7 @@ export default function PatternsPage() {
               Scam Pattern Database
             </h1>
           </div>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+          <p className="text-white/40 text-lg max-w-2xl mx-auto">
             Known scam patterns and attack vectors in the tech recruitment ecosystem
           </p>
         </div>
@@ -74,39 +93,39 @@ export default function PatternsPage() {
         {/* Search */}
         <div className="max-w-2xl mx-auto mb-8">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
             <input
               type="text"
               placeholder="Search patterns by description, category, or indicators..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg pl-12 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white/10 transition-colors"
+              className="w-full bg-[#111113] border border-white/10 rounded-lg pl-12 pr-4 py-3 text-white placeholder-white/40 font-mono focus:outline-none focus:border-red-500/50 focus:bg-white/10 transition-colors"
             />
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-white/5 border border-white/10 rounded-lg p-6">
+          <div className="bg-[#111113] border border-white/5 rounded-xl p-6">
             <div className="flex items-center justify-between mb-2">
               <AlertTriangle className="w-8 h-8 text-red-400" />
-              <span className="text-2xl font-bold">{patterns.length}</span>
+              <span className="text-2xl font-bold font-mono">{patterns.length}</span>
             </div>
-            <p className="text-gray-400">Total Patterns</p>
+            <p className="text-white/40 font-mono">Total Patterns</p>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-lg p-6">
+          <div className="bg-[#111113] border border-white/5 rounded-xl p-6">
             <div className="flex items-center justify-between mb-2">
               <CheckCircle className="w-8 h-8 text-green-400" />
-              <span className="text-2xl font-bold">{patterns.filter(p => p.verified).length}</span>
+              <span className="text-2xl font-bold font-mono">{patterns.filter(p => p.verified).length}</span>
             </div>
-            <p className="text-gray-400">Verified</p>
+            <p className="text-white/40 font-mono">Verified</p>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-lg p-6">
+          <div className="bg-[#111113] border border-white/5 rounded-xl p-6">
             <div className="flex items-center justify-between mb-2">
               <Shield className="w-8 h-8 text-blue-400" />
-              <span className="text-2xl font-bold">{new Set(patterns.map(p => p.ecosystem)).size}</span>
+              <span className="text-2xl font-bold font-mono">{new Set(patterns.map(p => p.ecosystem)).size}</span>
             </div>
-            <p className="text-gray-400">Ecosystems</p>
+            <p className="text-white/40 font-mono">Ecosystems</p>
           </div>
         </div>
 
@@ -115,40 +134,40 @@ export default function PatternsPage() {
           {filteredPatterns.map((pattern) => (
             <div
               key={pattern.id}
-              className="bg-white/5 border border-white/10 rounded-lg p-6 hover:bg-white/10 transition-colors"
+              className="bg-[#111113] border border-white/5 rounded-xl p-6 hover:bg-white/5 transition-all"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border font-mono ${
                       categoryColors[pattern.category as keyof typeof categoryColors] || 
                       'bg-gray-500/10 border-gray-500/20 text-gray-400'
                     }`}>
                       {pattern.category.replace('_', ' ')}
                     </span>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono">
                       {pattern.ecosystem}
                     </span>
                     {pattern.verified && (
                       <CheckCircle className="w-4 h-4 text-green-400" />
                     )}
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{pattern.description}</h3>
+                  <h3 className="text-lg font-semibold mb-2 font-mono">{pattern.description}</h3>
                 </div>
               </div>
 
               {/* Indicators */}
               <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-400 mb-2">Key Indicators:</p>
+                <p className="text-sm font-medium text-white/40 mb-2 font-mono">Key Indicators:</p>
                 <div className="space-y-1">
                   {pattern.indicators.map((indicator, index) => (
                     <div
                       key={index}
-                      className="flex items-start gap-2 text-sm text-gray-300"
+                      className="flex items-start gap-2 text-sm text-white/60"
                     >
                       <div className="w-1.5 h-1.5 bg-red-400 rounded-full mt-2 flex-shrink-0"></div>
-                      <span>{indicator}</span>
+                      <span className="font-mono">{indicator}</span>
                     </div>
                   ))}
                 </div>
@@ -160,8 +179,8 @@ export default function PatternsPage() {
         {/* No Results */}
         {filteredPatterns.length === 0 && (
           <div className="text-center py-12">
-            <AlertTriangle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">No patterns found matching your search.</p>
+            <AlertTriangle className="w-16 h-16 text-white/30 mx-auto mb-4" />
+            <p className="text-white/30 text-lg font-mono">No patterns found matching your search.</p>
           </div>
         )}
       </div>

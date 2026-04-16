@@ -24,6 +24,10 @@
   Built for <strong>blockchain/Web3 developers</strong> â the primary targets of fake recruiter attacks.
 </p>
 
+<p align="center">
+  <strong>Current Status:</strong> ✅ Production Ready with Enhanced Assessment & Quick Scans
+</p>
+
 ---
 
 ## ðŸŽ¯ What is TrustHire?
@@ -42,9 +46,21 @@ TrustHire automates the detection of these patterns before you become a victim.
 
 ## ✨ Features
 
-### 🕵️ Recruiter & Identity Scoring
-- LinkedIn profile verification check
+### � Quick Scan Features (Homepage)
+- **Quick GitHub Scan** - Instant repository security analysis
+- **Quick LinkedIn Check** - Real-time recruiter profile analysis with advanced details
+- **Quick Google Forms Scan** - Security analysis for form URLs with VirusTotal integration
+- **Real-time Scoring** - Immediate risk assessment with color-coded results
+- **Advanced LinkedIn Analysis** - Profile age, connections, email verification, message keywords
+- **3-Column Layout** - Side-by-side scanning interface
+
+### �🕵️ Enhanced Recruiter & Identity Scoring
+- LinkedIn profile verification check with **advanced detail inputs**
 - Email domain analysis (corporate vs. generic/free email)
+- Profile age analysis (<3 months = high risk)
+- Connections verification (senior recruiter <300 = suspicious)
+- Message keyword detection ("technical assessment", "culture fit", etc.)
+- Verification badge status check
 - Cross-reference claimed company vs. email domain
 - Identity confidence scoring (0–25 pts)
 
@@ -54,12 +70,14 @@ TrustHire automates the detection of these patterns before you become a victim.
 - Suspicious TLD detection (`.xyz`, `.tk`, `.ml`, etc.)
 - Shortlink URL detection (bit.ly, tinyurl, etc.)
 - Domain age estimation
+- **Google Forms security analysis** with phishing detection
 - Employer legitimacy scoring (0–25 pts)
 
-### 📋 Process Risk Detection
+### 📋 Enhanced Process Risk Detection
 - Detects artificial urgency signals
 - Flags wallet/seed phrase/KYC requests
 - Flags "run code locally" pressure
+- **Suspicious keywords auto-detection** in recruiter messages
 - Evaluates job description quality and specificity
 - Process legitimacy scoring (0–25 pts)
 
@@ -75,6 +93,14 @@ TrustHire automates the detection of these patterns before you become a victim.
   - Dynamic `require()`, base64 decoding, obfuscated hex
 - Repository age and stars/forks analysis
 - Technical safety scoring (0–25 pts)
+
+### 🎯 Enhanced Assessment Flow (4-Step Process)
+- **Step 1: Recruiter Info** - Complete profile analysis with quick scan integration
+- **Step 2: Job Context** - Enhanced details with Google Forms analysis
+- **Step 3: Technical Artifacts** - Smart link detection and repository scanning
+- **Step 4: Review & Submit** - Comprehensive summary with all quick scan results
+- **Real-time Validation** - Immediate feedback and scoring
+- **Progress Tracking** - Clear step completion indicators
 
 ### 📊 Scoring & Verdict Engine
 | Score | Verdict | Meaning |
