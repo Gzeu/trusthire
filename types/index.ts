@@ -15,7 +15,7 @@ export interface JobInput {
 }
 
 export interface ArtifactInput {
-  type: 'github' | 'gitlab' | 'zip' | 'drive' | 'notion' | 'url' | 'shortlink';
+  type: 'github' | 'gitlab' | 'zip' | 'drive' | 'notion' | 'url' | 'shortlink' | 'forms';
   url: string;
 }
 
