@@ -1,6 +1,6 @@
 {
   "name": "trusthire",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,12 +12,14 @@
     "db:migrate": "prisma migrate dev"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.2",
     "@prisma/client": "^5.10.0",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-progress": "^1.0.3",
+    "@radix-ui/react-switch": "^1.0.3",
     "@radix-ui/react-tabs": "^1.0.4",
     "@radix-ui/react-tooltip": "^1.0.7",
-    "@radix-ui/react-switch": "^1.0.3",
+    "@vercel/sandbox": "^1.10.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "lucide-react": "^0.344.0",

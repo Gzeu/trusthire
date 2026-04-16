@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -15,11 +15,11 @@ model Assessment {
   company       String
   finalScore    Int
   verdict       String
-  inputData     Json
-  scoreData     Json
-  redFlags      Json
-  vtResults     Json?
-  repoScans     Json?
+  inputData     String   // JSON stored as string
+  scoreData     String   // JSON stored as string
+  redFlags      String   // JSON stored as string
+  vtResults     String?  // JSON stored as string
+  repoScans     String?  // JSON stored as string
   shareToken    String   @unique @default(cuid())
 
   @@index([sessionId])
@@ -31,7 +31,7 @@ model ScamPattern {
   createdAt   DateTime @default(now())
   category    String
   description String
-  indicators  String[]
+  indicators  String   // JSON array stored as string
   ecosystem   String
   verified    Boolean  @default(false)
   anonymous   Boolean  @default(true)
