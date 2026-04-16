@@ -51,14 +51,12 @@ export default function AssessPage() {
     if (!recruiter.linkedinUrl) return;
     
     try {
-      // Simulate LinkedIn analysis
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       let score = 100;
       const redFlags: string[] = [];
       const warnings: string[] = [];
       
-      // Analysis based on provided data
       if (recruiter.profileAge) {
         const joinedDate = new Date(recruiter.profileAge);
         const now = new Date();
@@ -74,7 +72,6 @@ export default function AssessPage() {
         }
       }
       
-      // Email analysis
       const suspiciousEmails = ['outlook.com', 'gmail.com', 'yahoo.com', 'hotmail.com'];
       const hasYearInEmail = /20(24|25|26)/.test(recruiter.emailReceived);
       const emailDomain = recruiter.emailReceived.split('@')[1]?.toLowerCase();
@@ -84,7 +81,6 @@ export default function AssessPage() {
         redFlags.push(`Suspicious email address: ${recruiter.emailReceived}`);
       }
       
-      // Connections analysis
       const isSeniorRecruiter = recruiter.jobTitle.toLowerCase().includes('senior') || 
                               recruiter.jobTitle.toLowerCase().includes('lead') || 
                               recruiter.jobTitle.toLowerCase().includes('principal');
@@ -97,7 +93,6 @@ export default function AssessPage() {
         warnings.push(`Low connection count: ${recruiter.connections}`);
       }
       
-      // Message analysis
       const scamKeywords = [
         'technical assessment', 'culture fit', 'growth strategies', 
         'defi ecosystem', 'innovative solutions', 'urgent opportunity',
@@ -113,7 +108,6 @@ export default function AssessPage() {
         setJob(prev => ({ ...prev, suspiciousKeywords: foundKeywords }));
       }
       
-      // Verification status
       if (!recruiter.hasVerifiedBadge) {
         score -= 10;
         warnings.push('Profile is not verified');
@@ -156,7 +150,6 @@ export default function AssessPage() {
     if (githubArtifacts.length === 0) return;
     
     try {
-      // Scan first GitHub repo
       const response = await fetch('/api/scan/repo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,13 +175,11 @@ export default function AssessPage() {
       const redFlags: string[] = [];
       const warnings: string[] = [];
       
-      // Check if it's a Google Forms URL
       if (!job.googleFormsUrl.includes('forms.gle') && !job.googleFormsUrl.includes('docs.google.com/forms')) {
         score -= 30;
         redFlags.push('Not a Google Forms URL - potential phishing');
       }
       
-      // Check for suspicious patterns
       const suspiciousPatterns = ['bit.ly', 'tinyurl.com', 'short.link'];
       const hasShortener = suspiciousPatterns.some(pattern => job.googleFormsUrl.includes(pattern));
       
@@ -197,7 +188,6 @@ export default function AssessPage() {
         redFlags.push('URL uses link shortener - cannot verify destination');
       }
       
-      // Simulate VirusTotal check
       const virusTotalSafe = Math.random() > 0.3;
       
       if (!virusTotalSafe) {
@@ -258,7 +248,6 @@ export default function AssessPage() {
     setLoading(true);
     setError('');
     
-    // Run quick scans before submission
     await Promise.all([
       quickScanLinkedIn(),
       quickScanGitHub(),
@@ -312,7 +301,6 @@ export default function AssessPage() {
       </nav>
 
       <div className="max-w-4xl mx-auto px-6 py-12">
-        {/* Enhanced Step Indicator */}
         <div className="flex items-center gap-2 mb-10 overflow-x-auto">
           {steps.map((s, i) => (
             <div key={s} className="flex items-center gap-2 min-w-fit">
@@ -321,7 +309,7 @@ export default function AssessPage() {
                 i < step ? 'bg-green-600 text-white' : 
                 'bg-white/10 text-white/40'
               }`}>
-                {i < step ? 'â' : i + 1}
+                {i < step ? '✓' : i + 1}
               </div>
               <span className={`text-sm font-mono whitespace-nowrap ${
                 i === step ? 'text-white' : 'text-white/30'
@@ -331,7 +319,6 @@ export default function AssessPage() {
           ))}
         </div>
 
-        {/* Step 0 - Enhanced Recruiter Info */}
         {step === 0 && (
           <div className="space-y-8">
             <div>
@@ -339,7 +326,6 @@ export default function AssessPage() {
               <p className="text-white/40 text-sm">Enter what you know about the person who contacted you.</p>
             </div>
 
-            {/* Quick Scan Preview */}
             {quickScanResults.linkedin && (
               <div className="bg-[#111113] border border-white/5 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -402,7 +388,7 @@ export default function AssessPage() {
                     onChange={(e) => setRecruiter({ ...recruiter, linkedinUrl: e.target.value })}
                     onBlur={quickScanLinkedIn}
                   />
-                  <p className="text-white/30 text-xs mt-1">LinkedIn verification is a partial signal only â not a trust guarantee.</p>
+                  <p className="text-white/30 text-xs mt-1">LinkedIn verification is a partial signal only — not a trust guarantee.</p>
                 </Field>
                 <Field label="Email Received">
                   <input
@@ -474,39 +460,140 @@ export default function AssessPage() {
           </div>
         )}
 
-        {/* Step 1 - Job */}
         {step === 1 && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div>
-              <h2 className="text-2xl font-mono font-bold mb-1">Job Context</h2>
-              <p className="text-white/40 text-sm">Describe the opportunity and any suspicious signals.</p>
+              <h2 className="text-3xl font-mono font-bold mb-2">Job Context</h2>
+              <p className="text-white/40 text-sm">Describe the opportunity and any suspicious signals. We'll auto-detect red flags.</p>
             </div>
-            <div className="space-y-4">
-              <Field label="Job Description">
-                <textarea
-                  className="w-full bg-[#111113] border border-white/10 rounded-lg px-4 py-3 font-mono text-sm focus:outline-none focus:border-red-500/50 transition-colors resize-none h-28"
-                  placeholder="Paste the job description here..."
-                  value={job.jobDescription}
-                  onChange={(e) => setJob({ ...job, jobDescription: e.target.value })}
-                />
-              </Field>
-              <Field label="Recruiter Messages">
-                <textarea
-                  className="w-full bg-[#111113] border border-white/10 rounded-lg px-4 py-3 font-mono text-sm focus:outline-none focus:border-red-500/50 transition-colors resize-none h-36"
-                  placeholder="Paste the conversation or messages you received..."
-                  value={job.recruiterMessages}
-                  onChange={(e) => setJob({ ...job, recruiterMessages: e.target.value })}
-                />
-              </Field>
-              <div className="space-y-3">
-                <p className="text-sm text-white/60 font-mono">Signal checklist — check all that apply:</p>
+
+            {quickScanResults.forms && (
+              <div className="bg-[#111113] border border-white/5 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-mono font-bold flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-400" />
+                    Google Forms Security Analysis
+                  </h3>
+                  <div className={`text-2xl font-mono font-bold ${getScoreColor(quickScanResults.forms.score)}`}>
+                    {quickScanResults.forms.score}/100
+                  </div>
+                </div>
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border mb-4 ${getVerdictColor(quickScanResults.forms.verdict)}`}>
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="font-mono text-sm font-bold">
+                    {quickScanResults.forms.verdict.replace('_', ' ').toUpperCase()}
+                  </span>
+                </div>
+                {(quickScanResults.forms.redFlags.length > 0 || quickScanResults.forms.warnings.length > 0) && (
+                  <div className="space-y-2">
+                    {quickScanResults.forms.redFlags.map((flag: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-red-400 text-sm">
+                        <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span className="font-mono">{flag}</span>
+                      </div>
+                    ))}
+                    {quickScanResults.forms.warnings.map((warning: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-yellow-400 text-sm">
+                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span className="font-mono">{warning}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <Field label="Job Description">
+                  <textarea
+                    className="w-full bg-[#111113] border border-white/10 rounded-lg px-4 py-3 font-mono text-sm focus:outline-none focus:border-red-500/50 transition-colors resize-none h-32"
+                    placeholder="Paste job description here..."
+                    value={job.jobDescription}
+                    onChange={(e) => setJob({ ...job, jobDescription: e.target.value })}
+                  />
+                </Field>
+                <Field label="Google Forms URL">
+                  <input
+                    className="w-full bg-[#111113] border border-white/10 rounded-lg px-4 py-3 font-mono text-sm focus:outline-none focus:border-red-500/50 transition-colors"
+                    placeholder="https://forms.gle/... or https://docs.google.com/forms/..."
+                    value={job.googleFormsUrl}
+                    onChange={(e) => setJob({ ...job, googleFormsUrl: e.target.value })}
+                    onBlur={quickScanForms}
+                  />
+                  <p className="text-white/30 text-xs mt-1">We'll scan for phishing attempts and security issues</p>
+                </Field>
+              </div>
+
+              <div className="space-y-4">
+                <Field label="Recruiter Messages">
+                  <textarea
+                    className="w-full bg-[#111113] border border-white/10 rounded-lg px-4 py-3 font-mono text-sm focus:outline-none focus:border-red-500/50 transition-colors resize-none h-36"
+                    placeholder="Paste conversation or messages you received..."
+                    value={job.recruiterMessages}
+                    onChange={(e) => setJob({ ...job, recruiterMessages: e.target.value })}
+                    onBlur={() => {
+                      const scamKeywords = [
+                        'technical assessment', 'culture fit', 'growth strategies', 
+                        'defi ecosystem', 'innovative solutions', 'urgent opportunity',
+                        'immediate start', 'competitive package', 'revolutionary',
+                        'deadline', 'exclusive', 'limited time', 'salary', 'compensation'
+                      ];
+                      const messageLower = job.recruiterMessages.toLowerCase();
+                      const foundKeywords = scamKeywords.filter(keyword => messageLower.includes(keyword));
+                      if (foundKeywords.length > 0) {
+                        setJob(prev => ({ 
+                          ...prev, 
+                          suspiciousKeywords: foundKeywords,
+                          urgencySignals: foundKeywords.some(k => ['deadline', 'exclusive', 'limited time'].includes(k)),
+                          salaryMentioned: foundKeywords.some(k => ['salary', 'compensation'].includes(k))
+                        }));
+                      }
+                    }}
+                  />
+                </Field>
+                
+                {job.suspiciousKeywords.length > 0 && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                    <p className="text-xs font-mono text-yellow-400 mb-2">🔍 Auto-detected suspicious keywords:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {job.suspiciousKeywords.map((keyword, i) => (
+                        <span key={i} className="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded text-xs font-mono">
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-[#111113] border border-white/5 rounded-xl p-6">
+              <h3 className="font-mono font-bold mb-4 text-white/80">Risk Signal Checklist</h3>
+              <div className="grid md:grid-cols-2 gap-4">
                 {[
-                  { key: 'salaryMentioned', label: '💰 Salary was mentioned very early in the conversation' },
-                  { key: 'urgencySignals', label: '⏱️ There was urgency pressure ("deadline", "exclusive", "limited time")' },
-                  { key: 'walletSeedKycRequest', label: '🔑 Asked for wallet address, seed phrase, or KYC documents' },
-                  { key: 'runCodeLocally', label: '⚠️ Asked me to run code locally (npm install, docker compose, etc.)' },
-                ].map(({ key, label }) => (
-                  <label key={key} className="flex items-start gap-3 cursor-pointer group">
+                  { 
+                    key: 'salaryMentioned', 
+                    label: '💰 Early salary discussion', 
+                    description: 'Salary mentioned in first contact'
+                  },
+                  { 
+                    key: 'urgencySignals', 
+                    label: '⏱️ Pressure tactics', 
+                    description: '"Deadline", "exclusive", "limited time"'
+                  },
+                  { 
+                    key: 'walletSeedKycRequest', 
+                    label: '🔑 Personal data request', 
+                    description: 'Wallet, seed phrase, or KYC documents'
+                  },
+                  { 
+                    key: 'runCodeLocally', 
+                    label: '⚠️ Code execution request', 
+                    description: 'npm install, docker compose, etc.'
+                  },
+                ].map(({ key, label, description }) => (
+                  <label key={key} className="flex items-start gap-3 cursor-pointer group p-3 rounded-lg hover:bg-white/5 transition-colors">
                     <div className="relative mt-0.5">
                       <input
                         type="checkbox"
@@ -514,13 +601,16 @@ export default function AssessPage() {
                         checked={job[key as keyof typeof job] as boolean}
                         onChange={(e) => setJob({ ...job, [key]: e.target.checked })}
                       />
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                        job[key as keyof typeof job] ? 'bg-red-600 border-red-600' : 'border-white/20 bg-transparent'
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                        job[key as keyof typeof job] ? 'bg-red-600 border-red-600 scale-110' : 'border-white/20 bg-transparent'
                       }`}>
                         {job[key as keyof typeof job] && <span className="text-white text-xs">✓</span>}
                       </div>
                     </div>
-                    <span className="text-sm text-white/70 group-hover:text-white transition-colors">{label}</span>
+                    <div className="flex-1">
+                      <span className="text-sm text-white/70 group-hover:text-white transition-colors font-mono block">{label}</span>
+                      <span className="text-xs text-white/40 font-mono">{description}</span>
+                    </div>
                   </label>
                 ))}
               </div>
@@ -528,56 +618,266 @@ export default function AssessPage() {
           </div>
         )}
 
-        {/* Step 2 - Artifacts */}
         {step === 2 && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div>
-              <h2 className="text-2xl font-mono font-bold mb-1">Technical Artifacts</h2>
-              <p className="text-white/40 text-sm">Add any links you received: GitHub repos, Google Drive files, Notion pages, shortlinks.</p>
+              <h2 className="text-3xl font-mono font-bold mb-2">Technical Artifacts</h2>
+              <p className="text-white/40 text-sm">Add any links you received. We'll scan GitHub repos and detect suspicious URLs.</p>
             </div>
-            <div className="flex gap-2">
-              <input
-                className="flex-1 bg-[#111113] border border-white/10 rounded-lg px-4 py-3 font-mono text-sm focus:outline-none focus:border-red-500/50 transition-colors"
-                placeholder="https://github.com/user/repo"
-                value={newUrl}
-                onChange={(e) => setNewUrl(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addArtifact()}
-              />
-              <button
-                onClick={addArtifact}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 font-mono text-sm"
-              >
-                <Plus className="w-4 h-4" /> Add
-              </button>
-            </div>
-            {artifacts.length > 0 ? (
-              <div className="space-y-2">
-                {artifacts.map((a, i) => (
-                  <div key={i} className="flex items-center justify-between bg-[#111113] border border-white/5 rounded-lg px-4 py-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className={`text-xs font-mono px-2 py-0.5 rounded flex-shrink-0 ${
-                        a.type === 'github' ? 'bg-purple-500/20 text-purple-400' :
-                        a.type === 'shortlink' ? 'bg-red-500/20 text-red-400' :
-                        'bg-white/5 text-white/40'
-                      }`}>{a.type}</span>
-                      <span className="text-sm font-mono text-white/70 truncate">{a.url}</span>
-                    </div>
-                    <button onClick={() => removeArtifact(i)} className="text-white/30 hover:text-red-400 transition-colors flex-shrink-0 ml-3">
-                      <X className="w-4 h-4" />
-                    </button>
+
+            {quickScanResults.github && (
+              <div className="bg-[#111113] border border-white/5 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-mono font-bold flex items-center gap-2">
+                    <Github className="w-5 h-5 text-purple-400" />
+                    GitHub Security Analysis
+                  </h3>
+                  <div className={`text-2xl font-mono font-bold ${getScoreColor(quickScanResults.github.riskLevel === 'safe' ? 85 : quickScanResults.github.riskLevel === 'warning' ? 60 : 25)}`}>
+                    {quickScanResults.github.riskLevel === 'safe' ? '85/100' : quickScanResults.github.riskLevel === 'warning' ? '60/100' : '25/100'}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="border border-dashed border-white/10 rounded-lg p-8 text-center">
-                <p className="text-white/30 text-sm font-mono">No artifacts added yet. You can proceed without them.</p>
+                </div>
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border mb-4 ${
+                  quickScanResults.github.riskLevel === 'safe' ? 'bg-green-500/20 border-green-500/40 text-green-400' :
+                  quickScanResults.github.riskLevel === 'warning' ? 'bg-yellow-500/20 border-yellow-500/40 text-yellow-400' :
+                  'bg-red-500/20 border-red-500/40 text-red-400'
+                }`}>
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="font-mono text-sm font-bold">
+                    {quickScanResults.github.riskLevel.toUpperCase()}
+                  </span>
+                </div>
+                {quickScanResults.github.dangerousScripts?.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-mono text-red-400 mb-2">⚠️ Dangerous scripts detected:</p>
+                    {quickScanResults.github.dangerousScripts.map((script: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-red-400 text-sm">
+                        <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span className="font-mono">{script}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-            {error && <p className="text-red-400 text-sm font-mono">{error}</p>}
+
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 bg-[#111113] border border-white/10 rounded-lg px-4 py-3 font-mono text-sm focus:outline-none focus:border-red-500/50 transition-colors"
+                  placeholder="https://github.com/user/repo or any suspicious URL..."
+                  value={newUrl}
+                  onChange={(e) => setNewUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addArtifact()}
+                />
+                <button
+                  onClick={addArtifact}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 font-mono text-sm"
+                >
+                  <Plus className="w-4 h-4" /> Add
+                </button>
+              </div>
+              
+              {artifacts.length > 0 && (
+                <div className="space-y-2">
+                  {artifacts.map((a, i) => (
+                    <div key={i} className="flex items-center justify-between bg-[#111113] border border-white/5 rounded-lg px-4 py-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className={`text-xs font-mono px-2 py-0.5 rounded flex-shrink-0 ${
+                          a.type === 'github' ? 'bg-purple-500/20 text-purple-400' :
+                          a.type === 'forms' ? 'bg-blue-500/20 text-blue-400' :
+                          a.type === 'shortlink' ? 'bg-red-500/20 text-red-400' :
+                          a.type === 'drive' ? 'bg-green-500/20 text-green-400' :
+                          a.type === 'notion' ? 'bg-pink-500/20 text-pink-400' :
+                          'bg-white/5 text-white/40'
+                        }`}>{a.type}</span>
+                        <span className="text-sm font-mono text-white/70 truncate">{a.url}</span>
+                      </div>
+                      <button onClick={() => removeArtifact(i)} className="text-white/30 hover:text-red-400 transition-colors flex-shrink-0 ml-3">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {artifacts.length === 0 && (
+                <div className="border border-dashed border-white/10 rounded-lg p-8 text-center">
+                  <p className="text-white/30 text-sm font-mono">No artifacts added yet. You can proceed without them.</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Navigation */}
+        {step === 3 && (
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-3xl font-mono font-bold mb-2">Review & Submit</h2>
+              <p className="text-white/40 text-sm">Review all information and scan results before submitting your assessment.</p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-[#111113] border border-white/5 rounded-xl p-6">
+                <h3 className="font-mono font-bold mb-4 flex items-center gap-2">
+                  <User className="w-5 h-5 text-blue-400" />
+                  Recruiter Information
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-white/60 font-mono">Name:</span>
+                    <span className="text-white font-mono">{recruiter.name || 'Not provided'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60 font-mono">Company:</span>
+                    <span className="text-white font-mono">{recruiter.claimedCompany || 'Not provided'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60 font-mono">Job Title:</span>
+                    <span className="text-white font-mono">{recruiter.jobTitle || 'Not provided'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60 font-mono">Connections:</span>
+                    <span className="text-white font-mono">{recruiter.connections || 'Not provided'}</span>
+                  </div>
+                  {quickScanResults.linkedin && (
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 font-mono">LinkedIn Scan:</span>
+                        <span className={`font-mono font-bold ${getScoreColor(quickScanResults.linkedin.score)}`}>
+                          {quickScanResults.linkedin.score}/100
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-[#111113] border border-white/5 rounded-xl p-6">
+                <h3 className="font-mono font-bold mb-4 flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-green-400" />
+                  Job Context
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-white/60 font-mono">Salary Mentioned:</span>
+                    <span className={`font-mono ${job.salaryMentioned ? 'text-red-400' : 'text-green-400'}`}>
+                      {job.salaryMentioned ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60 font-mono">Urgency Pressure:</span>
+                    <span className={`font-mono ${job.urgencySignals ? 'text-red-400' : 'text-green-400'}`}>
+                      {job.urgencySignals ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60 font-mono">Data Request:</span>
+                    <span className={`font-mono ${job.walletSeedKycRequest ? 'text-red-400' : 'text-green-400'}`}>
+                      {job.walletSeedKycRequest ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60 font-mono">Code Execution:</span>
+                    <span className={`font-mono ${job.runCodeLocally ? 'text-red-400' : 'text-green-400'}`}>
+                      {job.runCodeLocally ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                  {quickScanResults.forms && (
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 font-mono">Forms Scan:</span>
+                        <span className={`font-mono font-bold ${getScoreColor(quickScanResults.forms.score)}`}>
+                          {quickScanResults.forms.score}/100
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-[#111113] border border-white/5 rounded-xl p-6">
+                <h3 className="font-mono font-bold mb-4 flex items-center gap-2">
+                  <Code className="w-5 h-5 text-purple-400" />
+                  Technical Artifacts
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-white/60 font-mono">Total Links:</span>
+                    <span className="text-white font-mono">{artifacts.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60 font-mono">GitHub Repos:</span>
+                    <span className="text-white font-mono">{artifacts.filter(a => a.type === 'github').length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60 font-mono">Suspicious URLs:</span>
+                    <span className="text-white font-mono">{artifacts.filter(a => ['shortlink', 'url'].includes(a.type)).length}</span>
+                  </div>
+                  {quickScanResults.github && (
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 font-mono">GitHub Scan:</span>
+                        <span className={`font-mono font-bold ${
+                          quickScanResults.github.riskLevel === 'safe' ? 'text-green-400' :
+                          quickScanResults.github.riskLevel === 'warning' ? 'text-yellow-400' :
+                          'text-red-400'
+                        }`}>
+                          {quickScanResults.github.riskLevel.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-[#111113] border border-white/5 rounded-xl p-6">
+                <h3 className="font-mono font-bold mb-4 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-400" />
+                  Quick Scan Summary
+                </h3>
+                <div className="space-y-3">
+                  {quickScanResults.linkedin && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60 font-mono flex items-center gap-2">
+                        <Linkedin className="w-4 h-4 text-blue-400" /> LinkedIn
+                      </span>
+                      <span className={`font-mono font-bold ${getScoreColor(quickScanResults.linkedin.score)}`}>
+                        {quickScanResults.linkedin.score}/100
+                      </span>
+                    </div>
+                  )}
+                  {quickScanResults.github && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60 font-mono flex items-center gap-2">
+                        <Github className="w-4 h-4 text-purple-400" /> GitHub
+                      </span>
+                      <span className={`font-mono font-bold ${
+                        quickScanResults.github.riskLevel === 'safe' ? 'text-green-400' :
+                        quickScanResults.github.riskLevel === 'warning' ? 'text-yellow-400' :
+                        'text-red-400'
+                      }`}>
+                        {quickScanResults.github.riskLevel.toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  {quickScanResults.forms && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60 font-mono flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-blue-400" /> Forms
+                      </span>
+                      <span className={`font-mono font-bold ${getScoreColor(quickScanResults.forms.score)}`}>
+                        {quickScanResults.forms.score}/100
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {error && <p className="text-red-400 text-sm font-mono bg-red-500/10 border border-red-500/20 rounded-lg p-3">{error}</p>}
+          </div>
+        )}
+
         <div className="flex justify-between mt-10">
           <button
             onClick={() => setStep((s) => Math.max(0, s - 1))}
