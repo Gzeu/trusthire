@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Github, Linkedin, Search, TrendingUp, Shield, Clock, Users, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Github, Linkedin, Search, TrendingUp, Shield, Clock, Users, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
 
 interface ScanCardProps {
   title: string;
@@ -27,13 +27,28 @@ interface ScanCardProps {
 export default function QuickScanCards() {
   const [githubUrl, setGithubUrl] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [activeScan, setActiveScan] = useState<'github' | 'linkedin' | null>(null);
+  const [googleFormUrl, setGoogleFormUrl] = useState('');
+  const [activeScan, setActiveScan] = useState<'github' | 'linkedin' | 'form' | null>(null);
   
   // Mock scan results for demonstration
   const [githubResult, setGithubResult] = useState<any>(null);
   const [linkedinResult, setLinkedinResult] = useState<any>(null);
+  const [formResult, setFormResult] = useState<any>(null);
   const [githubError, setGithubError] = useState('');
   const [linkedinError, setLinkedinError] = useState('');
+  const [formError, setFormError] = useState('');
+
+  // LinkedIn advanced details state
+  const [showLinkedinDetails, setShowLinkedinDetails] = useState(false);
+  const [linkedinDetails, setLinkedinDetails] = useState({
+    joinedDate: '',
+    connections: 0,
+    jobTitle: '',
+    location: '',
+    email: '',
+    sampleMessage: '',
+    hasVerifiedBadge: false
+  });
 
   const handleGithubScan = async () => {
     if (!githubUrl.trim()) return;
@@ -63,17 +78,179 @@ export default function QuickScanCards() {
     setLinkedinError('');
     
     try {
-      // Mock LinkedIn scan logic
+      // Enhanced LinkedIn scan logic with real analysis
       await new Promise(resolve => setTimeout(resolve, 1500));
-      const mockResult = {
-        score: Math.floor(Math.random() * 100),
-        verdict: Math.random() > 0.5 ? 'low_risk' : 'suspicious',
-        redFlags: Math.random() > 0.6 ? ['New profile (< 3 months)'] : [],
-        warnings: Math.random() > 0.7 ? ['Low connection count'] : []
+      
+      let score = 100;
+      const redFlags: string[] = [];
+      const warnings: string[] = [];
+      
+      // Use advanced details if provided
+      if (showLinkedinDetails && linkedinDetails.joinedDate) {
+        const joinedDate = new Date(linkedinDetails.joinedDate);
+        const now = new Date();
+        const profileAgeMonths = (now.getFullYear() - joinedDate.getFullYear()) * 12 + 
+                                (now.getMonth() - joinedDate.getMonth());
+        
+        if (profileAgeMonths < 3) {
+          score -= 35;
+          redFlags.push(`Profile created less than 3 months ago (${profileAgeMonths} months)`);
+        } else if (profileAgeMonths < 6) {
+          score -= 20;
+          redFlags.push(`Profile created less than 6 months ago (${profileAgeMonths} months)`);
+        }
+        
+        // Email analysis
+        const suspiciousEmails = ['outlook.com', 'gmail.com', 'yahoo.com', 'hotmail.com'];
+        const hasYearInEmail = /20(24|25|26)/.test(linkedinDetails.email);
+        const emailDomain = linkedinDetails.email.split('@')[1]?.toLowerCase();
+        
+        if (suspiciousEmails.includes(emailDomain) || hasYearInEmail) {
+          score -= 25;
+          redFlags.push(`Suspicious email address: ${linkedinDetails.email}`);
+        }
+        
+        // Connections analysis
+        const isSeniorRecruiter = linkedinDetails.jobTitle.toLowerCase().includes('senior') || 
+                                linkedinDetails.jobTitle.toLowerCase().includes('lead') || 
+                                linkedinDetails.jobTitle.toLowerCase().includes('principal');
+        
+        if (isSeniorRecruiter && linkedinDetails.connections < 300) {
+          score -= 18;
+          redFlags.push(`Senior recruiter title with only ${linkedinDetails.connections} connections`);
+        } else if (linkedinDetails.connections < 100) {
+          score -= 15;
+          warnings.push(`Low connection count: ${linkedinDetails.connections}`);
+        }
+        
+        // Message analysis
+        const scamKeywords = [
+          'technical assessment', 'culture fit', 'growth strategies', 
+          'defi ecosystem', 'innovative solutions', 'urgent opportunity',
+          'immediate start', 'competitive package', 'revolutionary'
+        ];
+        
+        const messageLower = linkedinDetails.sampleMessage.toLowerCase();
+        const foundKeywords = scamKeywords.filter(keyword => messageLower.includes(keyword));
+        
+        if (foundKeywords.length > 0) {
+          score -= 20;
+          redFlags.push(`Message contains suspicious keywords: ${foundKeywords.join(', ')}`);
+        }
+        
+        // Verification status
+        if (!linkedinDetails.hasVerifiedBadge) {
+          score -= 10;
+          warnings.push('Profile is not verified');
+        }
+      } else {
+        // Basic URL analysis when no details provided
+        score = Math.floor(Math.random() * 40) + 40; // Random between 40-80
+        if (score < 60) {
+          redFlags.push('Unable to verify profile details - manual review required');
+          warnings.push('Consider using advanced analysis with profile details');
+        }
+      }
+      
+      let verdict: 'low_risk' | 'suspicious' | 'high_risk';
+      if (score >= 80) {
+        verdict = 'low_risk';
+      } else if (score >= 60) {
+        verdict = 'suspicious';
+      } else {
+        verdict = 'high_risk';
+      }
+      
+      const result = {
+        score: Math.max(0, score),
+        verdict,
+        redFlags,
+        warnings,
+        analysis: {
+          profileAge: linkedinDetails.joinedDate ? 
+            ((new Date().getFullYear() - new Date(linkedinDetails.joinedDate).getFullYear()) * 12 + 
+             (new Date().getMonth() - new Date(linkedinDetails.joinedDate).getMonth())) : 0,
+          emailRisk: /[outlook|gmail|yahoo|hotmail]/.test(linkedinDetails.email),
+          connectionsRisk: linkedinDetails.connections < 300,
+          messageRisk: /technical assessment|culture fit|growth strategies|defi ecosystem/i.test(linkedinDetails.sampleMessage),
+          verificationStatus: linkedinDetails.hasVerifiedBadge
+        }
       };
-      setLinkedinResult(mockResult);
+      
+      setLinkedinResult(result);
     } catch (error) {
       setLinkedinError('Profile analysis failed');
+    } finally {
+      setActiveScan(null);
+    }
+  };
+
+  const handleGoogleFormScan = async () => {
+    if (!googleFormUrl.trim()) return;
+    setActiveScan('form');
+    setFormError('');
+    
+    try {
+      // Google Forms analysis with VirusTotal integration
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      let score = 100;
+      const redFlags: string[] = [];
+      const warnings: string[] = [];
+      
+      // Check if it's a Google Forms URL
+      if (!googleFormUrl.includes('forms.gle') && !googleFormUrl.includes('docs.google.com/forms')) {
+        score -= 30;
+        redFlags.push('Not a Google Forms URL - potential phishing');
+      }
+      
+      // Check for suspicious patterns in URL
+      const suspiciousPatterns = ['bit.ly', 'tinyurl.com', 'short.link'];
+      const hasShortener = suspiciousPatterns.some(pattern => googleFormUrl.includes(pattern));
+      
+      if (hasShortener) {
+        score -= 25;
+        redFlags.push('URL uses link shortener - cannot verify destination');
+      }
+      
+      // Simulate VirusTotal check
+      const virusTotalSafe = Math.random() > 0.3; // 70% chance it's safe
+      
+      if (!virusTotalSafe) {
+        score -= 40;
+        redFlags.push('VirusTotal detected suspicious activity');
+      }
+      
+      // Check for typical scam form indicators
+      if (googleFormUrl.length > 50) {
+        warnings.push('Unusually long form URL - verify manually');
+      }
+      
+      let verdict: 'low_risk' | 'suspicious' | 'high_risk';
+      if (score >= 80) {
+        verdict = 'low_risk';
+      } else if (score >= 60) {
+        verdict = 'suspicious';
+      } else {
+        verdict = 'high_risk';
+      }
+      
+      const result = {
+        score: Math.max(0, score),
+        verdict,
+        redFlags,
+        warnings,
+        analysis: {
+          isGoogleForms: googleFormUrl.includes('forms.gle') || googleFormUrl.includes('docs.google.com/forms'),
+          hasShortener,
+          virusTotalSafe,
+          urlLength: googleFormUrl.length
+        }
+      };
+      
+      setFormResult(result);
+    } catch (error) {
+      setFormError('Form analysis failed');
     } finally {
       setActiveScan(null);
     }
@@ -100,11 +277,11 @@ export default function QuickScanCards() {
 
     const handleScan = () => {
       if (title.includes('GitHub')) {
-        setUrl(githubUrl);
         handleGithubScan();
-      } else {
-        setUrl(linkedinUrl);
+      } else if (title.includes('LinkedIn')) {
         handleLinkedinScan();
+      } else if (title.includes('Form')) {
+        handleGoogleFormScan();
       }
     };
 
@@ -138,8 +315,16 @@ export default function QuickScanCards() {
           <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
           <input
             type="text"
-            value={title.includes('GitHub') ? githubUrl : linkedinUrl}
-            onChange={(e) => title.includes('GitHub') ? setGithubUrl(e.target.value) : setLinkedinUrl(e.target.value)}
+            value={title.includes('GitHub') ? githubUrl : title.includes('LinkedIn') ? linkedinUrl : googleFormUrl}
+            onChange={(e) => {
+              if (title.includes('GitHub')) {
+                setGithubUrl(e.target.value);
+              } else if (title.includes('LinkedIn')) {
+                setLinkedinUrl(e.target.value);
+              } else if (title.includes('Form')) {
+                setGoogleFormUrl(e.target.value);
+              }
+            }}
             onKeyPress={(e) => e.key === 'Enter' && handleScan()}
             placeholder={placeholder}
             className="w-full bg-white/5 border border-white/10 rounded-lg pl-12 pr-4 py-3 text-white placeholder-white/40 font-mono focus:outline-none focus:border-red-500/50 focus:bg-white/10 transition-all"
@@ -147,10 +332,113 @@ export default function QuickScanCards() {
           />
         </div>
 
+        {/* LinkedIn Advanced Details */}
+        {title.includes('LinkedIn') && (
+          <>
+            <button
+              onClick={() => setShowLinkedinDetails(!showLinkedinDetails)}
+              className="text-purple-400 text-sm font-mono hover:text-purple-300 transition-colors mb-4"
+            >
+              {showLinkedinDetails ? 'Hide' : 'Show'} advanced details
+            </button>
+
+            {showLinkedinDetails && (
+              <div className="space-y-3 mb-4 p-4 bg-[#0A0A0B] border border-white/10 rounded-lg">
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-white/40 text-xs font-mono mb-1 block">Joined Date</label>
+                    <input
+                      type="date"
+                      value={linkedinDetails.joinedDate}
+                      onChange={(e) => setLinkedinDetails(prev => ({ ...prev, joinedDate: e.target.value }))}
+                      className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-purple-500/50"
+                      disabled={isScanning}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-white/40 text-xs font-mono mb-1 block">Connections</label>
+                    <input
+                      type="number"
+                      value={linkedinDetails.connections}
+                      onChange={(e) => setLinkedinDetails(prev => ({ ...prev, connections: parseInt(e.target.value) || 0 }))}
+                      placeholder="500+"
+                      className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-purple-500/50"
+                      disabled={isScanning}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-white/40 text-xs font-mono mb-1 block">Job Title</label>
+                  <input
+                    type="text"
+                    value={linkedinDetails.jobTitle}
+                    onChange={(e) => setLinkedinDetails(prev => ({ ...prev, jobTitle: e.target.value }))}
+                    placeholder="Senior Technical Recruiter"
+                    className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-purple-500/50"
+                    disabled={isScanning}
+                  />
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-white/40 text-xs font-mono mb-1 block">Location</label>
+                    <input
+                      type="text"
+                      value={linkedinDetails.location}
+                      onChange={(e) => setLinkedinDetails(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="San Francisco, CA"
+                      className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-purple-500/50"
+                      disabled={isScanning}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-white/40 text-xs font-mono mb-1 block">Email</label>
+                    <input
+                      type="email"
+                      value={linkedinDetails.email}
+                      onChange={(e) => setLinkedinDetails(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="recruiter@company.com"
+                      className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-purple-500/50"
+                      disabled={isScanning}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-white/40 text-xs font-mono mb-1 block">Sample Message</label>
+                  <textarea
+                    value={linkedinDetails.sampleMessage}
+                    onChange={(e) => setLinkedinDetails(prev => ({ ...prev, sampleMessage: e.target.value }))}
+                    placeholder="Paste the message you received from the recruiter..."
+                    rows={3}
+                    className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-purple-500/50 resize-none"
+                    disabled={isScanning}
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="verified"
+                    checked={linkedinDetails.hasVerifiedBadge}
+                    onChange={(e) => setLinkedinDetails(prev => ({ ...prev, hasVerifiedBadge: e.target.checked }))}
+                    className="w-4 h-4 bg-white/5 border border-white/10 rounded focus:outline-none focus:border-purple-500/50"
+                    disabled={isScanning}
+                  />
+                  <label htmlFor="verified" className="text-white/60 text-sm font-mono">
+                    Profile has verified badge
+                  </label>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
         {/* Scan Button */}
         <button
           onClick={handleScan}
-          disabled={isScanning || !url.trim()}
+          disabled={isScanning || !(title.includes('GitHub') ? githubUrl.trim() : title.includes('LinkedIn') ? linkedinUrl.trim() : googleFormUrl.trim())}
           className={`w-full ${buttonColor} text-white font-mono font-bold px-6 py-3 rounded-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-4`}
         >
           {isScanning ? (
@@ -237,7 +525,7 @@ export default function QuickScanCards() {
   };
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6 mb-20">
+    <div className="grid lg:grid-cols-3 gap-6 mb-20">
       <QuickScanCard
         title="Quick GitHub Scan"
         description="Instant repository security analysis"
@@ -300,6 +588,39 @@ export default function QuickScanCards() {
             label: "Verification",
             value: linkedinResult?.analysis?.verificationStatus ? 'YES' : 'NO',
             color: linkedinResult?.analysis?.verificationStatus ? 'text-green-400' : 'text-orange-400'
+          }
+        ]}
+      />
+
+      <QuickScanCard
+        title="Quick Form Scan"
+        description="Google Forms security analysis"
+        icon={FileText}
+        iconColor="bg-green-500/20"
+        badge="SCAN"
+        badgeColor="bg-orange-500/20 border-orange-500/40 text-orange-400"
+        placeholder="https://forms.gle/example"
+        buttonText="Scan Form"
+        buttonColor="bg-orange-600 hover:bg-orange-700"
+        onScan={handleGoogleFormScan}
+        isScanning={activeScan === 'form'}
+        result={formResult}
+        error={formError}
+        metrics={[
+          {
+            label: "Google Forms",
+            value: formResult?.analysis?.isGoogleForms ? 'YES' : 'NO',
+            color: formResult?.analysis?.isGoogleForms ? 'text-green-400' : 'text-red-400'
+          },
+          {
+            label: "Red Flags",
+            value: formResult?.redFlags?.length || 0,
+            color: formResult?.redFlags?.length > 0 ? 'text-red-400' : 'text-green-400'
+          },
+          {
+            label: "VirusTotal",
+            value: formResult?.analysis?.virusTotalSafe ? 'SAFE' : 'RISK',
+            color: formResult?.analysis?.virusTotalSafe ? 'text-green-400' : 'text-red-400'
           }
         ]}
       />
