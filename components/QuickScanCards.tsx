@@ -80,7 +80,7 @@ export default function QuickScanCards() {
     setLinkedinError('');
     
     try {
-      // Enhanced LinkedIn scan logic with real analysis
+      // Enhanced LinkedIn scan logic with deterministic analysis
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       let score = 100;
@@ -94,25 +94,32 @@ export default function QuickScanCards() {
         const profileAgeMonths = (now.getFullYear() - joinedDate.getFullYear()) * 12 + 
                                 (now.getMonth() - joinedDate.getMonth());
         
+        // Consistent profile age analysis
         if (profileAgeMonths < 3) {
           score -= 35;
           redFlags.push(`Profile created less than 3 months ago (${profileAgeMonths} months)`);
         } else if (profileAgeMonths < 6) {
           score -= 20;
           redFlags.push(`Profile created less than 6 months ago (${profileAgeMonths} months)`);
+        } else if (profileAgeMonths < 12) {
+          score -= 10;
+          warnings.push(`Profile created less than 1 year ago (${profileAgeMonths} months)`);
         }
         
-        // Email analysis
+        // Email analysis - consistent logic
         const suspiciousEmails = ['outlook.com', 'gmail.com', 'yahoo.com', 'hotmail.com'];
         const hasYearInEmail = /20(24|25|26)/.test(linkedinDetails.email);
         const emailDomain = linkedinDetails.email.split('@')[1]?.toLowerCase();
         
-        if (suspiciousEmails.includes(emailDomain) || hasYearInEmail) {
+        if (hasYearInEmail) {
           score -= 25;
-          redFlags.push(`Suspicious email address: ${linkedinDetails.email}`);
+          redFlags.push(`Email contains recent year: ${linkedinDetails.email}`);
+        } else if (suspiciousEmails.includes(emailDomain)) {
+          score -= 15;
+          warnings.push(`Personal email domain: ${emailDomain}`);
         }
         
-        // Connections analysis
+        // Connections analysis - consistent thresholds
         const isSeniorRecruiter = linkedinDetails.jobTitle.toLowerCase().includes('senior') || 
                                 linkedinDetails.jobTitle.toLowerCase().includes('lead') || 
                                 linkedinDetails.jobTitle.toLowerCase().includes('principal');
@@ -146,12 +153,10 @@ export default function QuickScanCards() {
           warnings.push('Profile is not verified');
         }
       } else {
-        // Basic URL analysis when no details provided
-        score = Math.floor(Math.random() * 40) + 40; // Random between 40-80
-        if (score < 60) {
-          redFlags.push('Unable to verify profile details - manual review required');
-          warnings.push('Consider using advanced analysis with profile details');
-        }
+        // Basic URL analysis when no details provided - deterministic
+        score = 60; // Neutral score when no details available
+        warnings.push('No profile details provided - manual review recommended');
+        warnings.push('Consider using advanced analysis with profile details');
       }
       
       let verdict: 'low_risk' | 'suspicious' | 'high_risk';
@@ -181,7 +186,7 @@ export default function QuickScanCards() {
       
       setLinkedinResult(result);
     } catch (error) {
-      setLinkedinError('Profile analysis failed');
+      setLinkedinError(error instanceof Error ? error.message : 'Scan failed');
     } finally {
       setActiveScan(null);
     }
