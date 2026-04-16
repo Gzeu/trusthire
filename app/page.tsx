@@ -122,7 +122,7 @@ export default function HomePage() {
             &ldquo;The attack is simple: fake recruiter, real-looking repo,
             one npm install, and your .env is gone.&rdquo;
           </p>
-          <footer className="text-white/30 text-sm font-mono mt-3">— Real case, blockchain developer, 2024</footer>
+          <footer className="text-white/30 text-sm font-mono mt-3">— Real case, blockchain developer, 2026</footer>
         </blockquote>
 
         {/* Principles */}
