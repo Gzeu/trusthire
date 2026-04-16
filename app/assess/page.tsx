@@ -25,9 +25,9 @@ export default function AssessPage() {
     jobDescription: '',
     recruiterMessages: '',
     salaryMentioned: false,
-    urgencyDetected: false,
-    walletSeedKycRequested: false,
-    runCodeLocallyRequested: false,
+    urgencySignals: false,
+    walletSeedKycRequest: false,
+    runCodeLocally: false,
   });
 
   const [artifacts, setArtifacts] = useState<ArtifactInput[]>([]);
@@ -173,9 +173,9 @@ export default function AssessPage() {
                 <p className="text-sm text-white/60 font-mono">Signal checklist — check all that apply:</p>
                 {[
                   { key: 'salaryMentioned', label: '💰 Salary was mentioned very early in the conversation' },
-                  { key: 'urgencyDetected', label: '⏱️ There was urgency pressure ("deadline", "exclusive", "limited time")' },
-                  { key: 'walletSeedKycRequested', label: '🔑 Asked for wallet address, seed phrase, or KYC documents' },
-                  { key: 'runCodeLocallyRequested', label: '⚠️ Asked me to run code locally (npm install, docker compose, etc.)' },
+                  { key: 'urgencySignals', label: '⏱️ There was urgency pressure ("deadline", "exclusive", "limited time")' },
+                  { key: 'walletSeedKycRequest', label: '🔑 Asked for wallet address, seed phrase, or KYC documents' },
+                  { key: 'runCodeLocally', label: '⚠️ Asked me to run code locally (npm install, docker compose, etc.)' },
                 ].map(({ key, label }) => (
                   <label key={key} className="flex items-start gap-3 cursor-pointer group">
                     <div className="relative mt-0.5">

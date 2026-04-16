@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { calculateScores } from '@/lib/scoring';
+import { calculateScores, getVerdict, generateRedFlags, generateGreenSignals, generateMissingEvidence, generateWorkflowAdvice } from '@/lib/scoring';
 import { scanGithubRepo } from '@/lib/repoScanner';
 import { checkDomainSafety } from '@/lib/domainChecker';
 import { generateIncidentReport } from '@/lib/reportGenerator';
@@ -54,11 +54,45 @@ export async function POST(req: NextRequest) {
       )
   );
 
-  // Calculate scores
-  const result = calculateScores(body, repoScans, domainChecks);
+  // Calculate scores and generate full assessment
+  const scores = calculateScores(body, repoScans, domainChecks);
+  const finalScore = scores.identityConfidence + scores.employerLegitimacy + scores.processLegitimacy + scores.technicalSafety;
+  const verdict = getVerdict(finalScore);
+  const redFlags = generateRedFlags(body, repoScans, domainChecks);
+  const greenSignals = generateGreenSignals(body, repoScans, domainChecks);
+  const missingEvidence = generateMissingEvidence(body);
+  const workflowAdvice = generateWorkflowAdvice(verdict, redFlags);
+
+  // Create full assessment result for incident report
+  const assessmentResult = {
+    id: 'temp',
+    createdAt: new Date().toISOString(),
+    recruiterName: body.recruiter.name,
+    company: body.recruiter.claimedCompany,
+    finalScore,
+    verdict,
+    scores,
+    redFlags,
+    greenSignals,
+    missingEvidence,
+    workflowAdvice,
+    repoScans,
+    vtResults: domainChecks.map(dc => ({ 
+    url: '', 
+    domainResult: {
+      reputation: dc.vtReputation || 0,
+      malicious: dc.vtMalicious || 0,
+      suspicious: 0,
+      categories: dc.vtCategories || [],
+      creationDate: dc.domainAgeYears ? dc.domainAgeYears * 365 * 24 * 60 * 60 * 1000 : undefined,
+      country: undefined
+    }
+  })),
+    shareToken: 'temp'
+  };
 
   // Generate incident report
-  const incidentReport = generateIncidentReport(body, result);
+  const incidentReport = generateIncidentReport(assessmentResult);
 
   // Save to DB
   let savedId: string;
@@ -66,13 +100,14 @@ export async function POST(req: NextRequest) {
   try {
     const saved = await prisma.assessment.create({
       data: {
+        sessionId: `session_${Date.now()}`, // Generate a session ID
         recruiterName: body.recruiter.name,
         company: body.recruiter.claimedCompany,
-        finalScore: result.finalScore,
-        verdict: result.verdict,
+        finalScore: finalScore,
+        verdict: verdict,
         inputData: body as object,
-        scoreData: result.scores as object,
-        redFlags: result.redFlags as object,
+        scoreData: scores as object,
+        redFlags: redFlags as object,
         vtResults: domainChecks as object,
         repoScans: repoScans as object,
       },
@@ -91,13 +126,13 @@ export async function POST(req: NextRequest) {
     createdAt: new Date().toISOString(),
     recruiterName: body.recruiter.name,
     company: body.recruiter.claimedCompany,
-    scores: result.scores,
-    finalScore: result.finalScore,
-    verdict: result.verdict,
-    redFlags: result.redFlags,
-    greenSignals: result.greenSignals,
-    missingEvidence: result.missingEvidence,
-    workflowAdvice: result.workflowAdvice,
+    scores: scores,
+    finalScore: finalScore,
+    verdict: verdict,
+    redFlags: redFlags,
+    greenSignals: greenSignals,
+    missingEvidence: missingEvidence,
+    workflowAdvice: workflowAdvice,
     repoScans,
     domainChecks,
     incidentReport,

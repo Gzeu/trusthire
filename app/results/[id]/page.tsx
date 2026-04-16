@@ -7,7 +7,12 @@ import {
   Shield, AlertTriangle, CheckCircle, XCircle, HelpCircle,
   Copy, Download, ExternalLink, ChevronRight, Loader2
 } from 'lucide-react';
-import type { AssessmentResult, RedFlag, GreenSignal, MissingEvidence, WorkflowStep, RepoScanResult, DomainCheckResult } from '@/types';
+import type { AssessmentResult, RedFlag, WorkflowStep, RepoScanResult, DomainCheckResult } from '@/types';
+
+interface ExtendedAssessmentResult extends AssessmentResult {
+  incidentReport?: string;
+  domainChecks?: DomainCheckResult[];
+}
 
 const VERDICT_CONFIG = {
   low_risk: { label: 'Low Risk', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30', hex: '#16A34A' },
@@ -67,7 +72,7 @@ function ScoreCard({ label, score, icon }: { label: string; score: number; icon:
 
 export default function ResultsPage() {
   const params = useParams<{ id: string }>();
-  const [data, setData] = useState<AssessmentResult | null>(null);
+  const [data, setData] = useState<ExtendedAssessmentResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'green' | 'warnings' | 'redflags' | 'missing'>('redflags');
   const [copied, setCopied] = useState(false);
@@ -319,29 +324,26 @@ function RedFlagCard({ flag }: { flag: RedFlag }) {
   );
 }
 
-function GreenCard({ signal }: { signal: GreenSignal }) {
+function GreenCard({ signal }: { signal: string }) {
   return (
     <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4">
       <div className="flex items-start gap-3">
         <CheckCircle className="w-4 h-4 mt-0.5 text-green-400 flex-shrink-0" />
         <div>
-          <p className="text-sm font-mono text-white/80 mb-1">{signal.signal}</p>
-          <p className="text-xs text-white/50">{signal.explanation}</p>
+          <p className="text-sm font-mono text-white/80">{signal}</p>
         </div>
       </div>
     </div>
   );
 }
 
-function MissingCard({ item }: { item: MissingEvidence }) {
+function MissingCard({ item }: { item: string }) {
   return (
     <div className="bg-white/3 border border-white/10 rounded-lg p-4">
       <div className="flex items-start gap-3">
         <HelpCircle className="w-4 h-4 mt-0.5 text-white/40 flex-shrink-0" />
         <div>
-          <p className="text-sm font-mono text-white/70 mb-1">{item.item}</p>
-          <p className="text-xs text-white/40 mb-1">{item.why}</p>
-          <p className="text-xs text-blue-400/70">→ {item.howToGet}</p>
+          <p className="text-sm font-mono text-white/70">{item}</p>
         </div>
       </div>
     </div>
@@ -362,7 +364,7 @@ function WorkflowCard({ step, index }: { step: WorkflowStep; index: number }) {
       </div>
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-mono font-bold">{step.title}</span>
+          <span className="text-sm font-mono font-bold">{step.description}</span>
           <span className={`text-xs font-mono px-2 py-0.5 rounded border ${priorityColors[step.priority]}`}>
             {step.priority.toUpperCase()}
           </span>
@@ -378,7 +380,7 @@ function RepoScanCard({ scan }: { scan: RepoScanResult }) {
   return (
     <div className={`border rounded-lg p-4 mb-3 ${riskColor}`}>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-mono text-white/60 truncate">{scan.url}</span>
+        <span className="text-xs font-mono text-white/60 truncate">{scan.repoUrl}</span>
         <span className={`text-xs font-mono px-2 py-0.5 rounded ${
           scan.riskLevel === 'critical' ? 'bg-red-500/20 text-red-400' :
           scan.riskLevel === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
@@ -386,13 +388,13 @@ function RepoScanCard({ scan }: { scan: RepoScanResult }) {
         }`}>{scan.riskLevel?.toUpperCase()}</span>
       </div>
       {scan.error && <p className="text-xs text-white/40 font-mono">{scan.error}</p>}
-      {scan.repoAgeDays !== undefined && (
-        <p className="text-xs font-mono text-white/50 mb-2">Repo age: {scan.repoAgeDays} days | Stars: {scan.stars} | Forks: {scan.forks}</p>
+      {scan.repoAge !== undefined && (
+        <p className="text-xs font-mono text-white/50 mb-2">Repo age: {scan.repoAge} days | Stars: {scan.stars} | Forks: {scan.forks}</p>
       )}
-      {scan.dangerousLifecycleScripts?.length > 0 && (
+      {scan.dangerousScripts?.length > 0 && (
         <div className="mb-2">
           <p className="text-xs font-mono text-red-400 mb-1">🚨 Dangerous lifecycle scripts:</p>
-          {scan.dangerousLifecycleScripts.map((s) => (
+          {scan.dangerousScripts.map((s: string) => (
             <code key={s} className="block text-xs font-mono bg-red-500/10 text-red-300 px-2 py-1 rounded mb-1">{s}</code>
           ))}
         </div>
