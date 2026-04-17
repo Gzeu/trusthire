@@ -84,6 +84,10 @@ export default function SimpleAssessmentPage() {
       const data = await response.json();
       setAssessmentId(data.id);
       
+      // Save to sessionStorage for results page
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`assessment_${data.id}`, JSON.stringify(data));
+      }      
       // Redirect to results
       router.push(`/results/${data.id}`);
     } catch (err) {
