@@ -4,7 +4,8 @@ import { calculateScores, getVerdict, generateRedFlags, generateGreenSignals, ge
 import { scanGithubRepo } from '@/lib/repoScanner';
 import { checkDomainSafety } from '@/lib/domainChecker';
 import { generateIncidentReport } from '@/lib/reportGenerator';
-import { analyzeCodeWithGroq, analyzeProfileWithGroq, generateRiskAssessmentWithGroq, generateReportSummaryWithGroq } from '@/lib/groq-analysis';
+import { generateRiskAssessmentWithGroq, generateReportSummaryWithGroq, analyzeProfileWithGroq, analyzeCodeWithGroq } from '@/lib/groq-analysis';
+import { normalizeAiAnalysis } from '@/lib/normalizeAiAnalysis';
 import type { AssessmentInput } from '@/types';
 
 const rateLimit = new Map<string, { count: number; reset: number }>();
@@ -106,9 +107,12 @@ export async function POST(req: NextRequest) {
         existingFlags: redFlags
       });
 
+      // Normalize AI analysis for consistent frontend handling
+      aiAnalysis = normalizeAiAnalysis(aiAnalysis);
+
       // Add AI insights to existing data
       if (profileAnalysis?.redFlags?.length > 0) {
-        redFlags.push(...profileAnalysis.redFlags.map(flag => ({
+        redFlags.push(...profileAnalysis.redFlags.map((flag: any) => ({
           category: 'identity' as const,
           severity: 'warning' as const,
           signal: 'AI Analysis',

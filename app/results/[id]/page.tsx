@@ -8,7 +8,7 @@ import {
   Copy, Download, ExternalLink, ChevronRight, Loader2
 } from 'lucide-react';
 import type { AssessmentResult, RedFlag, WorkflowStep, RepoScanResult, DomainCheckResult } from '@/types';
-import AIAnalysisCard from '@/components/AIAnalysisCard';
+import { AiAnalysisSection } from '@/components/AiAnalysisSection';
 
 interface ExtendedAssessmentResult extends AssessmentResult {
   incidentReport?: string;
@@ -324,10 +324,7 @@ due diligence before making employment decisions.
         )}
 
         {/* AI Analysis */}
-        <AIAnalysisCard 
-          analysis={(data as any).aiAnalysis} 
-          isLoading={false}
-        />
+        <AiAnalysisSection ai={(data as any).aiAnalysis} />
 
         {/* Workflow advisor */}
         {(data.workflowAdvice?.length ?? 0) > 0 && (
