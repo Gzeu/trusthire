@@ -64,69 +64,76 @@ export async function POST(req: NextRequest) {
   const missingEvidence = generateMissingEvidence(body);
   const workflowAdvice = generateWorkflowAdvice(verdict, redFlags);
 
-  // Enhanced AI Analysis with Groq
+  // Enhanced AI Analysis with Groq (optional)
   let aiAnalysis = null;
-  try {
-    // Analyze profile data
-    const profileAnalysis = await analyzeProfileWithGroq({
-      name: body.recruiter.name,
-      company: body.recruiter.claimedCompany,
-      jobTitle: body.recruiter.jobTitle,
-      email: body.recruiter.emailReceived,
-      messages: body.recruiter.recruiterMessages ? [body.recruiter.recruiterMessages] : [],
-      jobDescription: body.job.jobDescription
-    });
+  if (process.env.GROQ_API_KEY) {
+    try {
+      // Analyze profile data
+      const profileAnalysis = await analyzeProfileWithGroq({
+        name: body.recruiter.name,
+        company: body.recruiter.claimedCompany,
+        jobTitle: body.recruiter.jobTitle,
+        email: body.recruiter.emailReceived,
+        messages: body.recruiter.recruiterMessages ? [body.recruiter.recruiterMessages] : [],
+        jobDescription: body.job.jobDescription
+      });
 
-    // Analyze code from repositories if available
-    const codeAnalyses = await Promise.all(
-      repoScans.map(async (scan) => {
-        if (scan.repoUrl) {
-          return await analyzeCodeWithGroq(
-            JSON.stringify(scan, null, 2),
-            `Repository: ${scan.repoUrl}`
-          );
-        }
-        return { suspiciousPatterns: [], recommendations: [] };
-      })
-    );
+      // Analyze code from repositories if available
+      const codeAnalyses = await Promise.all(
+        repoScans.map(async (scan) => {
+          if (scan.repoUrl) {
+            try {
+              return await analyzeCodeWithGroq(
+                JSON.stringify(scan, null, 2),
+                `Repository: ${scan.repoUrl}`
+              );
+            } catch (error) {
+              console.error(`Code analysis failed for ${scan.repoUrl}:`, error);
+              return { suspiciousPatterns: [], recommendations: [] };
+            }
+          }
+          return { suspiciousPatterns: [], recommendations: [] };
+        })
+      );
 
-    // Generate comprehensive risk assessment
-    aiAnalysis = await generateRiskAssessmentWithGroq({
-      profile: body.recruiter,
-      job: body.job,
-      code: repoScans,
-      domains: domainChecks,
-      existingFlags: redFlags
-    });
+      // Generate comprehensive risk assessment
+      aiAnalysis = await generateRiskAssessmentWithGroq({
+        profile: body.recruiter,
+        job: body.job,
+        code: repoScans,
+        domains: domainChecks,
+        existingFlags: redFlags
+      });
 
-    // Add AI insights to existing data
-    if (profileAnalysis.redFlags.length > 0) {
-      redFlags.push(...profileAnalysis.redFlags.map(flag => ({
-        category: 'identity' as const,
-        severity: 'warning' as const,
-        signal: 'AI Analysis',
-        explanation: flag,
-        recommendation: 'Review this finding carefully and verify independently'
-      })));
+      // Add AI insights to existing data
+      if (profileAnalysis?.redFlags?.length > 0) {
+        redFlags.push(...profileAnalysis.redFlags.map(flag => ({
+          category: 'identity' as const,
+          severity: 'warning' as const,
+          signal: 'AI Analysis',
+          explanation: flag,
+          recommendation: 'Review this finding carefully and verify independently'
+        })));
+      }
+
+      if (profileAnalysis?.greenFlags?.length > 0) {
+        greenSignals.push(...profileAnalysis.greenFlags);
+      }
+
+      // Merge AI recommendations with workflow advice
+      if (codeAnalyses.some(analysis => analysis.recommendations.length > 0)) {
+        const allCodeRecommendations = codeAnalyses.flatMap(analysis => analysis.recommendations);
+        workflowAdvice.push(...allCodeRecommendations.slice(0, 3).map(rec => ({
+          action: 'request_more_proof' as const,
+          priority: 'medium' as const,
+          description: rec
+        })));
+      }
+
+    } catch (error) {
+      console.error('Groq AI analysis failed:', error);
+      // Continue without AI analysis - fallback to standard scoring
     }
-
-    if (profileAnalysis.greenFlags.length > 0) {
-      greenSignals.push(...profileAnalysis.greenFlags);
-    }
-
-    // Merge AI recommendations with workflow advice
-    if (codeAnalyses.some(analysis => analysis.recommendations.length > 0)) {
-      const allCodeRecommendations = codeAnalyses.flatMap(analysis => analysis.recommendations);
-      workflowAdvice.push(...allCodeRecommendations.slice(0, 3).map(rec => ({
-        action: 'request_more_proof' as const,
-        priority: 'medium' as const,
-        description: rec
-      })));
-    }
-
-  } catch (error) {
-    console.error('Groq AI analysis failed:', error);
-    // Continue without AI analysis - fallback to standard scoring
   }
 
   // Create full assessment result for incident report
@@ -162,7 +169,7 @@ export async function POST(req: NextRequest) {
   let incidentReport = generateIncidentReport(assessmentResult);
   
   // Add AI summary if available
-  if (aiAnalysis && aiAnalysis.summary) {
+  if (aiAnalysis && aiAnalysis.summary && process.env.GROQ_API_KEY) {
     try {
       const aiSummary = await generateReportSummaryWithGroq({
         scores,
@@ -181,15 +188,15 @@ ${incidentReport}
 ${aiSummary}
 
 === AI RISK ASSESSMENT ===
-Risk Level: ${aiAnalysis.riskAssessment.level.toUpperCase()}
-Confidence: ${(aiAnalysis.riskAssessment.confidence * 100).toFixed(1)}%
-Reasoning: ${aiAnalysis.riskAssessment.reasoning}
+Risk Level: ${aiAnalysis.riskAssessment.level?.toUpperCase() || 'UNKNOWN'}
+Confidence: ${aiAnalysis.riskAssessment ? (aiAnalysis.riskAssessment.confidence * 100).toFixed(1) : '0'}%
+Reasoning: ${aiAnalysis.riskAssessment?.reasoning || 'AI analysis unavailable'}
 
 === AI KEY FINDINGS ===
-${aiAnalysis.summary.keyFindings.map(finding => `  - ${finding}`).join('\n')}
+${aiAnalysis.summary?.keyFindings?.map(finding => `  - ${finding}`).join('\n') || '  - No key findings available'}
 
 === AI RECOMMENDED NEXT STEPS ===
-${aiAnalysis.summary.nextSteps.map(step => `  1. ${step}`).join('\n')}
+${aiAnalysis.summary?.nextSteps?.map(step => `  1. ${step}`).join('\n') || '  - No specific recommendations'}
       `.trim();
     } catch (error) {
       console.error('Failed to generate AI summary:', error);
