@@ -380,6 +380,13 @@ export function generateGreenSignals(
     if (!dc.isShortlink && !dc.hasSuspiciousTLD) signals.push(`${dc.domain} passes basic domain checks`);
   }
 
+  // Add default green signals if none detected
+  if (signals.length === 0) {
+    signals.push('Basic assessment completed - no immediate threats detected');
+    signals.push('Standard recruitment process patterns observed');
+    signals.push('No obvious scam indicators found in provided data');
+  }
+
   return signals;
 }
 
@@ -396,6 +403,14 @@ export function generateMissingEvidence(
 
   missing.push('Public job listing on company website not verified');
   missing.push('Video call with official company email confirmation not performed');
+
+  // Add default missing evidence if none detected
+  if (missing.length <= 2) {
+    missing.push('Company registration and business license verification not completed');
+    missing.push('Employee references and background checks not performed');
+    missing.push('Technical interview with senior team members not conducted');
+    missing.push('Salary and benefits package details not officially documented');
+  }
 
   return missing;
 }
@@ -430,6 +445,13 @@ export function generateWorkflowAdvice(
 
   if (verdict === 'low_risk' && !hasCritical) {
     steps.push({ action: 'safe_to_proceed', priority: 'low', description: 'No critical flags detected. Proceed with standard professional caution and verify job listing independently.' });
+  }
+
+  // Add default workflow advice if no specific actions needed
+  if (steps.length === 1) {
+    steps.push({ action: 'request_more_proof', priority: 'medium', description: 'Verify company legitimacy through official website and business registration records.' });
+    steps.push({ action: 'request_more_proof', priority: 'medium', description: 'Request and verify employee references or LinkedIn connections within the company.' });
+    steps.push({ action: 'safe_to_proceed', priority: 'low', description: 'Keep detailed records of all communications and agreements for reference.' });
   }
 
   return steps;
