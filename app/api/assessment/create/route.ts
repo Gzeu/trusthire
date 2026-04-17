@@ -64,9 +64,10 @@ export async function POST(req: NextRequest) {
   const missingEvidence = generateMissingEvidence(body);
   const workflowAdvice = generateWorkflowAdvice(verdict, redFlags);
 
-  // Enhanced AI Analysis with Groq (optional)
+  // Enhanced AI Analysis with Groq
   let aiAnalysis = null;
-  if (process.env.GROQ_API_KEY) {
+  const groqApiKey = process.env.GROQ_API_KEY_GROQ_API_KEY || process.env.GROQ_API_KEY;
+  if (groqApiKey) {
     try {
       // Analyze profile data
       const profileAnalysis = await analyzeProfileWithGroq({
@@ -169,7 +170,7 @@ export async function POST(req: NextRequest) {
   let incidentReport = generateIncidentReport(assessmentResult);
   
   // Add AI summary if available
-  if (aiAnalysis && aiAnalysis.summary && process.env.GROQ_API_KEY) {
+  if (aiAnalysis && aiAnalysis.summary && groqApiKey) {
     try {
       const aiSummary = await generateReportSummaryWithGroq({
         scores,

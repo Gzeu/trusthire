@@ -1,10 +1,13 @@
 import { Groq } from 'groq-sdk';
 
-console.log('Groq API Key available:', !!process.env.GROQ_API_KEY);
-console.log('Groq API Key length:', process.env.GROQ_API_KEY?.length || 0);
+// Use Vercel environment variable name
+const groqApiKey = process.env.GROQ_API_KEY_GROQ_API_KEY || process.env.GROQ_API_KEY || '';
+
+console.log('Groq API Key available:', !!groqApiKey);
+console.log('Groq API Key length:', groqApiKey.length || 0);
 
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY || '',
+  apiKey: groqApiKey,
 });
 
 export interface GroqAnalysisResult {
@@ -87,7 +90,8 @@ export async function analyzeProfileWithGroq(
   }
 ): Promise<GroqAnalysisResult['profileAnalysis']> {
   // Check if API key is available and valid
-  if (!process.env.GROQ_API_KEY || process.env.GROQ_API_KEY.length < 20) {
+  const apiKey = process.env.GROQ_API_KEY_GROQ_API_KEY || process.env.GROQ_API_KEY;
+  if (!apiKey || apiKey.length < 20) {
     console.log('Groq API key not available or too short, using fallback');
     return {
       redFlags: ['Unable to verify AI analysis - API key not configured'],
