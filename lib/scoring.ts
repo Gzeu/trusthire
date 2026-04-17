@@ -401,16 +401,13 @@ export function generateMissingEvidence(
   if (!job.jobDescription || job.jobDescription.length < 50) missing.push('Formal job description not provided');
   if (!recruiter.recruiterMessages || recruiter.recruiterMessages.length < 50) missing.push('Recruiter conversation history not provided');
 
+  // Always add important missing evidence items
   missing.push('Public job listing on company website not verified');
   missing.push('Video call with official company email confirmation not performed');
-
-  // Add default missing evidence if none detected
-  if (missing.length <= 2) {
-    missing.push('Company registration and business license verification not completed');
-    missing.push('Employee references and background checks not performed');
-    missing.push('Technical interview with senior team members not conducted');
-    missing.push('Salary and benefits package details not officially documented');
-  }
+  missing.push('Company registration and business license verification not completed');
+  missing.push('Employee references and background checks not performed');
+  missing.push('Technical interview with senior team members not conducted');
+  missing.push('Salary and benefits package details not officially documented');
 
   return missing;
 }
@@ -443,15 +440,13 @@ export function generateWorkflowAdvice(
 
   steps.push({ action: 'request_more_proof', priority: 'medium', description: 'Request a video call from a verified company email address. Ask for the public job listing URL on the company website.' });
 
-  if (verdict === 'low_risk' && !hasCritical) {
-    steps.push({ action: 'safe_to_proceed', priority: 'low', description: 'No critical flags detected. Proceed with standard professional caution and verify job listing independently.' });
-  }
+  // Always add comprehensive verification steps
+  steps.push({ action: 'request_more_proof', priority: 'medium', description: 'Verify company legitimacy through official website and business registration records.' });
+  steps.push({ action: 'request_more_proof', priority: 'medium', description: 'Request and verify employee references or LinkedIn connections within the company.' });
+  steps.push({ action: 'safe_to_proceed', priority: 'low', description: 'Keep detailed records of all communications and agreements for reference.' });
 
-  // Add default workflow advice if no specific actions needed
-  if (steps.length === 1) {
-    steps.push({ action: 'request_more_proof', priority: 'medium', description: 'Verify company legitimacy through official website and business registration records.' });
-    steps.push({ action: 'request_more_proof', priority: 'medium', description: 'Request and verify employee references or LinkedIn connections within the company.' });
-    steps.push({ action: 'safe_to_proceed', priority: 'low', description: 'Keep detailed records of all communications and agreements for reference.' });
+  if (verdict === 'low_risk' && !hasCritical) {
+    steps.push({ action: 'safe_to_proceed', priority: 'low', description: 'No critical flags detected. Proceed with standard professional caution and verify the job listing independently.' });
   }
 
   return steps;

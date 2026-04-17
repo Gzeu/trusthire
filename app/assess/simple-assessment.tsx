@@ -122,23 +122,42 @@ export default function SimpleAssessmentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#0A0A0B] text-white">
+      {/* Navigation consistent with main page */}
+      <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
+        <div className="flex items-center gap-2">
+          <Shield className="w-6 h-6 text-red-500" />
+          <span className="font-mono font-bold text-lg tracking-tight">TrustHire</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <a href="/" className="text-sm text-white/50 hover:text-white transition-colors font-mono">
+            Home
+          </a>
+          <a href="/patterns" className="text-sm text-white/50 hover:text-white transition-colors font-mono">
+            Threat DB
+          </a>
+        </div>
+      </nav>
+
+      <div className="max-w-6xl mx-auto px-6 pt-12 pb-20">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Shield className="h-8 w-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-slate-900">TrustHire Assessment</h1>
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-full px-4 py-1.5 mb-6">
+            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            <span className="text-red-400 text-xs font-mono">AI-Powered Risk Assessment</span>
           </div>
-          <p className="text-slate-600 max-w-2xl mx-auto">
-            Complete recruitment scam detection in one simple step. AI-powered analysis with Groq integration.
+          <h1 className="text-5xl md:text-6xl font-bold font-mono leading-tight mb-6">
+            Complete Security Analysis
+          </h1>
+          <p className="text-white/50 text-xl max-w-3xl mx-auto leading-relaxed mb-8">
+            Evaluate recruiter identity, repository safety, and job legitimacy in one unified workflow.
           </p>
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <div className="flex items-center justify-center gap-4">
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-green-500/20 border border-green-500/40 text-green-400">
               <CheckCircle className="h-3 w-3 mr-1" />
-              Groq AI Enabled
+              Groq AI Active
             </span>
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-blue-500/20 border border-blue-500/40 text-blue-400">
               <Shield className="h-3 w-3 mr-1" />
               VirusTotal Scanning
             </span>
@@ -146,29 +165,27 @@ export default function SimpleAssessmentPage() {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
             <div className="flex items-center">
-              <AlertTriangle className="h-4 w-4 text-red-600 mr-2" />
-              <span className="text-red-800">{error}</span>
+              <AlertTriangle className="h-4 w-4 text-red-400 mr-2" />
+              <span className="text-red-400">{error}</span>
             </div>
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-lg">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">Recruitment Risk Assessment</h2>
-              <button 
-                type="button" 
-                onClick={quickFill}
-                className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Quick Fill Sample Data
-              </button>
-            </div>
+        <div className="bg-[#111113] border border-white/5 rounded-xl p-8 mb-8">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-xl font-semibold font-mono text-white">Risk Assessment Form</h2>
+            <button 
+              type="button" 
+              onClick={quickFill}
+              className="px-3 py-1.5 text-sm border border-white/10 rounded-md hover:bg-white/5 text-white/70 hover:text-white transition-colors font-mono"
+            >
+              Quick Fill Sample
+            </button>
           </div>
           
-          <div className="p-6">
+          <div className="space-y-8">
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Recruiter Information */}
               <div className="space-y-4">
@@ -179,7 +196,7 @@ export default function SimpleAssessmentPage() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="recruiter-name" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="recruiter-name" className="block text-sm font-medium text-white/70 mb-1">
                       Recruiter Name *
                     </label>
                     <input
@@ -191,13 +208,13 @@ export default function SimpleAssessmentPage() {
                         recruiter: { ...prev.recruiter, name: e.target.value }
                       }))}
                       placeholder="John Smith"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30"
                       required
                     />
                   </div>
                   
                   <div>
-                    <label htmlFor="recruiter-company" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="recruiter-company" className="block text-sm font-medium text-white/70 mb-1">
                       Company *
                     </label>
                     <input
@@ -209,13 +226,13 @@ export default function SimpleAssessmentPage() {
                         recruiter: { ...prev.recruiter, claimedCompany: e.target.value }
                       }))}
                       placeholder="Tech Corp Inc"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30"
                       required
                     />
                   </div>
                   
                   <div>
-                    <label htmlFor="recruiter-title" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="recruiter-title" className="block text-sm font-medium text-white/70 mb-1">
                       Job Title
                     </label>
                     <input
@@ -227,12 +244,12 @@ export default function SimpleAssessmentPage() {
                         recruiter: { ...prev.recruiter, jobTitle: e.target.value }
                       }))}
                       placeholder="Senior Developer"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30"
                     />
                   </div>
                   
                   <div>
-                    <label htmlFor="recruiter-email" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="recruiter-email" className="block text-sm font-medium text-white/70 mb-1">
                       Email
                     </label>
                     <input
@@ -244,12 +261,12 @@ export default function SimpleAssessmentPage() {
                         recruiter: { ...prev.recruiter, emailReceived: e.target.value }
                       }))}
                       placeholder="john.smith@company.com"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30"
                     />
                   </div>
                   
                   <div className="md:col-span-2">
-                    <label htmlFor="recruiter-linkedin" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="recruiter-linkedin" className="block text-sm font-medium text-white/70 mb-1">
                       LinkedIn Profile
                     </label>
                     <input
@@ -261,13 +278,13 @@ export default function SimpleAssessmentPage() {
                         recruiter: { ...prev.recruiter, linkedinUrl: e.target.value }
                       }))}
                       placeholder="https://linkedin.com/in/johnsmith"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="recruiter-message" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="recruiter-message" className="block text-sm font-medium text-white/70 mb-1">
                     Sample Message
                   </label>
                   <textarea
@@ -279,7 +296,7 @@ export default function SimpleAssessmentPage() {
                     }))}
                     placeholder="Paste the message you received from the recruiter..."
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30"
                   />
                 </div>
               </div>
@@ -292,7 +309,7 @@ export default function SimpleAssessmentPage() {
                 </h3>
                 
                 <div>
-                  <label htmlFor="job-description" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="job-description" className="block text-sm font-medium text-white/70 mb-1">
                     Job Description *
                   </label>
                   <textarea
@@ -304,14 +321,14 @@ export default function SimpleAssessmentPage() {
                     }))}
                     placeholder="Describe the job role and responsibilities..."
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30"
                     required
                   />
                 </div>
 
                 {/* Warning Signs */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Warning Signs (Check if applicable)</label>
+                  <label className="block text-sm font-medium text-white/70">Warning Signs (Check if applicable)</label>
                   <div className="flex flex-wrap gap-4">
                     <label className="flex items-center space-x-2">
                       <input
@@ -321,9 +338,9 @@ export default function SimpleAssessmentPage() {
                           ...prev,
                           job: { ...prev.job, salaryMentioned: e.target.checked }
                         }))}
-                        className="rounded"
+                        className="rounded bg-white/10 border-white/20 text-red-500 focus:ring-2 focus:ring-red-500"
                       />
-                      <span className="text-sm">Salary mentioned</span>
+                      <span className="text-sm text-white/70">Salary mentioned</span>
                     </label>
                     
                     <label className="flex items-center space-x-2">
@@ -334,9 +351,9 @@ export default function SimpleAssessmentPage() {
                           ...prev,
                           job: { ...prev.job, urgencySignals: e.target.checked }
                         }))}
-                        className="rounded"
+                        className="rounded bg-white/10 border-white/20 text-red-500 focus:ring-2 focus:ring-red-500"
                       />
-                      <span className="text-sm">Urgent hiring / Immediate start required</span>
+                      <span className="text-sm text-white/70">Urgent hiring / Immediate start required</span>
                     </label>
                     
                     <label className="flex items-center space-x-2">
@@ -347,9 +364,9 @@ export default function SimpleAssessmentPage() {
                           ...prev,
                           job: { ...prev.job, walletSeedKycRequest: e.target.checked }
                         }))}
-                        className="rounded"
+                        className="rounded bg-white/10 border-white/20 text-red-500 focus:ring-2 focus:ring-red-500"
                       />
-                      <span className="text-sm">Requests wallet/seed phrase</span>
+                      <span className="text-sm text-white/70">Requests wallet/seed phrase</span>
                     </label>
                     
                     <label className="flex items-center space-x-2">
@@ -360,9 +377,9 @@ export default function SimpleAssessmentPage() {
                           ...prev,
                           job: { ...prev.job, runCodeLocally: e.target.checked }
                         }))}
-                        className="rounded"
+                        className="rounded bg-white/10 border-white/20 text-red-500 focus:ring-2 focus:ring-red-500"
                       />
-                      <span className="text-sm">Requests code execution</span>
+                      <span className="text-sm text-white/70">Requests code execution</span>
                     </label>
                   </div>
                 </div>
@@ -378,7 +395,7 @@ export default function SimpleAssessmentPage() {
                   <button 
                     type="button" 
                     onClick={addArtifact} 
-                    className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-1"
+                    className="px-3 py-1.5 text-sm border border-white/10 rounded-md hover:bg-white/5 text-white/70 hover:text-white transition-colors font-mono flex items-center gap-1"
                   >
                     <Plus className="h-4 w-4" />
                     Add Artifact
@@ -386,21 +403,21 @@ export default function SimpleAssessmentPage() {
                 </div>
 
                 {formData.artifacts.length === 0 ? (
-                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No artifacts added</p>
-                    <p className="text-sm text-gray-500">Add GitHub repositories, code files, or other technical resources</p>
+                  <div className="text-center py-8 border-2 border-dashed border-white/10 rounded-lg">
+                    <Upload className="h-12 w-12 text-white/20 mx-auto mb-4" />
+                    <p className="text-white/40">No artifacts added</p>
+                    <p className="text-sm text-white/20">Add GitHub repositories, code files, or other technical resources</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {formData.artifacts.map((artifact, index) => (
                       <div key={index} className="flex gap-4 items-end">
                         <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                          <label className="block text-sm font-medium text-white/70 mb-1">Type</label>
                           <select
                             value={artifact.type}
                             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateArtifact(index, 'type', e.target.value as ArtifactInput['type'])}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
                           >
                             <option value="github">GitHub Repository</option>
                             <option value="gitlab">GitLab Repository</option>
@@ -414,13 +431,13 @@ export default function SimpleAssessmentPage() {
                         </div>
                         
                         <div className="flex-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">URL/Path *</label>
+                          <label className="block text-sm font-medium text-white/70 mb-1">URL/Path *</label>
                           <input
                             type="text"
                             value={artifact.url}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateArtifact(index, 'url', e.target.value)}
                             placeholder="https://github.com/user/repo"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30"
                             required
                           />
                         </div>
@@ -428,7 +445,7 @@ export default function SimpleAssessmentPage() {
                         <button
                           type="button"
                           onClick={() => removeArtifact(index)}
-                          className="p-2 text-red-600 hover:text-red-700 border border-red-300 rounded-md hover:bg-red-50"
+                          className="p-2 text-red-400 hover:text-red-300 border border-red-500/30 rounded-md hover:bg-red-500/10 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -443,7 +460,7 @@ export default function SimpleAssessmentPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-8 py-3 text-lg bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-8 py-3 text-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-mono transition-colors"
                 >
                   {loading ? (
                     <>
@@ -463,29 +480,29 @@ export default function SimpleAssessmentPage() {
         </div>
 
         {/* Features */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg shadow p-6 text-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Shield className="h-6 w-6 text-blue-600" />
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-[#111113] border border-white/5 rounded-xl p-6 text-center">
+            <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Shield className="h-6 w-6 text-red-500" />
             </div>
-            <h3 className="font-semibold mb-2">AI-Powered Analysis</h3>
-            <p className="text-sm text-gray-600">Groq AI analyzes patterns and provides risk assessment</p>
+            <h3 className="font-semibold mb-2 text-white font-mono">AI-Powered Analysis</h3>
+            <p className="text-sm text-white/40 leading-relaxed">Groq AI analyzes patterns and provides risk assessment</p>
           </div>
           
-          <div className="bg-white rounded-lg shadow p-6 text-center">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+          <div className="bg-[#111113] border border-white/5 rounded-xl p-6 text-center">
+            <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-6 w-6 text-green-500" />
             </div>
-            <h3 className="font-semibold mb-2">Multi-Layer Security</h3>
-            <p className="text-sm text-gray-600">VirusTotal scanning and code analysis</p>
+            <h3 className="font-semibold mb-2 text-white font-mono">Multi-Layer Security</h3>
+            <p className="text-sm text-white/40 leading-relaxed">VirusTotal scanning and code analysis</p>
           </div>
           
-          <div className="bg-white rounded-lg shadow p-6 text-center">
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="h-6 w-6 text-purple-600" />
+          <div className="bg-[#111113] border border-white/5 rounded-xl p-6 text-center">
+            <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="h-6 w-6 text-blue-500" />
             </div>
-            <h3 className="font-semibold mb-2">Instant Results</h3>
-            <p className="text-sm text-gray-600">Get comprehensive risk assessment in seconds</p>
+            <h3 className="font-semibold mb-2 text-white font-mono">Instant Results</h3>
+            <p className="text-sm text-white/40 leading-relaxed">Get comprehensive risk assessment in seconds</p>
           </div>
         </div>
       </div>
