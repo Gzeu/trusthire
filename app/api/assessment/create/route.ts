@@ -198,10 +198,10 @@ Confidence: ${aiAnalysis.riskAssessment ? (aiAnalysis.riskAssessment.confidence 
 Reasoning: ${aiAnalysis.riskAssessment?.reasoning || 'AI analysis unavailable'}
 
 === AI KEY FINDINGS ===
-${aiAnalysis.summary?.keyFindings?.map(finding => `  - ${finding}`).join('\n') || '  - No key findings available'}
+${aiAnalysis.summary?.keyFindings?.map((finding: string) => `  - ${finding}`).join('\n') || '  - No key findings available'}
 
 === AI RECOMMENDED NEXT STEPS ===
-${aiAnalysis.summary?.nextSteps?.map(step => `  1. ${step}`).join('\n') || '  - No specific recommendations'}
+${aiAnalysis.summary?.nextSteps?.map((step: string) => `  1. ${step}`).join('\n') || '  - No specific recommendations'}
       `.trim();
     } catch (error) {
       console.error('Failed to generate AI summary:', error);
