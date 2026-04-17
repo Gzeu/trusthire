@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
   // Enhanced AI Analysis with Groq
   let aiAnalysis = null;
-  const groqApiKey = process.env.GROQ_API_KEY_GROQ_API_KEY || process.env.GROQ_API_KEY;
+  const groqApiKey = process.env.GROQ_API_KEY;
   if (groqApiKey) {
     try {
       // Analyze profile data
@@ -250,6 +250,7 @@ ${aiAnalysis.summary?.nextSteps?.map((step: string) => `  1. ${step}`).join('\n'
     workflowAdvice: workflowAdvice,
     repoScans,
     domainChecks,
-    incidentReport,
+        incidentReport,
+        aiAnalysis,
   });
 }
