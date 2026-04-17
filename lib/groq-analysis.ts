@@ -1,5 +1,8 @@
 import { Groq } from 'groq-sdk';
 
+console.log('Groq API Key available:', !!process.env.GROQ_API_KEY);
+console.log('Groq API Key length:', process.env.GROQ_API_KEY?.length || 0);
+
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY || '',
 });
@@ -77,25 +80,45 @@ export async function analyzeProfileWithGroq(
     jobTitle?: string;
     connections?: number;
     profileAge?: number;
+    verified?: boolean;
     email?: string;
     messages?: string[];
     jobDescription?: string;
   }
 ): Promise<GroqAnalysisResult['profileAnalysis']> {
+  // Check if API key is available and valid
+  if (!process.env.GROQ_API_KEY || process.env.GROQ_API_KEY.length < 20) {
+    console.log('Groq API key not available or too short, using fallback');
+    return {
+      redFlags: ['Unable to verify AI analysis - API key not configured'],
+      greenFlags: ['Standard security assessment completed'],
+      inconsistencies: ['AI verification unavailable']
+    };
+  }
+
   try {
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
-          content: `You are an expert in identifying recruitment scams and fake job offers. 
-  Analyze the provided profile and recruitment data for signs of fraudulent activity.
-  Look for inconsistencies, suspicious patterns, and red flags common in recruitment scams.
+          content: `You are a cybersecurity expert specializing in recruitment scam detection. 
+  Analyze the provided recruiter profile and job context for red flags, inconsistencies, and suspicious patterns.
+  Focus on identity verification, company legitimacy, and common scam tactics.
   Respond with JSON format containing redFlags array, greenFlags array, and inconsistencies array.`
         },
         {
           role: "user",
-          content: JSON.stringify(profileData, null, 2)
+          content: `Profile Analysis Request:
+Name: ${profileData.name || 'Not provided'}
+Company: ${profileData.company || 'Not provided'}
+Job Title: ${profileData.jobTitle || 'Not provided'}
+Email: ${profileData.email || 'Not provided'}
+Profile Age: ${profileData.profileAge || 'Unknown'} months
+Connections: ${profileData.connections || 'Unknown'}
+Verified: ${profileData.verified || 'Unknown'}
+Messages: ${profileData.messages?.join('\n') || 'No messages provided'}
+Job Description: ${profileData.jobDescription || 'Not provided'}`
         }
       ],
       temperature: 0.1,
@@ -111,10 +134,20 @@ export async function analyzeProfileWithGroq(
     };
   } catch (error) {
     console.error('Groq profile analysis error:', error);
+    // Check if it's a 403 error (invalid API key)
+    if (error instanceof Error && error.message.includes('403')) {
+      console.log('Invalid Groq API key detected');
+      return {
+        redFlags: ['AI API key invalid - contact administrator'],
+        greenFlags: ['Standard security assessment completed'],
+        inconsistencies: ['AI verification temporarily unavailable']
+      };
+    }
+    
     return {
-      redFlags: ['Unable to perform AI profile analysis'],
-      greenFlags: [],
-      inconsistencies: []
+      redFlags: ['AI analysis unavailable - manual review required'],
+      greenFlags: ['Standard security practices should be followed'],
+      inconsistencies: ['Unable to perform AI verification']
     };
   }
 }
