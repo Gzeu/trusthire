@@ -4,6 +4,7 @@ import { calculateScores, getVerdict, generateRedFlags, generateGreenSignals, ge
 import { scanGithubRepo } from '@/lib/repoScanner';
 import { checkDomainSafety } from '@/lib/domainChecker';
 import { generateIncidentReport } from '@/lib/reportGenerator';
+import { analyzeCodeWithGroq, analyzeProfileWithGroq, generateRiskAssessmentWithGroq, generateReportSummaryWithGroq } from '@/lib/groq-analysis';
 import type { AssessmentInput } from '@/types';
 
 const rateLimit = new Map<string, { count: number; reset: number }>();
@@ -63,6 +64,71 @@ export async function POST(req: NextRequest) {
   const missingEvidence = generateMissingEvidence(body);
   const workflowAdvice = generateWorkflowAdvice(verdict, redFlags);
 
+  // Enhanced AI Analysis with Groq
+  let aiAnalysis = null;
+  try {
+    // Analyze profile data
+    const profileAnalysis = await analyzeProfileWithGroq({
+      name: body.recruiter.name,
+      company: body.recruiter.claimedCompany,
+      jobTitle: body.recruiter.jobTitle,
+      email: body.recruiter.emailReceived,
+      messages: body.recruiter.recruiterMessages ? [body.recruiter.recruiterMessages] : [],
+      jobDescription: body.job.jobDescription
+    });
+
+    // Analyze code from repositories if available
+    const codeAnalyses = await Promise.all(
+      repoScans.map(async (scan) => {
+        if (scan.repoUrl) {
+          return await analyzeCodeWithGroq(
+            JSON.stringify(scan, null, 2),
+            `Repository: ${scan.repoUrl}`
+          );
+        }
+        return { suspiciousPatterns: [], recommendations: [] };
+      })
+    );
+
+    // Generate comprehensive risk assessment
+    aiAnalysis = await generateRiskAssessmentWithGroq({
+      profile: body.recruiter,
+      job: body.job,
+      code: repoScans,
+      domains: domainChecks,
+      existingFlags: redFlags
+    });
+
+    // Add AI insights to existing data
+    if (profileAnalysis.redFlags.length > 0) {
+      redFlags.push(...profileAnalysis.redFlags.map(flag => ({
+        category: 'identity' as const,
+        severity: 'warning' as const,
+        signal: 'AI Analysis',
+        explanation: flag,
+        recommendation: 'Review this finding carefully and verify independently'
+      })));
+    }
+
+    if (profileAnalysis.greenFlags.length > 0) {
+      greenSignals.push(...profileAnalysis.greenFlags);
+    }
+
+    // Merge AI recommendations with workflow advice
+    if (codeAnalyses.some(analysis => analysis.recommendations.length > 0)) {
+      const allCodeRecommendations = codeAnalyses.flatMap(analysis => analysis.recommendations);
+      workflowAdvice.push(...allCodeRecommendations.slice(0, 3).map(rec => ({
+        action: 'request_more_proof' as const,
+        priority: 'medium' as const,
+        description: rec
+      })));
+    }
+
+  } catch (error) {
+    console.error('Groq AI analysis failed:', error);
+    // Continue without AI analysis - fallback to standard scoring
+  }
+
   // Create full assessment result for incident report
   const assessmentResult = {
     id: 'temp',
@@ -88,11 +154,48 @@ export async function POST(req: NextRequest) {
       country: undefined
     }
   })),
-    shareToken: 'temp'
+    shareToken: 'temp',
+    aiAnalysis // Add AI analysis results
   };
 
-  // Generate incident report
-  const incidentReport = generateIncidentReport(assessmentResult);
+  // Generate enhanced incident report with AI insights
+  let incidentReport = generateIncidentReport(assessmentResult);
+  
+  // Add AI summary if available
+  if (aiAnalysis && aiAnalysis.summary) {
+    try {
+      const aiSummary = await generateReportSummaryWithGroq({
+        scores,
+        flags: redFlags,
+        signals: greenSignals,
+        missing: missingEvidence,
+        advice: workflowAdvice,
+        recruiterName: body.recruiter.name,
+        company: body.recruiter.claimedCompany
+      });
+      
+      incidentReport = `
+${incidentReport}
+
+=== AI-ENHANCED ANALYSIS ===
+${aiSummary}
+
+=== AI RISK ASSESSMENT ===
+Risk Level: ${aiAnalysis.riskAssessment.level.toUpperCase()}
+Confidence: ${(aiAnalysis.riskAssessment.confidence * 100).toFixed(1)}%
+Reasoning: ${aiAnalysis.riskAssessment.reasoning}
+
+=== AI KEY FINDINGS ===
+${aiAnalysis.summary.keyFindings.map(finding => `  - ${finding}`).join('\n')}
+
+=== AI RECOMMENDED NEXT STEPS ===
+${aiAnalysis.summary.nextSteps.map(step => `  1. ${step}`).join('\n')}
+      `.trim();
+    } catch (error) {
+      console.error('Failed to generate AI summary:', error);
+      // Continue with standard report
+    }
+  }
 
   // Save to DB
   let savedId: string;

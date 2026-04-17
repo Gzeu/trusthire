@@ -8,6 +8,7 @@ import {
   Copy, Download, ExternalLink, ChevronRight, Loader2
 } from 'lucide-react';
 import type { AssessmentResult, RedFlag, WorkflowStep, RepoScanResult, DomainCheckResult } from '@/types';
+import AIAnalysisCard from '@/components/AIAnalysisCard';
 
 interface ExtendedAssessmentResult extends AssessmentResult {
   incidentReport?: string;
@@ -317,15 +318,21 @@ due diligence before making employment decisions.
         {/* Domain checks */}
         {(data.domainChecks?.length ?? 0) > 0 && (
           <div className="bg-[#111113] border border-white/5 rounded-2xl p-6">
-            <h2 className="font-mono font-bold mb-4"><span className="text-white/50 text-sm">🌐</span> Domain & URL Analysis</h2>
+            <h2 className="font-mono font-bold mb-4"><span className="text-white/50 text-sm">Domain & URL Analysis</span></h2>
             {data.domainChecks?.map((check, i) => <DomainCard key={i} check={check} />)}
           </div>
         )}
 
+        {/* AI Analysis */}
+        <AIAnalysisCard 
+          analysis={(data as any).aiAnalysis} 
+          isLoading={false}
+        />
+
         {/* Workflow advisor */}
         {(data.workflowAdvice?.length ?? 0) > 0 && (
           <div className="bg-[#111113] border border-white/5 rounded-2xl p-6">
-            <h2 className="font-mono font-bold mb-4">⚡ Recommended Actions</h2>
+            <h2 className="font-mono font-bold mb-4">Recommended Actions</h2>
             <div className="space-y-3">
               {data.workflowAdvice?.map((step, i) => <WorkflowCard key={i} step={step} index={i} />)}
             </div>
