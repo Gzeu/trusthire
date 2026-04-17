@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <strong>Current Status:</strong> ✅ Production Ready with Enhanced Assessment & Quick Scans
+  <strong>Current Status:</strong> ✅ Production Ready with Simplified Single-Step Assessment & Groq AI
 </p>
 
 ---
@@ -54,7 +54,7 @@ TrustHire automates the detection of these patterns before you become a victim.
 - **Advanced LinkedIn Analysis** - Profile age, connections, email verification, message keywords
 - **3-Column Layout** - Side-by-side scanning interface
 
-### �🕵️ Enhanced Recruiter & Identity Scoring
+### ��️ Enhanced Recruiter & Identity Scoring
 - LinkedIn profile verification check with **advanced detail inputs**
 - Email domain analysis (corporate vs. generic/free email)
 - Profile age analysis (<3 months = high risk)
@@ -94,13 +94,12 @@ TrustHire automates the detection of these patterns before you become a victim.
 - Repository age and stars/forks analysis
 - Technical safety scoring (0–25 pts)
 
-### 🎯 Enhanced Assessment Flow (4-Step Process)
-- **Step 1: Recruiter Info** - Complete profile analysis with quick scan integration
-- **Step 2: Job Context** - Enhanced details with Google Forms analysis
-- **Step 3: Technical Artifacts** - Smart link detection and repository scanning
-- **Step 4: Review & Submit** - Comprehensive summary with all quick scan results
-- **Real-time Validation** - Immediate feedback and scoring
-- **Progress Tracking** - Clear step completion indicators
+### 🎯 Simplified Assessment Flow (Single-Step Process)
+- **Unified Form** - Complete assessment in one comprehensive interface
+- **All Data Visible** - Recruiter info, job context, and technical artifacts on one page
+- **Real-time Analysis** - Instant AI-powered risk assessment with Groq integration
+- **Instant Results** - Complete report generation without multi-step navigation
+- **Enhanced UX** - Reduced friction and faster completion time
 
 ### 📊 Scoring & Verdict Engine
 | Score | Verdict | Meaning |
@@ -134,6 +133,7 @@ TrustHire automates the detection of these patterns before you become a victim.
 | Styling | Tailwind CSS |
 | Database | Turso SQLite (Serverless) |
 | Security APIs | VirusTotal API v3 |
+| AI Analysis | Groq AI (Llama 3.1 70B) |
 | Code Scanning | GitHub REST API |
 | Sandboxes | Vercel Sandboxes |
 | Hosting | Vercel (Production) |
