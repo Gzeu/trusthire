@@ -100,11 +100,7 @@ export async function analyzeProfileWithGroq(
     };
   }
 
-  let retryCount = 0;
-  const maxRetries = 2;
-  
-  while (retryCount <= maxRetries) {
-    try {
+  try {
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
@@ -150,7 +146,7 @@ Job Description: ${profileData.jobDescription || 'Not provided'}`
     console.log('Groq profile analysis validated response:', validatedResponse);
     
     return validatedResponse;
-    } catch (error) {
+  } catch (error) {
     console.error('Groq profile analysis error - Full details:', {
       error: error,
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -180,38 +176,20 @@ Job Description: ${profileData.jobDescription || 'Not provided'}`
       }
       
       if (error.message.includes('429') || error.message.includes('rate_limit')) {
-        console.log('Groq rate limit exceeded - Free plan limit reached');
+        console.log('Groq rate limit exceeded');
         return {
-          redFlags: ['AI rate limit exceeded - Free plan limit reached. Try again in a few minutes.'],
+          redFlags: ['AI rate limit exceeded - please try again later'],
           greenFlags: ['Standard security assessment completed'],
-          inconsistencies: ['AI service temporarily rate limited - Free plan constraints']
-        };
-      }
-      
-      if (error.message.includes('insufficient_quota') || error.message.includes('quota_exceeded')) {
-        console.log('Groq quota exceeded - Free plan limit');
-        return {
-          redFlags: ['AI quota exceeded - Free plan limit reached'],
-          greenFlags: ['Standard security assessment completed'],
-          inconsistencies: ['AI service temporarily unavailable - Plan limits']
+          inconsistencies: ['AI service temporarily rate limited']
         };
       }
     }
-      
-      // If it's a rate limit error and we haven't maxed out retries, wait and retry
-      if (error instanceof Error && (error.message.includes('429') || error.message.includes('rate_limit')) && retryCount < maxRetries) {
-        retryCount++;
-        console.log(`Groq rate limit hit, retry ${retryCount}/${maxRetries} in 2 seconds...`);
-        await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
-        continue;
-      }
-      
-      return {
-        redFlags: [`AI analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
-        greenFlags: ['Standard security assessment completed'],
-        inconsistencies: ['AI verification unavailable - technical issues']
-      };
-    }
+    
+    return {
+      redFlags: [`AI analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
+      greenFlags: ['Standard security assessment completed'],
+      inconsistencies: ['AI verification unavailable - technical issues']
+    };
   }
 }
 
