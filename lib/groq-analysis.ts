@@ -37,14 +37,14 @@ export async function analyzeCodeWithGroq(
 ): Promise<GroqAnalysisResult['codeAnalysis']> {
   try {
     const completion = await groq.chat.completions.create({
-      model: "llama-3.1-70b-versatile",
+      model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
           content: `You are a cybersecurity expert specializing in code security analysis for recruitment scams. 
-          Analyze the provided code for malicious patterns, credential theft, data exfiltration, or other security risks.
-          Focus on patterns commonly used in fake technical assessments and recruitment scams.
-          Respond with JSON format containing suspiciousPatterns array and recommendations array.`
+  Analyze the provided code for malicious patterns, credential theft, data exfiltration, or other security risks.
+  Focus on patterns commonly used in fake technical assessments and recruitment scams.
+  Respond with JSON format containing suspiciousPatterns array and recommendations array.`
         },
         {
           role: "user",
@@ -55,7 +55,6 @@ export async function analyzeCodeWithGroq(
       max_tokens: 1000,
       response_format: { type: "json_object" }
     });
-
     const response = JSON.parse(completion.choices[0]?.message?.content || '{}');
     
     return {
@@ -85,14 +84,14 @@ export async function analyzeProfileWithGroq(
 ): Promise<GroqAnalysisResult['profileAnalysis']> {
   try {
     const completion = await groq.chat.completions.create({
-      model: "llama-3.1-70b-versatile",
+      model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
           content: `You are an expert in identifying recruitment scams and fake job offers. 
-          Analyze the provided profile and recruitment data for signs of fraudulent activity.
-          Look for inconsistencies, suspicious patterns, and red flags common in recruitment scams.
-          Respond with JSON format containing redFlags array, greenFlags array, and inconsistencies array.`
+  Analyze the provided profile and recruitment data for signs of fraudulent activity.
+  Look for inconsistencies, suspicious patterns, and red flags common in recruitment scams.
+  Respond with JSON format containing redFlags array, greenFlags array, and inconsistencies array.`
         },
         {
           role: "user",
@@ -103,7 +102,6 @@ export async function analyzeProfileWithGroq(
       max_tokens: 1000,
       response_format: { type: "json_object" }
     });
-
     const response = JSON.parse(completion.choices[0]?.message?.content || '{}');
     
     return {
@@ -132,15 +130,15 @@ export async function generateRiskAssessmentWithGroq(
 ): Promise<GroqAnalysisResult> {
   try {
     const completion = await groq.chat.completions.create({
-      model: "llama-3.1-70b-versatile",
+      model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
           content: `You are a senior cybersecurity analyst specializing in recruitment fraud detection.
-          Analyze all provided data to generate a comprehensive risk assessment.
-          Consider the credibility of the recruiter, legitimacy of the job offer, technical safety, and overall risk level.
-          Provide specific, actionable insights and recommendations.
-          Respond with JSON format containing riskAssessment, codeAnalysis, profileAnalysis, and summary objects.`
+  Analyze all provided data to generate a comprehensive risk assessment.
+  Consider the credibility of the recruiter, legitimacy of the job offer, technical safety, and overall risk level.
+  Provide specific, actionable insights and recommendations.
+  Respond with JSON format containing riskAssessment, codeAnalysis, profileAnalysis, and summary objects.`
         },
         {
           role: "user",
@@ -151,7 +149,6 @@ export async function generateRiskAssessmentWithGroq(
       max_tokens: 2000,
       response_format: { type: "json_object" }
     });
-
     const response = JSON.parse(completion.choices[0]?.message?.content || '{}');
     
     return {
@@ -214,13 +211,13 @@ export async function generateReportSummaryWithGroq(
 ): Promise<string> {
   try {
     const completion = await groq.chat.completions.create({
-      model: "llama-3.1-70b-versatile",
+      model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
           content: `You are a professional security report writer. Generate a clear, concise, and actionable summary of the recruitment security assessment.
-          Focus on the most important findings, risk level, and recommended actions.
-          Use professional but accessible language. Include specific risk indicators and next steps.`
+  Focus on the most important findings, risk level, and recommended actions.
+  Use professional but accessible language. Include specific risk indicators and next steps.`
         },
         {
           role: "user",
@@ -230,7 +227,6 @@ export async function generateReportSummaryWithGroq(
       temperature: 0.3,
       max_tokens: 800
     });
-
     return completion.choices[0]?.message?.content || 'Unable to generate AI summary';
   } catch (error) {
     console.error('Groq report summary error:', error);
