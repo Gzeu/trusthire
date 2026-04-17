@@ -109,7 +109,8 @@ export async function analyzeProfileWithGroq(
           content: `You are a cybersecurity expert specializing in recruitment scam detection. 
   Analyze the provided recruiter profile and job context for red flags, inconsistencies, and suspicious patterns.
   Focus on identity verification, company legitimacy, and common scam tactics.
-  Respond with JSON format containing redFlags array, greenFlags array, and inconsistencies array.`
+  Respond with JSON format containing redFlags array, greenFlags array, and inconsistencies array.
+  Each array should contain strings only.`
         },
         {
           role: "user",
@@ -129,29 +130,65 @@ Job Description: ${profileData.jobDescription || 'Not provided'}`
       max_tokens: 1000,
       response_format: { type: "json_object" }
     });
-    const response = JSON.parse(completion.choices[0]?.message?.content || '{}');
     
-    return {
-      redFlags: response.redFlags || [],
-      greenFlags: response.greenFlags || [],
-      inconsistencies: response.inconsistencies || []
+    const content = completion.choices[0]?.message?.content || '{}';
+    console.log('Groq profile analysis raw response:', content);
+    
+    const response = JSON.parse(content);
+    
+    // Strict validation of response structure
+    const validatedResponse = {
+      redFlags: Array.isArray(response.redFlags) ? response.redFlags.filter((flag: any) => typeof flag === 'string') : [],
+      greenFlags: Array.isArray(response.greenFlags) ? response.greenFlags.filter((flag: any) => typeof flag === 'string') : [],
+      inconsistencies: Array.isArray(response.inconsistencies) ? response.inconsistencies.filter((flag: any) => typeof flag === 'string') : []
     };
+    
+    console.log('Groq profile analysis validated response:', validatedResponse);
+    
+    return validatedResponse;
   } catch (error) {
-    console.error('Groq profile analysis error:', error);
-    // Check if it's a 403 error (invalid API key)
-    if (error instanceof Error && error.message.includes('403')) {
-      console.log('Invalid Groq API key detected');
-      return {
-        redFlags: ['AI API key invalid - contact administrator'],
-        greenFlags: ['Standard security assessment completed'],
-        inconsistencies: ['AI verification temporarily unavailable']
-      };
+    console.error('Groq profile analysis error - Full details:', {
+      error: error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      apiKeyLength: groqApiKey.length,
+      apiKeyPresent: !!groqApiKey
+    });
+    
+    // Check specific error types
+    if (error instanceof Error) {
+      if (error.message.includes('403')) {
+        console.log('Invalid Groq API key detected');
+        return {
+          redFlags: ['AI API key invalid - contact administrator'],
+          greenFlags: ['Standard security assessment completed'],
+          inconsistencies: ['AI verification temporarily unavailable']
+        };
+      }
+      
+      if (error.message.includes('model_decommissioned') || error.message.includes('model_not_found')) {
+        console.log('Groq model deprecated or not found');
+        return {
+          redFlags: ['AI model deprecated - update required'],
+          greenFlags: ['Standard security assessment completed'],
+          inconsistencies: ['AI model temporarily unavailable']
+        };
+      }
+      
+      if (error.message.includes('429') || error.message.includes('rate_limit')) {
+        console.log('Groq rate limit exceeded');
+        return {
+          redFlags: ['AI rate limit exceeded - please try again later'],
+          greenFlags: ['Standard security assessment completed'],
+          inconsistencies: ['AI service temporarily rate limited']
+        };
+      }
     }
     
     return {
-      redFlags: ['AI analysis unavailable - manual review required'],
-      greenFlags: ['Standard security practices should be followed'],
-      inconsistencies: ['Unable to perform AI verification']
+      redFlags: [`AI analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
+      greenFlags: ['Standard security assessment completed'],
+      inconsistencies: ['AI verification unavailable - technical issues']
     };
   }
 }
@@ -175,7 +212,8 @@ export async function generateRiskAssessmentWithGroq(
   Analyze all provided data to generate a comprehensive risk assessment.
   Consider the credibility of the recruiter, legitimacy of the job offer, technical safety, and overall risk level.
   Provide specific, actionable insights and recommendations.
-  Respond with JSON format containing riskAssessment, codeAnalysis, profileAnalysis, and summary objects.`
+  Respond with JSON format containing riskAssessment, codeAnalysis, profileAnalysis, and summary objects.
+  CRITICAL: riskAssessment.confidence must be a number between 0 and 1. riskAssessment.level must be one of: low, medium, high, critical.`
         },
         {
           role: "user",
@@ -186,14 +224,27 @@ export async function generateRiskAssessmentWithGroq(
       max_tokens: 2000,
       response_format: { type: "json_object" }
     });
-    const response = JSON.parse(completion.choices[0]?.message?.content || '{}');
+    
+    const content = completion.choices[0]?.message?.content || '{}';
+    console.log('Groq risk assessment raw response:', content);
+    
+    const response = JSON.parse(content);
+    
+    // Validate risk assessment
+    const confidence = Number(response.riskAssessment?.confidence);
+    const validRiskLevels = ['low', 'medium', 'high', 'critical'];
+    const riskLevel = response.riskAssessment?.level;
+    
+    const riskAssessment = {
+      level: validRiskLevels.includes(riskLevel) ? riskLevel : 'medium',
+      confidence: Number.isFinite(confidence) && confidence >= 0 && confidence <= 1 ? confidence : 0.5,
+      reasoning: response.riskAssessment?.reasoning || 'Unable to generate detailed assessment'
+    };
+    
+    console.log('Groq risk assessment validated:', riskAssessment);
     
     return {
-      riskAssessment: response.riskAssessment || {
-        level: 'medium',
-        confidence: 0.5,
-        reasoning: 'Unable to generate detailed assessment'
-      },
+      riskAssessment,
       codeAnalysis: response.codeAnalysis || {
         suspiciousPatterns: [],
         recommendations: ['Manual code review recommended']
@@ -210,7 +261,14 @@ export async function generateRiskAssessmentWithGroq(
       }
     };
   } catch (error) {
-    console.error('Groq comprehensive analysis error:', error);
+    console.error('Groq comprehensive analysis error - Full details:', {
+      error: error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      apiKeyLength: groqApiKey.length,
+      apiKeyPresent: !!groqApiKey
+    });
+    
     return {
       riskAssessment: {
         level: 'medium',
