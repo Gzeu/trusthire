@@ -438,6 +438,40 @@ function WorkflowCard({ step, index }: { step: WorkflowStep; index: number }) {
     medium: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
     low: 'text-green-400 bg-green-500/10 border-green-500/20',
   };
+
+  // Debug logging
+  console.log('WorkflowCard step:', step, 'index:', index);
+  
+  // Validate step structure
+  if (!step || typeof step !== 'object') {
+    console.error('Invalid step object:', step);
+    return (
+      <div className="flex items-start gap-4">
+        <div className="w-7 h-7 bg-white/5 border border-white/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+          <span className="text-xs font-mono text-white/40">{index + 1}</span>
+        </div>
+        <div className="flex-1">
+          <p className="text-xs text-red-400">Invalid workflow step data</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Validate required properties
+  if (!step.action || !step.description || !step.priority) {
+    console.error('Missing required step properties:', step);
+    return (
+      <div className="flex items-start gap-4">
+        <div className="w-7 h-7 bg-white/5 border border-white/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+          <span className="text-xs font-mono text-white/40">{index + 1}</span>
+        </div>
+        <div className="flex-1">
+          <p className="text-xs text-yellow-400">Incomplete workflow step data</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-start gap-4">
       <div className="w-7 h-7 bg-white/5 border border-white/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -445,12 +479,12 @@ function WorkflowCard({ step, index }: { step: WorkflowStep; index: number }) {
       </div>
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-mono font-bold">{step.action}</span>
+          <span className="text-sm font-mono font-bold">{String(step.action)}</span>
           <span className={`text-xs font-mono px-2 py-0.5 rounded border ${priorityColors[step.priority]}`}>
-            {step.priority.toUpperCase()}
+            {String(step.priority).toUpperCase()}
           </span>
         </div>
-        <p className="text-xs text-white/50">{step.description}</p>
+        <p className="text-xs text-white/50">{String(step.description)}</p>
       </div>
     </div>
   );
