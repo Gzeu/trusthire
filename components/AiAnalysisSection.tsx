@@ -1,9 +1,10 @@
 'use client';
 
 export function AiAnalysisSection({ ai }: { ai: any }) {
-  const hasSummary = Boolean(ai?.summary?.trim() || ai?.analysis?.trim());
-  const hasFindings = (ai?.findings?.length ?? 0) > 0;
-  const hasNextSteps = (ai?.nextSteps?.length ?? 0) > 0;
+  const hasSummary = Boolean(typeof ai?.summary === 'string' && ai?.summary?.trim()) || 
+                     Boolean(typeof ai?.analysis === 'string' && ai?.analysis?.trim());
+  const hasFindings = Array.isArray(ai?.findings) && ai?.findings?.length > 0;
+  const hasNextSteps = Array.isArray(ai?.nextSteps) && ai?.nextSteps?.length > 0;
   const hasContent = hasSummary || hasFindings || hasNextSteps;
   const isPartial = ai?.status === 'partial' || ai?.available === false;
 
@@ -36,7 +37,9 @@ export function AiAnalysisSection({ ai }: { ai: any }) {
         <div className="mb-6">
           <h3 className="text-sm font-mono font-bold text-white/70 mb-3">Summary</h3>
           <p className="text-sm text-white/60 leading-relaxed">
-            {ai.summary || ai.analysis}
+            {typeof ai?.summary === 'string' ? ai.summary : 
+             typeof ai?.analysis === 'string' ? ai.analysis : 
+             'Analysis content unavailable'}
           </p>
         </div>
       )}
@@ -82,14 +85,17 @@ export function AiAnalysisSection({ ai }: { ai: any }) {
             <div>
               <span className="text-white/40">Confidence:</span>
               <span className="ml-2 font-mono text-white/80">
-                {ai.riskAssessment.confidence 
+                {typeof ai.riskAssessment?.confidence === 'number' && 
+                 !isNaN(ai.riskAssessment.confidence) && 
+                 ai.riskAssessment.confidence >= 0 && 
+                 ai.riskAssessment.confidence <= 1
                   ? `${(ai.riskAssessment.confidence * 100).toFixed(1)}%`
                   : '0%'
                 }
               </span>
             </div>
           </div>
-          {ai.riskAssessment.reasoning && (
+          {typeof ai?.riskAssessment?.reasoning === 'string' && ai?.riskAssessment.reasoning && (
             <div className="mt-3">
               <span className="text-white/40">Reasoning:</span>
               <p className="text-sm text-white/60 mt-1">{ai.riskAssessment.reasoning}</p>
