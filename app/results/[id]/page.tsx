@@ -92,8 +92,7 @@ export default function ResultsPage() {
   }, [params.id]);
 
   const copyReport = () => {
-    if (!data?.incidentReport) return;
-    const fullReport = generateFullReport();
+    if (!data) return;    const fullReport = generateFullReport();
     navigator.clipboard.writeText(fullReport);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -353,11 +352,11 @@ due diligence before making employment decisions.
             </div>
           </div>
           <pre className="text-xs font-mono text-white/60 bg-[#0A0A0B] rounded-lg p-4 overflow-auto max-h-64 whitespace-pre-wrap">
-            {data.incidentReport}
+            {data.{generateFullReport()}
           </pre>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: 'Report to GitHub', url: 'https://github.com/contact/report-abuse' },
+              { label: 'Report {generateFullReport()} GitHub', url: 'https://github.com/contact/report-abuse' },
               { label: 'Report to LinkedIn', url: 'https://www.linkedin.com/help/linkedin/answer/a1339724' },
               { label: 'Report to DNSC (RO)', url: 'https://dnsc.ro' },
               { label: 'Report to CISA (US)', url: 'https://www.cisa.gov/report' },
