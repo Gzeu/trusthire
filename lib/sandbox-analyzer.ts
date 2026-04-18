@@ -76,12 +76,13 @@ export class SandboxAnalyzer {
     },
     {
       pattern: /child_process\.(exec|spawn|fork)/gi,
-      type: 'critical',
+      type: 'critical' as const,
       severity: 10,
-      category: 'security',
+      category: 'security' as const,
       title: 'Child Process Execution',
       description: 'Code spawns external processes which can be exploited',
-      recommendation: 'Remove child process execution or implement strict validation'
+      recommendation: 'Remove child process execution or implement strict validation',
+      references: []
     },
     {
       pattern: /(curl|wget|fetch|axios)\s*\+\s*(["'][^"']*["'][^)]*\)\s*\+\s*(\||\&)/gi,
@@ -90,79 +91,88 @@ export class SandboxAnalyzer {
       category: 'security' as const,
       title: 'Command Injection via HTTP Requests',
       description: 'HTTP requests used to inject shell commands',
-      recommendation: 'Validate all user input and use parameterized queries'
+      recommendation: 'Validate all user input and use parameterized queries',
+      references: []
     },
     {
       pattern: /require\s*\(\s*["'][^"']*["'][^)]*\)\s*\(/gi,
-      type: 'high',
+      type: 'high' as const,
       severity: 7,
-      category: 'security',
+      category: 'security' as const,
       title: 'Dynamic Require with Concatenation',
       description: 'Dynamic require() with string concatenation can lead to path traversal',
-      recommendation: 'Use static imports or implement proper path validation'
+      recommendation: 'Use static imports or implement proper path validation',
+      references: []
     },
     {
       pattern: /(atob|btoa|Buffer\.from|Buffer\.alloc)/gi,
-      type: 'high',
+      type: 'high' as const,
       severity: 6,
-      category: 'security',
+      category: 'security' as const,
       title: 'Base64 Encoding/Decoding',
       description: 'Use of base64 encoding/decoding to obfuscate code',
-      recommendation: 'Remove obfuscation and use clear, readable code'
+      recommendation: 'Remove obfuscation and use clear, readable code',
+      references: []
     },
     {
       pattern: /(crypto|createHash|createHmac)/gi,
-      type: 'medium',
+      type: 'medium' as const,
       severity: 5,
-      category: 'security',
+      category: 'security' as const,
       title: 'Cryptographic Operations',
       description: 'Use of cryptographic functions without proper validation',
-      recommendation: 'Implement proper key management and validation'
+      recommendation: 'Implement proper key management and validation',
+      references: []
     },
     {
-      pattern: /(fs\.|path\.|os\.).*\s*\+\s*["'][^"']*["']/gi,
-      type: 'medium',
+      pattern: /(fs\.|path\.|os\.).*\s*\+\s*(["'][^"']*["']/gi,
+      type: 'medium' as const,
       severity: 4,
-      category: 'security',
+      category: 'security' as const,
       title: 'File System Access',
       description: 'File system operations without proper validation',
-      recommendation: 'Validate all file paths and implement proper access controls'
+      recommendation: 'Validate all file paths and implement proper access controls',
+      references: []
     },
     {
       pattern: /(setTimeout|setInterval)\s*\(\s*["'][^"']*["'][^)]*\)\s*\(/gi,
-      type: 'medium',
+      type: 'medium' as const,
       severity: 4,
-      category: 'security',
+      category: 'security' as const,
       title: 'Timer-based Code Execution',
       description: 'Use of timers to execute code dynamically',
-      recommendation: 'Remove dynamic code execution in timers'
+      recommendation: 'Remove dynamic code execution in timers',
+      references: []
     },
     {
       pattern: /document\.(cookie|localStorage|sessionStorage)/gi,
-      type: 'medium',
+      type: 'medium' as const,
       severity: 5,
-      category: 'privacy',
+      category: 'privacy' as const,
       title: 'Browser Storage Access',
       description: 'Access to browser storage mechanisms',
-      recommendation: 'Implement proper data handling and privacy controls'
+      recommendation: 'Implement proper data handling and privacy controls',
+      references: []
     },
     {
       pattern: /(XMLHttpRequest|fetch)\s*\(\s*["'][^"']*["'][^)]*\)\s*\(/gi,
-      type: 'low',
+      type: 'low' as const,
       severity: 3,
-      category: 'security',
+      category: 'security' as const,
       title: 'Dynamic HTTP Request Construction',
       description: 'HTTP requests constructed with dynamic parameters',
-      recommendation: 'Validate all URLs and implement proper request handling'
+      recommendation: 'Validate all URLs and implement proper request handling',
+      references: []
     },
     {
       pattern: /(console\.log|console\.error|console\.warn)/gi,
-      type: 'info',
+      type: 'info' as const,
       severity: 1,
-      category: 'best-practice',
+      category: 'best-practice' as const,
       title: 'Console Logging',
       description: 'Console logging in production code',
-      recommendation: 'Remove or implement proper logging system'
+      recommendation: 'Remove or implement proper logging system',
+      references: []
     }
   ];
 
@@ -199,9 +209,9 @@ export class SandboxAnalyzer {
       return await SandboxAnalyzer.analyzeCode(content, filePath);
     } catch (error) {
       return [{
-        type: 'medium',
+        type: 'medium' as const,
         severity: 5,
-        category: 'security',
+        category: 'security' as const,
         title: 'File Access Error',
         description: `Could not read file: ${error}`,
         location: filePath,
@@ -229,9 +239,9 @@ export class SandboxAnalyzer {
       }
     } catch (error) {
       issues.push({
-        type: 'medium',
+        type: 'medium' as const,
         severity: 5,
-        category: 'security',
+        category: 'security' as const,
         title: 'Directory Access Error',
         description: `Could not read directory: ${error}`,
         location: dirPath,
@@ -262,7 +272,7 @@ export class SandboxAnalyzer {
 
     // Generate recommendations
     const recommendations = [
-      ...new Set(issues.map(i => i.recommendation)),
+      ...Array.from(new Set(issues.map(i => i.recommendation))),
       'Implement comprehensive input validation',
       'Use static analysis tools before execution',
       'Review all external dependencies',
@@ -270,7 +280,7 @@ export class SandboxAnalyzer {
     ];
 
     // Categories analyzed
-    const categoriesAnalyzed = [...new Set(issues.map(i => i.category))];
+    const categoriesAnalyzed = Array.from(new Set(issues.map(i => i.category))) as string[];
 
     return {
       summary: {
