@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle, Search, Home } from 'lucide-react';
-import Link from 'next/link';
+import { Shield, AlertTriangle, CheckCircle, Search } from 'lucide-react';
 
 interface ScamPattern {
   id: string;
@@ -33,7 +32,7 @@ export default function PatternsPage() {
     pattern.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     pattern.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
     pattern.ecosystem.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pattern.indicators.some(indicator => 
+    pattern.indicators.some(indicator =>
       indicator.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
@@ -58,24 +57,6 @@ export default function PatternsPage() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white">
-      {/* Navigation */}
-      <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-4xl mx-auto">
-        <Link href="/" className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-red-500" />
-          <span className="font-mono font-bold">TrustHire</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link 
-            href="/" 
-            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-mono"
-          >
-            <Home className="w-4 h-4" />
-            Home
-          </Link>
-          <span className="text-red-500 text-sm font-mono">Threat DB</span>
-        </div>
-      </nav>
-
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="text-center mb-12">
@@ -136,12 +117,11 @@ export default function PatternsPage() {
               key={pattern.id}
               className="bg-[#111113] border border-white/5 rounded-xl p-6 hover:bg-white/5 transition-all"
             >
-              {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border font-mono ${
-                      categoryColors[pattern.category as keyof typeof categoryColors] || 
+                      categoryColors[pattern.category as keyof typeof categoryColors] ||
                       'bg-gray-500/10 border-gray-500/20 text-gray-400'
                     }`}>
                       {pattern.category.replace('_', ' ')}
@@ -156,16 +136,11 @@ export default function PatternsPage() {
                   <h3 className="text-lg font-semibold mb-2 font-mono">{pattern.description}</h3>
                 </div>
               </div>
-
-              {/* Indicators */}
               <div className="space-y-2">
                 <p className="text-sm font-medium text-white/40 mb-2 font-mono">Key Indicators:</p>
                 <div className="space-y-1">
                   {pattern.indicators.map((indicator, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-2 text-sm text-white/60"
-                    >
+                    <div key={index} className="flex items-start gap-2 text-sm text-white/60">
                       <div className="w-1.5 h-1.5 bg-red-400 rounded-full mt-2 flex-shrink-0"></div>
                       <span className="font-mono">{indicator}</span>
                     </div>
@@ -176,7 +151,6 @@ export default function PatternsPage() {
           ))}
         </div>
 
-        {/* No Results */}
         {filteredPatterns.length === 0 && (
           <div className="text-center py-12">
             <AlertTriangle className="w-16 h-16 text-white/30 mx-auto mb-4" />

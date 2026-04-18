@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  Shield, AlertTriangle, CheckCircle, Clock,
+  Shield, CheckCircle,
   Search, ChevronLeft, ChevronRight, ExternalLink,
   BarChart2, Activity, XCircle, RefreshCw
 } from 'lucide-react';
@@ -94,7 +94,6 @@ export default function DashboardPage() {
     return matchSearch && matchFilter;
   });
 
-  // Stats
   const total = data?.total ?? 0;
   const critical = assessments.filter(a => a.verdict === 'critical').length;
   const safe = assessments.filter(a => a.verdict === 'low_risk').length;
@@ -104,23 +103,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white">
-      {/* Nav */}
-      <nav className="border-b border-white/5 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-red-500" />
-            <span className="font-mono font-bold">TrustHire</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-xs font-mono text-white/80 border-b border-red-500 pb-0.5">Dashboard</Link>
-            <Link href="/patterns" className="text-xs font-mono text-white/40 hover:text-white/70 transition-colors">Patterns</Link>
-            <Link href="/assess" className="text-sm font-mono bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
-              + New Assessment
-            </Link>
-          </div>
-        </div>
-      </nav>
-
       <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
