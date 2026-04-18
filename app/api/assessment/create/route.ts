@@ -6,7 +6,16 @@ import { checkDomainSafety } from '@/lib/domainChecker';
 import { generateIncidentReport } from '@/lib/reportGenerator';
 import { generateRiskAssessmentWithGroq, generateReportSummaryWithGroq, analyzeProfileWithGroq, analyzeCodeWithGroq } from '@/lib/groq-analysis';
 import { normalizeAiAnalysis } from '@/lib/normalizeAiAnalysis';
-import type { AssessmentInput } from '@/types';
+import type { AssessmentInput, RepoScanResult } from '@/types';
+
+const EMPTY_REPO_SCAN: RepoScanResult = {
+  repoUrl: '',
+  hasPackageJson: false,
+  dangerousScripts: [],
+  patternMatches: [],
+  riskLevel: 'safe',
+  error: 'Scan failed',
+};
 
 const rateLimit = new Map<string, { count: number; reset: number }>();
 
@@ -44,8 +53,8 @@ export async function POST(req: NextRequest) {
     const repoScanResults = await Promise.allSettled(
       (body.artifacts ?? []).filter((a) => a.type === 'github').map((a) => scanGithubRepo(a.url))
     );
-    const repoScans = repoScanResults.map((r) =>
-      r.status === 'fulfilled' ? r.value : { repoUrl: '', error: 'Scan failed', files: [], suspiciousFiles: [] }
+    const repoScans: RepoScanResult[] = repoScanResults.map((r) =>
+      r.status === 'fulfilled' ? r.value : { ...EMPTY_REPO_SCAN }
     );
 
     // Run domain checks safely
@@ -137,7 +146,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Create full assessment result for incident report
     const assessmentResult = {
       id: 'temp',
       createdAt: new Date().toISOString(),
