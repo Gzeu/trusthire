@@ -1,19 +1,4 @@
-import { createClient } from '@libsql/client';
-
-// Turso client for SQLite
-let tursoClient: any;
-let dbInitialized = false;
-
-try {
-  tursoClient = createClient({
-    url: process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || 'file:./dev.db',
-    authToken: process.env.TURSO_AUTH_TOKEN || ''
-  });
-  dbInitialized = true;
-} catch (error) {
-  console.warn('Database not initialized, using fallback mode:', error);
-  tursoClient = null;
-}
+import { db, tursoClient, dbInitialized } from './turso-client';
 
 // Mock prisma object for compatibility
 export const prisma = {
