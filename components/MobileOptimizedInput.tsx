@@ -14,7 +14,7 @@ interface MobileOptimizedInputProps {
   minTouchTarget?: number;
 }
 
-export default function MobileOptimizedInput({
+function MobileOptimizedInput({
   label,
   type = 'text',
   placeholder,
@@ -72,3 +72,5 @@ export default function MobileOptimizedInput({
     </div>
   );
 }
+
+export default MobileOptimizedInput;

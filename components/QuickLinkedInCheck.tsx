@@ -30,7 +30,7 @@ interface LinkedInAnalysisResult {
   };
 }
 
-export default function QuickLinkedInCheck() {
+function QuickLinkedInCheck() {
   const [profileData, setProfileData] = useState<LinkedInProfileData>({
     url: '',
     joinedDate: '',
@@ -496,3 +496,5 @@ export default function QuickLinkedInCheck() {
     </div>
   );
 }
+
+export default QuickLinkedInCheck;
