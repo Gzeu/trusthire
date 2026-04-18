@@ -4,11 +4,25 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Upload, Plus, Trash2, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 import type { RecruiterInput, JobInput, ArtifactInput } from '@/types';
+import { useTouchOptimized } from '@/hooks/useTouchOptimized';
+import { useFocusManagement } from '@/hooks/useFocusManagement';
 
 export default function SimpleAssessmentPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Initialize mobile optimization hooks
+  const { getTouchOptimizedProps, triggerHaptic } = useTouchOptimized({
+    minTouchTarget: 44,
+    enableSwipeGestures: true,
+    enableHapticFeedback: true,
+  });
+  
+  const { setFocusToElement, activeElement } = useFocusManagement({
+    enableAutoFocus: true,
+    trapFocusWithin: '.assessment-form',
+  });
 
   const [formData, setFormData] = useState({
     recruiter: {
@@ -159,30 +173,46 @@ export default function SimpleAssessmentPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="recruiter-name" className="block text-sm font-medium text-white/70 mb-1">Recruiter Name *</label>
-                  <input id="recruiter-name" type="text" value={formData.recruiter.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, recruiter: { ...prev.recruiter, name: e.target.value } }))}
-                    placeholder="John Smith"
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30"
-                    required />
+                  <input
+                    id="recruiter-name"
+                    type="text"
+                    placeholder="Recruiter name"
+                    value={formData.recruiter.name}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, recruiter: { ...prev.recruiter, name: e.target.value } }));
+                      triggerHaptic(); // Haptic feedback on input
+                    }}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white placeholder-white/30 min-h-[44px]"
+                    required
+                  />
                 </div>
                 <div>
                   <label htmlFor="recruiter-company" className="block text-sm font-medium text-white/70 mb-1">Company *</label>
-                  <input id="recruiter-company" type="text" value={formData.recruiter.claimedCompany}
-                    onChange={(e) => setFormData(prev => ({ ...prev, recruiter: { ...prev.recruiter, claimedCompany: e.target.value } }))}
-                    placeholder="Tech Corp Inc"
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30"
-                    required />
+                  <input
+                    id="recruiter-company"
+                    type="text"
+                    placeholder="Company name"
+                    value={formData.recruiter.claimedCompany}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, recruiter: { ...prev.recruiter, claimedCompany: e.target.value } }));
+                      triggerHaptic(); // Haptic feedback on input
+                    }}
+                    {...getTouchOptimizedProps()}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white placeholder-white/30"
+                    required
+                  />
                 </div>
                 <div>
                   <label htmlFor="recruiter-title" className="block text-sm font-medium text-white/70 mb-1">Job Title</label>
                   <input id="recruiter-title" type="text" value={formData.recruiter.jobTitle}
-                    onChange={(e) => setFormData(prev => ({ ...prev, recruiter: { ...prev.recruiter, jobTitle: e.target.value } }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, recruiter: { ...prev.recruiter, jobTitle: e.target.value } as RecruiterInput }))}
                     placeholder="Senior Developer"
                     className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30" />
                 </div>
                 <div>
                   <label htmlFor="recruiter-email" className="block text-sm font-medium text-white/70 mb-1">Email</label>
                   <input id="recruiter-email" type="email" value={formData.recruiter.emailReceived}
+                    onChange={(e) => setFormData(prev => ({ ...prev, recruiter: { ...prev.recruiter, emailReceived: e.target.value } as RecruiterInput }))}
                     onChange={(e) => setFormData(prev => ({ ...prev, recruiter: { ...prev.recruiter, emailReceived: e.target.value } }))}
                     placeholder="john.smith@company.com"
                     className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30" />
