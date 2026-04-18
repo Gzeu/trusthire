@@ -12,7 +12,7 @@ interface SimpleChartProps {
   color?: string;
 }
 
-export default function SimpleChart({ data, height = 200, color = '#8b5cf6' }: SimpleChartProps) {
+function SimpleChart({ data, height = 200, color = '#8b5cf6' }: SimpleChartProps) {
   const maxValue = Math.max(...data.map(d => d.value));
   const sortedData = [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -100,3 +100,5 @@ export default function SimpleChart({ data, height = 200, color = '#8b5cf6' }: S
     </div>
   );
 }
+
+export default SimpleChart;
