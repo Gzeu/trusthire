@@ -1,85 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { Shield, AlertTriangle, Search, FileText, ChevronRight, Lock, Eye, Zap, Github, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { Shield, AlertTriangle, Search, FileText, ChevronRight, Lock, Eye, Zap } from 'lucide-react';
 import QuickScanCards from '@/components/QuickScanCards';
 import EnhancedActionButtons from '@/components/EnhancedActionButtons';
 
 export default function HomePage() {
-  const [quickScanUrl, setQuickScanUrl] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<any>(null);
-  const [scanError, setScanError] = useState('');
-
-  const handleQuickScan = async () => {
-    if (!quickScanUrl.trim()) return;
-    
-    setIsScanning(true);
-    setScanError('');
-    setScanResult(null);
-
-    try {
-      const response = await fetch('/api/scan/repo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: quickScanUrl.trim() })
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Scan failed');
-      }
-
-      setScanResult(data);
-    } catch (error) {
-      setScanError(error instanceof Error ? error.message : 'Scan failed');
-    } finally {
-      setIsScanning(false);
-    }
-  };
-
-  const getQuickScanScore = () => {
-    if (!scanResult) return null;
-    
-    let score = 100;
-    if (scanResult.dangerousScripts?.length > 0) score -= 30;
-    if (scanResult.suspiciousFiles?.length > 0) score -= 20;
-    if (scanResult.riskLevel === 'critical') score -= 40;
-    else if (scanResult.riskLevel === 'warning') score -= 15;
-    
-    return Math.max(0, score);
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-400';
-    if (score >= 60) return 'text-yellow-400';
-    if (score >= 40) return 'text-orange-400';
-    return 'text-red-400';
-  };
-
   return (
     <main className="min-h-screen bg-[#0A0A0B] text-white">
-      {/* Nav */}
-      <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
-        <div className="flex items-center gap-2">
-          <Shield className="w-6 h-6 text-red-500" />
-          <span className="font-mono font-bold text-lg tracking-tight">TrustHire</span>
-        </div>
-        <div className="flex items-center gap-6">
-          <Link href="/patterns" className="text-sm text-white/50 hover:text-white transition-colors font-mono">
-            Threat DB
-          </Link>
-          <Link
-            href="/assess"
-            className="bg-red-600 hover:bg-red-700 text-white text-sm font-mono px-4 py-2 rounded transition-colors"
-          >
-            Start Assessment
-          </Link>
-        </div>
-      </nav>
-
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-24 pb-20">
         <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-full px-4 py-1.5 mb-8">
