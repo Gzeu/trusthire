@@ -197,8 +197,7 @@ export default function SimpleAssessmentPage() {
                       setFormData(prev => ({ ...prev, recruiter: { ...prev.recruiter, claimedCompany: e.target.value } }));
                       triggerHaptic(); // Haptic feedback on input
                     }}
-                    {...getTouchOptimizedProps()}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white placeholder-white/30"
+                                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white placeholder-white/30"
                     required
                   />
                 </div>
@@ -212,7 +211,6 @@ export default function SimpleAssessmentPage() {
                 <div>
                   <label htmlFor="recruiter-email" className="block text-sm font-medium text-white/70 mb-1">Email</label>
                   <input id="recruiter-email" type="email" value={formData.recruiter.emailReceived}
-                    onChange={(e) => setFormData(prev => ({ ...prev, recruiter: { ...prev.recruiter, emailReceived: e.target.value } as RecruiterInput }))}
                     onChange={(e) => setFormData(prev => ({ ...prev, recruiter: { ...prev.recruiter, emailReceived: e.target.value } }))}
                     placeholder="john.smith@company.com"
                     className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-white/30" />
