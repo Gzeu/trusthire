@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <strong>Production Live:</strong> <a href="https://trusthire-five.vercel.app">https://trusthire-five.vercel.app</a>
+  <strong>Production Live:</strong> <a href="https://trusthire-git-main-gzeus-projects.vercel.app">https://trusthire-git-main-gzeus-projects.vercel.app</a>
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <strong>Current Status:</strong> ✅ Production Ready with Simplified Single-Step Assessment & Groq AI
+  <strong>Current Status:</strong> ✅ Production Ready with Mobile UX & Turso Database
 </p>
 
 ---
@@ -122,6 +122,21 @@ TrustHire automates the detection of these patterns before you become a victim.
 - Each assessment gets a unique share token
 - Results are shareable via `/results/[id]` — useful for community warnings
 
+### 📱 Mobile-First Design (NEW)
+- **Touch Optimization**: 44px minimum touch targets (WCAG compliance)
+- **Haptic Feedback**: Tactile confirmation on mobile interactions
+- **Swipe Gestures**: 4-direction gesture detection for enhanced UX
+- **Focus Management**: WCAG 2.1 AA compliant keyboard navigation
+- **Responsive Design**: Optimized for all screen sizes
+- **PWA Support**: Install prompts and offline detection
+
+### 🔌 Advanced Features (NEW)
+- **Turso SQLite Database**: Production-ready serverless database
+- **Real-time Updates**: Custom event system for live data
+- **Data Visualization**: Custom SVG charts (no external dependencies)
+- **Accessibility**: Screen reader support and semantic HTML
+- **Performance**: Edge-optimized with fast loading times
+
 ---
 
 ## 🏗️ Tech Stack
@@ -132,11 +147,12 @@ TrustHire automates the detection of these patterns before you become a victim.
 | Language | TypeScript 5 |
 | Styling | Tailwind CSS |
 | Database | Turso SQLite (Serverless) |
-| Security APIs | VirusTotal API v3 |
-| AI Analysis | Groq AI (Llama 3.1 70B) |
+| Security APIs | VirusTotal API v3, Groq AI |
 | Code Scanning | GitHub REST API |
 | Sandboxes | Vercel Sandboxes |
 | Hosting | Vercel (Production) |
+| Mobile UX | Touch optimization, Haptic feedback |
+| Accessibility | WCAG 2.1 AA compliance |
 
 ---
 
