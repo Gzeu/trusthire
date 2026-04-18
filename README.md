@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <strong>Current Status:</strong> ✅ Production Ready with Mobile UX & Turso Database
+  <strong>Current Status:</strong> ✅ Production Ready with AI-Powered Scam Detection & LangChain Integration
 </p>
 
 ---
@@ -97,6 +97,23 @@ TrustHire automates the detection of these patterns before you become a victim.
 ### 🎯 Simplified Assessment Flow (Single-Step Process)
 - **Unified Form** - Complete assessment in one comprehensive interface
 - **All Data Visible** - Recruiter info, job context, and technical artifacts on one page
+
+### 🤖 AI-Powered Scam Detection (NEW)
+- **LangChain Integration** - Advanced AI analysis with multi-chain support
+- **Message Pattern Recognition** - Detects urgency language, off-platform requests, crypto payment mentions
+- **Context-Aware Analysis** - Platform-aware scam detection
+- **Multi-LLM Support** - LangChain + Groq for comprehensive coverage
+- **Real-time Processing** - Instant AI-powered threat assessment
+- **Confidence Scoring** - Sophisticated risk level calculation
+- **LangSmith Monitoring** - Production-ready debugging and tracing
+
+### 📊 LangChain Features
+- **Security Analysis Chains** - Specialized workflows for threat detection
+- **AI Agents** - Multi-tool security analysis agents
+- **RAG System** - Retrieval-Augmented Generation with document context
+- **Memory Management** - Conversation context and session preservation
+- **Performance Monitoring** - Built-in benchmarking and optimization
+- **Enterprise Tracing** - LangSmith integration for production monitoring
 - **Real-time Analysis** - Instant AI-powered risk assessment with Groq integration
 - **Instant Results** - Complete report generation without multi-step navigation
 - **Enhanced UX** - Reduced friction and faster completion time
@@ -181,9 +198,14 @@ trusthire/
 │       ├── scan/
 │       │   ├── repo/route.ts       # POST — scan GitHub repository
 │       │   └── url/route.ts        # POST — scan URL via VirusTotal
-│       ├── patterns/route.ts       # GET — known scam patterns DB
-│       └── sandbox/
-│           └── analyze/route.ts    # POST — sandbox analysis endpoint
+│       ├── sandbox/
+│       │   └── analyze/route.ts    # POST — sandbox analysis endpoint
+│       ├── ai/
+│       │   └── analyze/route.ts    # POST — AI-powered message analysis
+│       ├── langchain/
+│       │   └── analyze/route.ts    # POST — LangChain security analysis
+│       └── report/
+│           └── route.ts            # POST — Generate incident report endpoint
 ├── components/
 │   ├── ScoreGauge.tsx              # Animated half-circle score arc
 │   ├── ScoreCard.tsx               # Per-category score card
@@ -337,6 +359,37 @@ Analyze code, repositories, or URLs in isolated Vercel Sandboxes.
     "url": "https://example.com",
     "code": "console.log('test');",
     "language": "node"
+  }
+}
+```
+
+### `POST /api/ai/analyze`
+
+AI-powered recruiter message analysis for advanced scam detection.
+
+```json
+{
+  "recruiterMessages": ["Hi, we have an urgent role...", "Apply now with your resume..."],
+  "context": {
+    "type": "recruiter_messages",
+    "platform": "assessment"
+  }
+}
+```
+
+### `POST /api/langchain/analyze`
+
+Advanced LangChain security analysis with multi-chain support.
+
+```json
+{
+  "chainId": "security",
+  "inputs": {
+    "input": "Suspicious recruiter message content...",
+    "context": {
+      "type": "recruiter_messages",
+      "platform": "assessment"
+    }
   }
 }
 ```
