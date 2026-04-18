@@ -66,7 +66,9 @@ export function useFocusManagement(config: FocusConfig = {}) {
     if (!element || !config.enableAutoFocus) return;
     
     // Store current focus before changing
-    previousFocusRef.current = document.activeElement as HTMLElement;
+    if (document.activeElement) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+    }
     
     // Add to focus history
     if (element && !focusHistory.current.includes(element)) {
@@ -102,7 +104,7 @@ export function useFocusManagement(config: FocusConfig = {}) {
     return () => {
       observer.disconnect();
     };
-  }, [activeElement, config.restoreFocusOnNavigation, handleNavigation]);
+  }, [activeElement, config.restoreFocusOnNavigation]);
 
   // Focus trap initialization
   useEffect(() => {
