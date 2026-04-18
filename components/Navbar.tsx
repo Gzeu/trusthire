@@ -49,7 +49,7 @@ export default function Navbar() {
           className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-mono px-4 py-2 rounded-md transition-colors"
         >
           <PlusCircle className="w-3.5 h-3.5" />
-          New Assessment
+          Start Assessment
         </Link>
       </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Upload, Plus, Trash2, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 import type { RecruiterInput, JobInput, ArtifactInput } from '@/types';
