@@ -19,7 +19,7 @@ export function useFocusManagement(config: FocusConfig = {}) {
       config.trapFocusWithin
     ) as NodeListOf<HTMLElement>;
 
-    const currentIndex = Array.from(focusableElements).indexOf(activeElement);
+    const currentIndex = Array.from(focusableElements).indexOf(activeElement || document.activeElement as HTMLElement);
     
     switch (e.key) {
       case 'Tab':
