@@ -1,6 +1,8 @@
 'use client';
 
 import { Brain, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import EnhancedLoadingState from './EnhancedLoadingStates';
+import EnhancedScoreGauge from './EnhancedScoreGauge';
 
 interface AIAnalysisData {
   riskAssessment: {
@@ -39,12 +41,17 @@ export default function AIAnalysisCard({ analysis, isLoading }: AIAnalysisCardPr
     return (
       <div className="bg-[#111113] border border-white/5 rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Brain className="w-5 h-5 text-blue-400 animate-pulse" />
-          <h2 className="font-mono font-bold">AI Analysis</h2>
+          <Brain className="w-5 h-5 text-blue-400" />
+          <h2 className="font-mono font-bold text-white">AI Analysis</h2>
         </div>
-        <div className="text-center py-8">
-          <div className="animate-spin w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-white/40 font-mono text-sm">Analyzing with AI...</p>
+        <div className="py-8">
+          <EnhancedLoadingState
+            type="spinner"
+            size="lg"
+            message="AI Analysis in Progress"
+            submessage="Analyzing patterns and detecting threats..."
+            variant="analysis"
+          />
         </div>
       </div>
     );
@@ -96,6 +103,22 @@ export default function AIAnalysisCard({ analysis, isLoading }: AIAnalysisCardPr
             {analysis.riskAssessment.level.toUpperCase()} RISK
           </span>
         </div>
+      </div>
+
+      {/* Score Gauge */}
+      <div className="mb-6">
+        <EnhancedScoreGauge
+          score={Math.round(analysis.riskAssessment.confidence * 100)}
+          label="Risk Score"
+          sublabel="AI Confidence"
+          size="md"
+          riskLevel={analysis.riskAssessment.level}
+          showDetails={true}
+          metrics={[
+            { label: 'Confidence', value: `${Math.round(analysis.riskAssessment.confidence * 100)}%`, color: 'text-white' },
+            { label: 'Patterns', value: analysis.codeAnalysis.suspiciousPatterns.length, color: 'text-white' }
+          ]}
+        />
       </div>
 
       {/* Risk Assessment */}

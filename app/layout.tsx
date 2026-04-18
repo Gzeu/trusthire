@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import EnhancedNavbar from '@/components/EnhancedNavbar';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.className} bg-[#0A0A0B] text-white antialiased`}>
         <EnhancedNavbar />
         {children}
+        <MobileBottomNav />
       </body>
     </html>
   );
