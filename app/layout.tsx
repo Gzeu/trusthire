@@ -1,39 +1,28 @@
-import type { Metadata } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
-import './globals.css'
-import { ThemeProvider } from '@/components/theme-provider'
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
-const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'TrustHire — Recruiter Security Assessment',
-  description: 'Evaluate recruiter credibility and hiring workflow safety before you clone or run anything. Built for blockchain/web3 developers.',
-  keywords: ['security', 'recruiter', 'blockchain', 'web3', 'scam detection', 'hiring safety'],
+  description: 'Protect yourself from recruitment scams and malicious code attacks. Verify recruiters and repositories before engaging.',
+  keywords: ['security', 'recruiter', 'scam detection', 'web3', 'blockchain', 'github scanning'],
   openGraph: {
-    title: 'TrustHire — Know who you\'re dealing with before you npm install',
-    description: 'Security due diligence tool for developers. Detect fake recruiters, scan repos for malicious patterns, protect your credentials.',
+    title: 'TrustHire — Recruiter Security Assessment',
+    description: 'Verify recruiters and scan repositories for malicious code.',
+    url: 'https://trusthire-five.vercel.app',
+    siteName: 'TrustHire',
     type: 'website',
   },
-}
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+    <html lang="en">
+      <body className={`${inter.className} bg-[#0A0A0B] text-white antialiased`}>
+        {children}
       </body>
     </html>
-  )
+  );
 }
