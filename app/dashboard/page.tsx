@@ -3,100 +3,144 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  Shield, CheckCircle, AlertTriangle, TrendingUp,
-  Search, ChevronLeft, ChevronRight, ExternalLink,
-  BarChart2, Activity, XCircle, RefreshCw, PlusCircle,
-  Users, Clock, Target
+  Shield,
+  BarChart2,
+  Activity,
+  XCircle,
+  CheckCircle,
+  RefreshCw,
+  ExternalLink,
+  PlusCircle,
+  AlertTriangle,
 } from 'lucide-react';
+import type { DashboardStats, RecentAssessment } from '@/app/api/dashboard/stats/route';
 
-interface AssessmentRow {
-  id: string;
-  createdAt: string;
-  recruiterName: string;
-  company: string;
-  finalScore: number;
-  verdict: string;
-  shareToken: string;
-}
-
-interface DashboardStats {
-  totalAssessments: number;
-  averageScore: number;
-  verdictCounts: {
-    low_risk: number;
-    caution: number;
-    high_risk: number;
-    critical: number;
-  };
-  recentAssessments: AssessmentRow[];
-}
+// ─── Verdict config ───────────────────────────────────────────────────────────
 
 const VERDICT_CONFIG = {
-  low_risk:  { label: 'Low Risk',  color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/30',  dot: 'bg-green-400' },
-  caution:   { label: 'Caution',   color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', dot: 'bg-yellow-400' },
-  high_risk: { label: 'High Risk', color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30', dot: 'bg-orange-400' },
-  critical:  { label: 'Critical',  color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/30',    dot: 'bg-red-400' },
-};
+  low_risk:  { label: 'Low Risk',  color: 'text-emerald-400',  bg: 'bg-emerald-500/10',  border: 'border-emerald-500/25', dot: 'bg-emerald-400' },
+  caution:   { label: 'Caution',   color: 'text-yellow-400',   bg: 'bg-yellow-500/10',   border: 'border-yellow-500/25',  dot: 'bg-yellow-400' },
+  high_risk: { label: 'High Risk', color: 'text-orange-400',   bg: 'bg-orange-500/10',   border: 'border-orange-500/25',  dot: 'bg-orange-400' },
+  critical:  { label: 'Critical',  color: 'text-red-400',      bg: 'bg-red-500/10',      border: 'border-red-500/25',     dot: 'bg-red-500' },
+} as const;
 
-function verdictConfig(v: string) {
-  return VERDICT_CONFIG[v as keyof typeof VERDICT_CONFIG] ?? VERDICT_CONFIG.caution;
+type VerdictKey = keyof typeof VERDICT_CONFIG;
+
+function verdictCfg(v: string) {
+  return VERDICT_CONFIG[v as VerdictKey] ?? VERDICT_CONFIG.caution;
 }
 
-function ScoreBadge({ score, verdict }: { score: number; verdict: string }) {
-  const cfg = verdictConfig(verdict);
+// ─── Score colour helper ──────────────────────────────────────────────────────
+
+function scoreColor(score: number) {
+  if (score >= 70) return 'text-emerald-400';
+  if (score >= 45) return 'text-yellow-400';
+  return 'text-red-400';
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+/** Coloured pill badge showing score + verdict dot */
+function VerdictBadge({ score, verdict }: { score: number; verdict: string }) {
+  const cfg = verdictCfg(verdict);
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold ${cfg.bg} ${cfg.color} border ${cfg.border}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold ${cfg.bg} ${cfg.color} border ${cfg.border}`}
+    >
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
       {score}
     </span>
   );
 }
 
-function StatCard({ icon: Icon, label, value, sub, color = 'text-white', glow = false }: {
-  icon: React.ElementType; label: string; value: string | number; sub?: string; color?: string; glow?: boolean;
+/** Top-level KPI card */
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  accent = false,
+  color,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  sub?: string;
+  accent?: boolean;
+  color?: string;
 }) {
   return (
-    <div className={`bg-[#111113] border ${glow ? 'border-red-500/50 shadow-lg shadow-red-500/20' : 'border-white/5'} rounded-3xl p-6 transition-all duration-300 hover:border-white/10`}>
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-white/30 text-xs font-mono uppercase tracking-wider">{label}</span>
-        <Icon className={`w-4 h-4 ${glow ? 'text-red-400' : 'text-white/20'}`} />
+    <div
+      className={`relative overflow-hidden rounded-3xl border p-6 flex flex-col gap-4 transition-all duration-200 hover:border-white/10 ${
+        accent
+          ? 'bg-red-950/20 border-red-500/20'
+          : 'bg-zinc-900/60 border-white/5'
+      }`}
+    >
+      {/* Subtle glow for accent cards */}
+      {accent && (
+        <div className="pointer-events-none absolute -top-6 -right-6 w-24 h-24 rounded-full bg-red-600/10 blur-2xl" />
+      )}
+
+      <div className="flex items-center justify-between">
+        <span className="text-white/30 text-[11px] font-mono uppercase tracking-widest">
+          {label}
+        </span>
+        <div className={`p-2 rounded-xl ${accent ? 'bg-red-500/10' : 'bg-white/5'}`}>
+          <Icon className={`w-4 h-4 ${accent ? 'text-red-400' : 'text-white/30'}`} />
+        </div>
       </div>
-      <div className={`text-3xl font-mono font-bold ${color}`}>{value}</div>
-      {sub && <div className="text-xs font-mono text-white/30 mt-1">{sub}</div>}
+
+      <div>
+        <span className={`text-4xl font-mono font-bold tabular-nums ${color ?? 'text-white'}`}>
+          {value}
+        </span>
+        {sub && (
+          <p className="text-[11px] font-mono text-white/25 mt-1">{sub}</p>
+        )}
+      </div>
     </div>
   );
 }
 
+/** Shimmer skeleton block */
+function Skeleton({ className = '' }: { className?: string }) {
+  return (
+    <div
+      className={`animate-pulse rounded-lg bg-white/5 ${className}`}
+      aria-hidden="true"
+    />
+  );
+}
+
+/** Full loading state — mirrors the real layout */
 function LoadingSkeleton() {
   return (
     <div className="space-y-8">
-      {/* Stats Skeleton */}
+      {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-[#111113] border border-white/5 rounded-3xl p-6">
-            <div className="h-4 bg-white/10 rounded w-20 mb-3 animate-pulse" />
-            <div className="h-8 bg-white/10 rounded w-16 animate-pulse" />
-            <div className="h-3 bg-white/5 rounded w-24 mt-2 animate-pulse" />
+          <div key={i} className="rounded-3xl border border-white/5 bg-zinc-900/60 p-6 space-y-4">
+            <div className="flex justify-between">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-8 w-8 rounded-xl" />
+            </div>
+            <Skeleton className="h-10 w-20" />
           </div>
         ))}
       </div>
-      
-      {/* Table Skeleton */}
-      <div className="bg-[#111113] border border-white/5 rounded-2xl overflow-hidden">
-        <div className="grid grid-cols-[1fr_1fr_auto_auto_auto] text-xs font-mono text-white/30 uppercase tracking-wider px-6 py-3 border-b border-white/5">
-          <span>Recruiter</span>
-          <span>Company</span>
-          <span className="text-right pr-4">Score</span>
-          <span className="text-right pr-4">Date</span>
-          <span />
+      {/* Table rows */}
+      <div className="rounded-3xl border border-white/5 bg-zinc-900/60 overflow-hidden">
+        <div className="px-6 py-4 border-b border-white/5">
+          <Skeleton className="h-3 w-48" />
         </div>
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="grid grid-cols-[1fr_1fr_auto_auto_auto] items-center px-6 py-4 border-b border-white/5">
-            <div className="h-4 bg-white/10 rounded w-32 animate-pulse" />
-            <div className="h-4 bg-white/10 rounded w-24 animate-pulse" />
-            <div className="h-6 bg-white/10 rounded w-12 animate-pulse" />
-            <div className="h-4 bg-white/10 rounded w-16 animate-pulse" />
-            <div className="h-4 bg-white/10 rounded w-12 animate-pulse" />
+          <div key={i} className="px-6 py-4 border-b border-white/5 flex items-center gap-4">
+            <Skeleton className="h-4 w-4 rounded-full flex-shrink-0" />
+            <Skeleton className="h-4 flex-1" />
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-6 w-16 rounded-full" />
+            <Skeleton className="h-4 w-20" />
           </div>
         ))}
       </div>
@@ -104,40 +148,29 @@ function LoadingSkeleton() {
   );
 }
 
-function ErrorBanner({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <XCircle className="w-5 h-5 text-red-400" />
-          <div>
-            <p className="text-red-400 font-mono font-semibold">Failed to load dashboard data</p>
-            <p className="text-red-300/70 font-mono text-sm">Please check your connection and try again.</p>
-          </div>
-        </div>
-        <button
-          onClick={onRetry}
-          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-mono text-sm rounded-lg transition-colors"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Retry
-        </button>
-      </div>
-    </div>
-  );
-}
-
+/** Empty state when no assessments exist */
 function EmptyState() {
   return (
-    <div className="text-center py-16">
-      <div className="w-16 h-16 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <Shield className="w-8 h-8 text-red-400" />
+    <div className="rounded-3xl border border-white/5 bg-zinc-900/40 py-24 flex flex-col items-center gap-5 text-center">
+      <div className="relative">
+        <div className="w-16 h-16 rounded-2xl bg-zinc-800 flex items-center justify-center">
+          <Shield className="w-8 h-8 text-white/20" />
+        </div>
+        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+          <span className="text-red-400 text-xs font-mono font-bold">0</span>
+        </div>
       </div>
-      <h3 className="text-xl font-mono font-semibold text-white mb-2">No assessments yet</h3>
-      <p className="text-white/40 font-mono text-sm mb-6">Start by running your first security assessment</p>
+      <div>
+        <h3 className="text-white font-mono font-semibold text-base">
+          No assessments yet
+        </h3>
+        <p className="text-white/30 font-mono text-sm mt-1 max-w-[280px]">
+          Run your first TrustHire assessment to see stats appear here.
+        </p>
+      </div>
       <Link
         href="/assess"
-        className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-mono text-sm rounded-xl transition-colors"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-mono font-semibold transition-colors duration-150"
       >
         <PlusCircle className="w-4 h-4" />
         Start Assessment
@@ -146,222 +179,227 @@ function EmptyState() {
   );
 }
 
+/** Error banner */
+function ErrorBanner({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="rounded-2xl border border-red-500/20 bg-red-950/20 px-5 py-4 flex items-center gap-3">
+      <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+      <span className="text-red-300 text-sm font-mono flex-1">
+        Failed to load dashboard data.
+      </span>
+      <button
+        onClick={onRetry}
+        className="text-xs font-mono text-red-400 hover:text-red-300 underline transition-colors"
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
+
+// ─── Main Dashboard page ──────────────────────────────────────────────────────
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<string>('all');
+  const [error, setError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const load = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    setError(false);
+
     try {
       const res = await fetch('/api/dashboard/stats');
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
-      const data = await res.json();
+      if (!res.ok) throw new Error('Non-2xx response');
+      const data: DashboardStats = await res.json();
       setStats(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      console.error('Dashboard fetch error:', err);
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { load(); }, [load]);
 
-  const assessments = stats?.recentAssessments ?? [];
+  const recent: RecentAssessment[] = stats?.recent ?? [];
 
-  const filtered = assessments.filter(a => {
-    const matchSearch =
-      search === '' ||
-      a.recruiterName.toLowerCase().includes(search.toLowerCase()) ||
-      a.company.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'all' || a.verdict === filter;
-    return matchSearch && matchFilter;
-  });
-
-  const total = stats?.totalAssessments ?? 0;
-  const critical = stats?.verdictCounts.critical ?? 0;
-  const avgScore = stats?.averageScore ?? 0;
-  const safe = stats?.verdictCounts.low_risk ?? 0;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0B] text-white">
-        <div className="max-w-6xl mx-auto px-6 py-10">
-          <LoadingSkeleton />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0B] text-white">
-        <div className="max-w-6xl mx-auto px-6 py-10">
-          <ErrorBanner onRetry={fetchData} />
-        </div>
-      </div>
-    );
-  }
-
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white">
-      <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-8">
+
+        {/* ── Page header ─────────────────────────────────────────────────── */}
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-mono font-bold">Assessment Dashboard</h1>
-            <p className="text-white/40 text-sm font-mono mt-1">Real-time security assessment statistics</p>
-          </div>
-          <button
-            onClick={fetchData}
-            disabled={loading}
-            className="flex items-center gap-2 text-sm font-mono text-white/40 hover:text-white border border-white/10 px-3 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-          </button>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard 
-            icon={BarChart2} 
-            label="Total Assessments" 
-            value={total.toLocaleString()} 
-            sub="all time" 
-          />
-          <StatCard 
-            icon={Target} 
-            label="Avg Score" 
-            value={avgScore} 
-            sub="global average" 
-            color={avgScore >= 70 ? 'text-green-400' : avgScore >= 45 ? 'text-yellow-400' : 'text-red-400'} 
-          />
-          <StatCard 
-            icon={XCircle} 
-            label="Critical" 
-            value={critical} 
-            sub="total critical" 
-            color={critical > 0 ? 'text-red-400' : 'text-white'}
-            glow={critical > 0}
-          />
-          <StatCard 
-            icon={CheckCircle} 
-            label="Low Risk" 
-            value={safe} 
-            sub="total safe" 
-            color={safe > 0 ? 'text-green-400' : 'text-white'} 
-          />
-        </div>
-
-        {/* Additional Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatCard 
-            icon={AlertTriangle} 
-            label="High Risk" 
-            value={stats?.verdictCounts.high_risk ?? 0} 
-            sub="total high risk" 
-            color="text-orange-400" 
-          />
-          <StatCard 
-            icon={TrendingUp} 
-            label="Caution" 
-            value={stats?.verdictCounts.caution ?? 0} 
-            sub="total caution" 
-            color="text-yellow-400" 
-          />
-          <StatCard 
-            icon={Users} 
-            label="Recent" 
-            value={assessments.length} 
-            sub="last 10 assessments" 
-            color="text-blue-400" 
-          />
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-            <input
-              type="text"
-              placeholder="Search by recruiter or company..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full bg-[#111113] border border-white/10 rounded-lg pl-9 pr-4 py-2.5 text-sm font-mono text-white placeholder-white/20 focus:outline-none focus:border-red-500/50"
-            />
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {(['all', 'critical', 'high_risk', 'caution', 'low_risk'] as const).map(v => (
-              <button
-                key={v}
-                onClick={() => setFilter(v)}
-                className={`px-3 py-2 rounded-lg text-xs font-mono transition-colors border ${
-                  filter === v
-                    ? 'bg-red-600 border-red-500 text-white'
-                    : 'bg-[#111113] border-white/10 text-white/40 hover:text-white/70'
-                }`}
-              >
-                {v === 'all' ? 'All' : verdictConfig(v).label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="bg-[#111113] border border-white/5 rounded-2xl overflow-hidden">
-          <div className="grid grid-cols-[1fr_1fr_auto_auto_auto] text-xs font-mono text-white/30 uppercase tracking-wider px-6 py-3 border-b border-white/5">
-            <span>Recruiter</span>
-            <span>Company</span>
-            <span className="text-right pr-4">Score</span>
-            <span className="text-right pr-4">Date</span>
-            <span />
-          </div>
-
-          {filtered.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <div className="divide-y divide-white/5">
-              {filtered.map(a => {
-                const cfg = verdictConfig(a.verdict);
-                return (
-                  <div key={a.id} className="grid grid-cols-[1fr_1fr_auto_auto_auto] items-center px-6 py-4 hover:bg-white/3 transition-colors">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
-                      <span className="font-mono text-sm text-white truncate">{a.recruiterName}</span>
-                    </div>
-                    <span className="font-mono text-sm text-white/50 truncate">{a.company}</span>
-                    <div className="pr-4">
-                      <ScoreBadge score={a.finalScore} verdict={a.verdict} />
-                    </div>
-                    <span className="font-mono text-xs text-white/30 pr-4 whitespace-nowrap">
-                      {new Date(a.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </span>
-                    <Link
-                      href={`/results/${a.id}`}
-                      className="flex items-center gap-1 text-xs font-mono text-white/30 hover:text-red-400 transition-colors"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> View
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        {total > 10 && (
-          <div className="text-center py-4">
-            <p className="text-xs font-mono text-white/30">
-              Showing 10 of {total.toLocaleString()} total assessments
+            <h1 className="text-2xl font-mono font-bold tracking-tight">
+              Assessment Dashboard
+            </h1>
+            <p className="text-white/35 text-sm font-mono mt-1">
+              Security overview · all-time statistics
             </p>
           </div>
+
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {/* New assessment CTA */}
+            <Link
+              href="/assess"
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white/70 hover:text-white text-sm font-mono border border-white/8 transition-colors duration-150"
+            >
+              <PlusCircle className="w-4 h-4" />
+              New
+            </Link>
+
+            {/* Refresh button */}
+            <button
+              onClick={() => load(true)}
+              disabled={refreshing || loading}
+              aria-label="Refresh dashboard"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-mono border border-white/8 bg-zinc-900 text-white/40 hover:text-white hover:border-white/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Error banner ─────────────────────────────────────────────────── */}
+        {error && <ErrorBanner onRetry={() => load()} />}
+
+        {/* ── Loading skeleton / real content ─────────────────────────────── */}
+        {loading ? (
+          <LoadingSkeleton />
+        ) : (
+          <>
+            {/* ── Stat cards ─────────────────────────────────────────────── */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard
+                icon={BarChart2}
+                label="Total"
+                value={stats?.total ?? 0}
+                sub="assessments run"
+              />
+              <StatCard
+                icon={Activity}
+                label="Avg Score"
+                value={stats?.avgScore ?? 0}
+                sub="global average"
+                color={scoreColor(stats?.avgScore ?? 0)}
+              />
+              <StatCard
+                icon={XCircle}
+                label="Critical"
+                value={stats?.byVerdict.critical ?? 0}
+                sub="high-danger flags"
+                accent={(stats?.byVerdict.critical ?? 0) > 0}
+                color={(stats?.byVerdict.critical ?? 0) > 0 ? 'text-red-400' : 'text-white'}
+              />
+              <StatCard
+                icon={CheckCircle}
+                label="Low Risk"
+                value={stats?.byVerdict.low_risk ?? 0}
+                sub="safe recruiters"
+                color={(stats?.byVerdict.low_risk ?? 0) > 0 ? 'text-emerald-400' : 'text-white'}
+              />
+            </div>
+
+            {/* ── Recent assessments table ────────────────────────────────── */}
+            {recent.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <div className="rounded-3xl border border-white/5 bg-zinc-900/50 overflow-hidden">
+                {/* Table header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+                  <span className="text-white/40 text-xs font-mono uppercase tracking-widest">
+                    Recent Assessments
+                  </span>
+                  <span className="text-white/20 text-xs font-mono">
+                    last {recent.length}
+                  </span>
+                </div>
+
+                {/* Column headers – hidden on mobile, visible md+ */}
+                <div className="hidden md:grid grid-cols-[1fr_1fr_100px_110px_60px] text-[11px] font-mono text-white/20 uppercase tracking-widest px-6 py-2 border-b border-white/5">
+                  <span>Recruiter</span>
+                  <span>Company</span>
+                  <span className="text-right">Score</span>
+                  <span className="text-right">Date</span>
+                  <span />
+                </div>
+
+                {/* Rows */}
+                <div className="divide-y divide-white/5">
+                  {recent.map((a) => {
+                    const cfg = verdictCfg(a.verdict);
+                    const date = new Date(a.createdAt).toLocaleDateString('ro-RO', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    });
+
+                    return (
+                      <div
+                        key={a.id}
+                        className="group flex flex-col gap-2 md:grid md:grid-cols-[1fr_1fr_100px_110px_60px] md:items-center px-6 py-4 hover:bg-white/[0.02] transition-colors duration-150"
+                      >
+                        {/* Recruiter */}
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
+                          <span className="font-mono text-sm text-white truncate">
+                            {a.recruiterName}
+                          </span>
+                        </div>
+
+                        {/* Company */}
+                        <span className="font-mono text-sm text-white/45 truncate pl-[18px] md:pl-0">
+                          {a.company}
+                        </span>
+
+                        {/* Score badge */}
+                        <div className="flex md:justify-end pl-[18px] md:pl-0">
+                          <VerdictBadge score={a.finalScore} verdict={a.verdict} />
+                        </div>
+
+                        {/* Date */}
+                        <span className="font-mono text-xs text-white/25 pl-[18px] md:pl-0 md:text-right">
+                          {date}
+                        </span>
+
+                        {/* View link */}
+                        <div className="flex md:justify-end pl-[18px] md:pl-0">
+                          <Link
+                            href={`/results/${a.id}`}
+                            className="inline-flex items-center gap-1 text-xs font-mono text-white/25 hover:text-red-400 group-hover:text-white/40 transition-colors duration-150"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>View</span>
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Footer */}
+                {(stats?.total ?? 0) > 10 && (
+                  <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between">
+                    <span className="text-white/20 text-xs font-mono">
+                      Showing 10 of {stats?.total} total assessments
+                    </span>
+                    <Link
+                      href="/assess"
+                      className="text-xs font-mono text-red-400/70 hover:text-red-400 transition-colors duration-150"
+                    >
+                      New assessment →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

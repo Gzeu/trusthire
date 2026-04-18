@@ -1,67 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { prisma } from '@/lib/prisma';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
-interface DashboardStats {
-  totalAssessments: number;
-  averageScore: number;
-  verdictCounts: {
-    low_risk: number;
-    caution: number;
-    high_risk: number;
-    critical: number;
-  };
-  recentAssessments: Array<{
-    id: string;
-    createdAt: string;
-    recruiterName: string;
-    company: string;
-    finalScore: number;
-    verdict: string;
-    shareToken: string;
-  }>;
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface RecentAssessment {
+  id: string;
+  createdAt: string;
+  recruiterName: string;
+  company: string;
+  finalScore: number;
+  verdict: string;
+  shareToken: string;
 }
 
-export async function GET(request: NextRequest) {
-  // Rate limiting
-  const clientIp = getClientIp(request);
-  const isAllowed = await checkRateLimit(clientIp, 30, 60 * 1000); // 30 requests per minute
-  if (!isAllowed) {
-    return NextResponse.json(
-      { error: 'Rate limit exceeded' },
-      { status: 429 }
-    );
+export interface DashboardStats {
+  total: number;
+  avgScore: number;
+  byVerdict: {
+    critical: number;
+    high_risk: number;
+    caution: number;
+    low_risk: number;
+  };
+  recent: RecentAssessment[];
+}
+
+// ─── GET /api/dashboard/stats ─────────────────────────────────────────────────
+
+export async function GET(req: NextRequest) {
+  // Rate-limit: 30 requests per minute per IP
+  const ip = getClientIp(req);
+  if (!checkRateLimit(ip, 30, 60_000)) {
+    return NextResponse.json({ error: 'Rate limit exceeded.' }, { status: 429 });
   }
 
   try {
-    // Execute all queries in parallel for better performance
-    const [
-      totalAssessments,
-      scoreData,
-      verdictCounts,
-      recentAssessments
-    ] = await Promise.all([
-      // Total assessments count
+    // Run all DB queries in parallel for performance
+    const [total, allScores, verdictCounts, recent] = await Promise.all([
+      // Total number of assessments
       prisma.assessment.count(),
-      
-      // All scores for calculating global average
+
+      // All scores (for global average)
       prisma.assessment.findMany({
-        select: {
-          finalScore: true
-        }
+        select: { finalScore: true },
       }),
-      
-      // Verdict distribution
+
+      // Group-by verdict counts
       prisma.assessment.groupBy({
-        by: ['verdict']
+        by: ['verdict'],
+        _count: { verdict: true },
       }),
-      
-      // Last 10 assessments
+
+      // Last 10 assessments, newest first
       prisma.assessment.findMany({
+        orderBy: { createdAt: 'desc' },
         take: 10,
-        orderBy: {
-          createdAt: 'desc'
-        },
         select: {
           id: true,
           createdAt: true,
@@ -69,49 +63,41 @@ export async function GET(request: NextRequest) {
           company: true,
           finalScore: true,
           verdict: true,
-          shareToken: true
-        }
-      })
+          shareToken: true,
+        },
+      }),
     ]);
 
-    // Calculate global average score
-    const averageScore = scoreData.length > 0
-      ? Math.round(
-          scoreData.reduce((sum: number, assessment: any) => sum + assessment.finalScore, 0) / 
-          scoreData.length
-        )
-      : 0;
+    // Compute global average score
+    const avgScore =
+      allScores.length > 0
+        ? Math.round(
+            allScores.reduce((sum, a) => sum + a.finalScore, 0) / allScores.length
+          )
+        : 0;
 
-    // Initialize verdict counts with defaults
-    const verdictCountsMap = {
-      low_risk: 0,
-      caution: 0,
-      high_risk: 0,
-      critical: 0
-    };
-
-    // Populate verdict counts from groupBy result
-    verdictCounts.forEach((item: any) => {
-      if (item.verdict in verdictCountsMap) {
-        verdictCountsMap[item.verdict as keyof typeof verdictCountsMap] = item._count;
-      }
-    });
+    // Map groupBy result into a keyed object with defaults
+    const byVerdict = { critical: 0, high_risk: 0, caution: 0, low_risk: 0 };
+    for (const row of verdictCounts) {
+      const key = row.verdict as keyof typeof byVerdict;
+      if (key in byVerdict) byVerdict[key] = row._count.verdict;
+    }
 
     const stats: DashboardStats = {
-      totalAssessments,
-      averageScore,
-      verdictCounts: verdictCountsMap,
-      recentAssessments: recentAssessments.map((assessment: any) => ({
-        ...assessment,
-        createdAt: assessment.createdAt.toISOString()
-      }))
+      total,
+      avgScore,
+      byVerdict,
+      recent: recent.map((a) => ({
+        ...a,
+        createdAt: a.createdAt.toISOString(),
+      })),
     };
 
     return NextResponse.json(stats);
-  } catch (error) {
-    console.error('Dashboard stats error:', error);
+  } catch (err) {
+    console.error('[dashboard/stats] DB error:', err);
     return NextResponse.json(
-      { error: 'Failed to fetch dashboard statistics' },
+      { error: 'Failed to load dashboard stats.' },
       { status: 500 }
     );
   }
