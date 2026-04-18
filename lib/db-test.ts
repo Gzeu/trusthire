@@ -31,7 +31,7 @@ export async function testDatabaseConnection() {
     return { 
       success: true, 
       message: 'Database connection successful',
-      tables: tables.rows.map(row => row.name)
+      tables: tables.rows.map((row: { name: string }) => row.name)
     };
   } catch (error) {
     console.error('Database connection failed:', error);
