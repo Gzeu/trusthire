@@ -23,170 +23,164 @@ function checkRateLimit(ip: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
-  if (!checkRateLimit(ip)) {
-    return NextResponse.json({ error: 'Rate limit exceeded. Please wait a minute.' }, { status: 429 });
-  }
-
-  let body: AssessmentInput;
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-  }
+    const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json({ error: 'Rate limit exceeded. Please wait a minute.' }, { status: 429 });
+    }
 
-  if (!body.recruiter?.name || !body.recruiter?.claimedCompany) {
-    return NextResponse.json({ error: 'Name and company are required' }, { status: 400 });
-  }
+    let body: AssessmentInput;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
 
-  // Run repo scans in parallel
-  const repoScans = await Promise.all(
-    (body.artifacts ?? []).filter((a) => a.type === 'github').map((a) => scanGithubRepo(a.url))
-  );
+    if (!body.recruiter?.name || !body.recruiter?.claimedCompany) {
+      return NextResponse.json({ error: 'Name and company are required' }, { status: 400 });
+    }
 
-  // Run domain checks in parallel
-  const domainChecks = await Promise.all(
-    (body.artifacts ?? [])
+    // Run repo scans safely — never let a single failure crash the whole request
+    const repoScanResults = await Promise.allSettled(
+      (body.artifacts ?? []).filter((a) => a.type === 'github').map((a) => scanGithubRepo(a.url))
+    );
+    const repoScans = repoScanResults.map((r) =>
+      r.status === 'fulfilled' ? r.value : { repoUrl: '', error: 'Scan failed', files: [], suspiciousFiles: [] }
+    );
+
+    // Run domain checks safely
+    const domainTargets = (body.artifacts ?? [])
       .filter((a) => a.type !== 'github')
-      .map((a) => checkDomainSafety(a.url))
+      .map((a) => a.url)
       .concat(
         body.recruiter.emailReceived
-          ? [checkDomainSafety(body.recruiter.emailReceived.split('@')[1] ?? '')]
+          ? [body.recruiter.emailReceived.split('@')[1] ?? '']
           : []
-      )
-  );
-
-  // Calculate scores and generate full assessment
-  const scores = await calculateScores(body, repoScans, domainChecks);
-  const finalScore = scores.identityConfidence + scores.employerLegitimacy + scores.processLegitimacy + scores.technicalSafety;
-  const verdict = getVerdict(finalScore);
-  const redFlags = generateRedFlags(body, repoScans, domainChecks);
-  const greenSignals = generateGreenSignals(body, repoScans, domainChecks);
-  const missingEvidence = generateMissingEvidence(body);
-  const workflowAdvice = generateWorkflowAdvice(verdict, redFlags);
-
-  // Enhanced AI Analysis with Groq
-  let aiAnalysis = null;
-  const groqApiKey = process.env.GROQ_API_KEY;
-  if (groqApiKey) {
-    try {
-      // Analyze profile data
-      const profileAnalysis = await analyzeProfileWithGroq({
-        name: body.recruiter.name,
-        company: body.recruiter.claimedCompany,
-        jobTitle: body.recruiter.jobTitle,
-        email: body.recruiter.emailReceived,
-        messages: body.recruiter.recruiterMessages ? [body.recruiter.recruiterMessages] : [],
-        jobDescription: body.job.jobDescription
-      });
-
-      // Analyze code from repositories if available
-      const codeAnalyses = await Promise.all(
-        repoScans.map(async (scan) => {
-          if (scan.repoUrl) {
-            try {
-              return await analyzeCodeWithGroq(
-                JSON.stringify(scan, null, 2),
-                `Repository: ${scan.repoUrl}`
-              );
-            } catch (error) {
-              console.error(`Code analysis failed for ${scan.repoUrl}:`, error);
-              return { suspiciousPatterns: [], recommendations: [] };
-            }
-          }
-          return { suspiciousPatterns: [], recommendations: [] };
-        })
       );
 
-      // Generate comprehensive risk assessment
-      aiAnalysis = await generateRiskAssessmentWithGroq({
-        profile: body.recruiter,
-        job: body.job,
-        code: repoScans,
-        domains: domainChecks,
-        existingFlags: redFlags
-      });
+    const domainCheckResults = await Promise.allSettled(
+      domainTargets.map((url) => checkDomainSafety(url))
+    );
+    const domainChecks = domainCheckResults.map((r) =>
+      r.status === 'fulfilled' ? r.value : { safe: true, vtReputation: 0, vtMalicious: 0, vtCategories: [], domainAgeYears: null }
+    );
 
-      // Normalize AI analysis for consistent frontend handling
-      aiAnalysis = normalizeAiAnalysis(aiAnalysis);
+    // Calculate scores and generate full assessment
+    const scores = await calculateScores(body, repoScans, domainChecks);
+    const finalScore = scores.identityConfidence + scores.employerLegitimacy + scores.processLegitimacy + scores.technicalSafety;
+    const verdict = getVerdict(finalScore);
+    const redFlags = generateRedFlags(body, repoScans, domainChecks);
+    const greenSignals = generateGreenSignals(body, repoScans, domainChecks);
+    const missingEvidence = generateMissingEvidence(body);
+    const workflowAdvice = generateWorkflowAdvice(verdict, redFlags);
 
-      // Add AI insights to existing data
-      if (profileAnalysis?.redFlags?.length > 0) {
-        redFlags.push(...profileAnalysis.redFlags.map((flag: any) => ({
-          category: 'identity' as const,
-          severity: 'warning' as const,
-          signal: 'AI Analysis',
-          explanation: flag,
-          recommendation: 'Review this finding carefully and verify independently'
-        })));
+    // Enhanced AI Analysis with Groq
+    let aiAnalysis = null;
+    const groqApiKey = process.env.GROQ_API_KEY;
+    if (groqApiKey) {
+      try {
+        const profileAnalysis = await analyzeProfileWithGroq({
+          name: body.recruiter.name,
+          company: body.recruiter.claimedCompany,
+          jobTitle: body.recruiter.jobTitle,
+          email: body.recruiter.emailReceived,
+          messages: body.recruiter.recruiterMessages ? [body.recruiter.recruiterMessages] : [],
+          jobDescription: body.job.jobDescription
+        });
+
+        const codeAnalyses = await Promise.allSettled(
+          repoScans.map(async (scan) => {
+            if (scan.repoUrl) {
+              return analyzeCodeWithGroq(JSON.stringify(scan, null, 2), `Repository: ${scan.repoUrl}`);
+            }
+            return { suspiciousPatterns: [], recommendations: [] };
+          })
+        );
+        const resolvedCodeAnalyses = codeAnalyses.map((r) =>
+          r.status === 'fulfilled' ? r.value : { suspiciousPatterns: [], recommendations: [] }
+        );
+
+        aiAnalysis = await generateRiskAssessmentWithGroq({
+          profile: body.recruiter,
+          job: body.job,
+          code: repoScans,
+          domains: domainChecks,
+          existingFlags: redFlags
+        });
+
+        aiAnalysis = normalizeAiAnalysis(aiAnalysis);
+
+        if (profileAnalysis?.redFlags?.length > 0) {
+          redFlags.push(...profileAnalysis.redFlags.map((flag: any) => ({
+            category: 'identity' as const,
+            severity: 'warning' as const,
+            signal: 'AI Analysis',
+            explanation: flag,
+            recommendation: 'Review this finding carefully and verify independently'
+          })));
+        }
+
+        if (profileAnalysis?.greenFlags?.length > 0) {
+          greenSignals.push(...profileAnalysis.greenFlags);
+        }
+
+        const allCodeRecommendations = resolvedCodeAnalyses.flatMap((a) => a.recommendations ?? []);
+        if (allCodeRecommendations.length > 0) {
+          workflowAdvice.push(...allCodeRecommendations.slice(0, 3).map((rec) => ({
+            action: 'request_more_proof' as const,
+            priority: 'medium' as const,
+            description: rec
+          })));
+        }
+      } catch (error) {
+        console.error('Groq AI analysis failed:', error);
       }
-
-      if (profileAnalysis?.greenFlags?.length > 0) {
-        greenSignals.push(...profileAnalysis.greenFlags);
-      }
-
-      // Merge AI recommendations with workflow advice
-      if (codeAnalyses.some(analysis => analysis.recommendations.length > 0)) {
-        const allCodeRecommendations = codeAnalyses.flatMap(analysis => analysis.recommendations);
-        workflowAdvice.push(...allCodeRecommendations.slice(0, 3).map(rec => ({
-          action: 'request_more_proof' as const,
-          priority: 'medium' as const,
-          description: rec
-        })));
-      }
-
-    } catch (error) {
-      console.error('Groq AI analysis failed:', error);
-      // Continue without AI analysis - fallback to standard scoring
     }
-  }
 
-  // Create full assessment result for incident report
-  const assessmentResult = {
-    id: 'temp',
-    createdAt: new Date().toISOString(),
-    recruiterName: body.recruiter.name,
-    company: body.recruiter.claimedCompany,
-    finalScore,
-    verdict,
-    scores,
-    redFlags,
-    greenSignals,
-    missingEvidence,
-    workflowAdvice,
-    repoScans,
-    vtResults: domainChecks.map(dc => ({ 
-    url: '', 
-    domainResult: {
-      reputation: dc.vtReputation || 0,
-      malicious: dc.vtMalicious || 0,
-      suspicious: 0,
-      categories: dc.vtCategories || [],
-      creationDate: dc.domainAgeYears ? dc.domainAgeYears * 365 * 24 * 60 * 60 * 1000 : undefined,
-      country: undefined
-    }
-  })),
-    shareToken: 'temp',
-    aiAnalysis
-  };
+    // Create full assessment result for incident report
+    const assessmentResult = {
+      id: 'temp',
+      createdAt: new Date().toISOString(),
+      recruiterName: body.recruiter.name,
+      company: body.recruiter.claimedCompany,
+      finalScore,
+      verdict,
+      scores,
+      redFlags,
+      greenSignals,
+      missingEvidence,
+      workflowAdvice,
+      repoScans,
+      vtResults: domainChecks.map((dc) => ({
+        url: '',
+        domainResult: {
+          reputation: dc.vtReputation || 0,
+          malicious: dc.vtMalicious || 0,
+          suspicious: 0,
+          categories: dc.vtCategories || [],
+          creationDate: dc.domainAgeYears ? dc.domainAgeYears * 365 * 24 * 60 * 60 * 1000 : undefined,
+          country: undefined
+        }
+      })),
+      shareToken: 'temp',
+      aiAnalysis
+    };
 
-  // Generate enhanced incident report with AI insights
-  let incidentReport = generateIncidentReport(assessmentResult);
-  
-  // Add AI summary if available
-  if (aiAnalysis && aiAnalysis.summary && groqApiKey) {
-    try {
-      const aiSummary = await generateReportSummaryWithGroq({
-        scores,
-        flags: redFlags,
-        signals: greenSignals,
-        missing: missingEvidence,
-        advice: workflowAdvice,
-        recruiterName: body.recruiter.name,
-        company: body.recruiter.claimedCompany
-      });
-      
-      incidentReport = `
+    let incidentReport = generateIncidentReport(assessmentResult);
+
+    if (aiAnalysis && aiAnalysis.summary && groqApiKey) {
+      try {
+        const aiSummary = await generateReportSummaryWithGroq({
+          scores,
+          flags: redFlags,
+          signals: greenSignals,
+          missing: missingEvidence,
+          advice: workflowAdvice,
+          recruiterName: body.recruiter.name,
+          company: body.recruiter.claimedCompany
+        });
+
+        incidentReport = `
 ${incidentReport}
 
 === AI-ENHANCED ANALYSIS ===
@@ -202,53 +196,62 @@ ${aiAnalysis.summary?.keyFindings?.map((finding: string) => `  - ${finding}`).jo
 
 === AI RECOMMENDED NEXT STEPS ===
 ${aiAnalysis.summary?.nextSteps?.map((step: string) => `  1. ${step}`).join('\n') || '  - No specific recommendations'}
-      `.trim();
-    } catch (error) {
-      console.error('Failed to generate AI summary:', error);
+        `.trim();
+      } catch (error) {
+        console.error('Failed to generate AI summary:', error);
+      }
     }
-  }
 
-  // Save to DB
-  let savedId: string;
-  let shareToken: string;
-  try {
-    const saved = await prisma.assessment.create({
-      data: {
-        sessionId: `session_${Date.now()}`,
-        recruiterName: body.recruiter.name,
-        company: body.recruiter.claimedCompany,
-        finalScore: finalScore,
-        verdict: verdict,
-        inputData: body as object,
-        scoreData: scores as object,
-        redFlags: redFlags as object,
-        vtResults: domainChecks as object,
-        repoScans: repoScans as object,
-      },
+    // Save to DB
+    let savedId: string;
+    let shareToken: string;
+    try {
+      const saved = await prisma.assessment.create({
+        data: {
+          sessionId: `session_${Date.now()}`,
+          recruiterName: body.recruiter.name,
+          company: body.recruiter.claimedCompany,
+          finalScore: finalScore,
+          verdict: verdict,
+          inputData: body as object,
+          scoreData: scores as object,
+          redFlags: redFlags as object,
+          vtResults: domainChecks as object,
+          repoScans: repoScans as object,
+        },
+      });
+      savedId = saved.id;
+      shareToken = saved.shareToken;
+    } catch {
+      savedId = `local_${Date.now()}`;
+      shareToken = `share_${Math.random().toString(36).slice(2)}`;
+    }
+
+    return NextResponse.json({
+      id: savedId,
+      shareToken,
+      createdAt: new Date().toISOString(),
+      recruiterName: body.recruiter.name,
+      company: body.recruiter.claimedCompany,
+      scores,
+      finalScore,
+      verdict,
+      redFlags,
+      greenSignals,
+      missingEvidence,
+      workflowAdvice,
+      repoScans,
+      domainChecks,
+      incidentReport,
+      aiAnalysis,
     });
-    savedId = saved.id;
-    shareToken = saved.shareToken;
-  } catch {
-    savedId = `local_${Date.now()}`;
-    shareToken = `share_${Math.random().toString(36).slice(2)}`;
-  }
 
-  return NextResponse.json({
-    id: savedId,
-    shareToken,
-    createdAt: new Date().toISOString(),
-    recruiterName: body.recruiter.name,
-    company: body.recruiter.claimedCompany,
-    scores: scores,
-    finalScore: finalScore,
-    verdict: verdict,
-    redFlags: redFlags,
-    greenSignals: greenSignals,
-    missingEvidence: missingEvidence,
-    workflowAdvice: workflowAdvice,
-    repoScans,
-    domainChecks,
-    incidentReport,
-    aiAnalysis,
-  });
+  } catch (error) {
+    // Top-level safety net — always return valid JSON, never an empty 500
+    console.error('Assessment create fatal error:', error);
+    return NextResponse.json(
+      { error: 'Assessment failed. Please try again.', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
 }
