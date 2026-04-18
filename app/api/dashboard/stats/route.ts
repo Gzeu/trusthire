@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
     const avgScore =
       allScores.length > 0
         ? Math.round(
-            allScores.reduce((sum, a) => sum + a.finalScore, 0) / allScores.length
+            allScores.reduce((sum: number, a: any) => sum + a.finalScore, 0) / allScores.length
           )
         : 0;
 
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
       total,
       avgScore,
       byVerdict,
-      recent: recent.map((a) => ({
+      recent: recent.map((a: any) => ({
         ...a,
         createdAt: a.createdAt.toISOString(),
       })),
