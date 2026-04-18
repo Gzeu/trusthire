@@ -3,6 +3,7 @@ import { RepoScanResult, PatternMatch } from '@/types';
 const LIFECYCLE_SCRIPTS = ['postinstall', 'preinstall', 'prepare', 'install', 'prepack', 'postpack'];
 
 const CODE_PATTERNS: Array<{ name: string; regex: RegExp; severity: PatternMatch['severity'] }> = [
+  // Critical patterns - immediate security threats
   { name: 'eval_execution', regex: /eval\s*\(/, severity: 'critical' },
   { name: 'new_function', regex: /new\s+Function\s*\(/, severity: 'critical' },
   { name: 'child_process_exec', regex: /child_process[\s\S]{0,120}exec(?:Sync)?\s*\(/, severity: 'critical' },
@@ -15,15 +16,57 @@ const CODE_PATTERNS: Array<{ name: string; regex: RegExp; severity: PatternMatch
   { name: 'powershell_download', regex: /(Invoke-WebRequest|iwr)[\s\S]{0,120}(iex|Invoke-Expression)/i, severity: 'critical' },
   { name: 'discord_webhook', regex: /discord(?:app)?\.com\/api\/webhooks\//, severity: 'critical' },
   { name: 'telegram_exfil', regex: /api\.telegram\.org\//, severity: 'high' },
+  
+  // Cryptocurrency and wallet patterns
+  { name: 'wallet_keyword_cluster', regex: /(seed phrase|private key|mnemonic|wallet connect|walletconnect)/i, severity: 'high' },
+  { name: 'crypto_library_import', regex: /require\s*\(\s*['"](?:ethers|web3|web3js|walletconnect|metamask)/i, severity: 'high' },
+  { name: 'crypto_wallet_operations', regex: /(ethers|web3)\.(sendTransaction|transfer|sign|connect)/i, severity: 'critical' },
+  { name: 'metamask_provider', regex: /window\.ethereum|ethereum\.request/i, severity: 'high' },
+  
+  // Obfuscation patterns
   { name: 'base64_decode_node', regex: /Buffer\.from\s*\([^)]*,\s*['"]base64['"]\)/, severity: 'high' },
   { name: 'atob_decode', regex: /atob\s*\(/, severity: 'high' },
   { name: 'dynamic_require', regex: /require\s*\(\s*[^'"`a-zA-Z]/, severity: 'high' },
   { name: 'hex_obfuscation', regex: /_0x[a-f0-9]{4,}/i, severity: 'high' },
-  { name: 'wallet_keyword_cluster', regex: /(seed phrase|private key|mnemonic|wallet connect|walletconnect)/i, severity: 'high' },
-  { name: 'process_env_generic', regex: /process\.env\.[A-Z_]{4,}/, severity: 'medium' },
   { name: 'obfuscated_hex', regex: /(\\x[0-9a-fA-F]{2}){4,}/, severity: 'medium' },
+  { name: 'unicode_escape', regex: /\\u[0-9a-fA-F]{4}/i, severity: 'medium' },
+  
+  // Network and data exfiltration
+  { name: 'http_request_to_external', regex: /(fetch|axios|request|got)\s*\(\s*['"]https?:\/\/[^'"\s]+/, severity: 'medium' },
+  { name: 'websocket_connection', regex: /new\s+WebSocket\s*\(/i, severity: 'medium' },
+  { name: 'dns_lookup', regex: /dns\.lookup|resolve\(/, severity: 'medium' },
+  
+  // File system and system access
+  { name: 'file_system_read', regex: /fs\.(readFile|readFileSync|readdir)/, severity: 'high' },
+  { name: 'file_system_write', regex: /fs\.(writeFile|writeFileSync|appendFile|mkdir)/, severity: 'high' },
+  { name: 'file_system_delete', regex: /fs\.(unlink|rm|rmdir)/, severity: 'critical' },
+  { name: 'system_info_access', regex: /os\.(userInfo|hostname|platform|arch|release)/, severity: 'medium' },
+  
+  // Process and environment manipulation
+  { name: 'process_env_generic', regex: /process\.env\.[A-Z_]{4,}/, severity: 'medium' },
+  { name: 'process_exit', regex: /process\.exit\s*\(/, severity: 'medium' },
+  { name: 'child_process_fork', regex: /child_process\.fork/, severity: 'high' },
+  
+  // Code quality and suspicious patterns
+  { name: 'minified_or_packed_payload', regex: /^.{4000,}$/m, severity: 'high' },
   { name: 'long_single_line_payload', regex: /^.{800,}$/m, severity: 'medium' },
+  { name: 'excessive_single_char_vars', regex: /\b(?:const|let|var)\s+[a-zA-Z]\s*=/g, severity: 'medium' },
   { name: 'hardcoded_url', regex: /https?:\/\/[^'"\s]{30,}/, severity: 'low' },
+  { name: 'hardcoded_credentials', regex: /(?:password|secret|token|key)\s*[:=]\s*['"][^'"]{8,}['"]/i, severity: 'critical' },
+  
+  // Advanced obfuscation
+  { name: 'string_split_and_join', regex: /['"][^'"]{20,}['"]\s*\.\s*split\s*\([^)]*\)\s*\.\s*join\s*\(/, severity: 'high' },
+  { name: 'char_code_obfuscation', regex: /String\.fromCharCode\s*\(/, severity: 'high' },
+  { name: 'array_map_char_codes', regex: /\.map\s*\(\s*[^)]*=>\s*String\.fromCharCode/, severity: 'high' },
+  
+  // Suspicious imports and dependencies
+  { name: 'suspicious_crypto_import', regex: /require\s*\(\s*['"]crypto['"]\s*\)\s*\.\s*(createCipher|createDecipher)/, severity: 'high' },
+  { name: 'net_module_socket', regex: /net\.(createServer|createConnection|Socket)/, severity: 'medium' },
+  { name: 'http_server_creation', regex: /http\.createServer\s*\(/, severity: 'medium' },
+  
+  // Timing and anti-analysis
+  { name: 'set_timeout_suspicious', regex: /setTimeout\s*\(\s*[^,]+,\s*[0-9]{3,}\s*\)/, severity: 'low' },
+  { name: 'set_interval_suspicious', regex: /setInterval\s*\(/, severity: 'low' },
 ];
 
 const FILES_TO_SCAN = [
@@ -58,27 +101,106 @@ function findLineNumber(code: string, regex: RegExp): number | undefined {
 }
 
 function scanCodePatterns(code: string, filename: string): PatternMatch[] {
-  const matches = CODE_PATTERNS
-    .filter((p) => {
-      const testRegex = new RegExp(p.regex.source, p.regex.flags);
-      return testRegex.test(code);
-    })
-    .map((p) => ({
-      pattern: p.name,
-      severity: p.severity,
+  const matches: PatternMatch[] = [];
+  
+  // Check each pattern and collect matches with line numbers
+  CODE_PATTERNS.forEach((p) => {
+    const testRegex = new RegExp(p.regex.source, p.regex.flags);
+    if (testRegex.test(code)) {
+      const line = findLineNumber(code, p.regex);
+      matches.push({
+        pattern: p.name,
+        severity: p.severity,
+        file: filename,
+        line,
+      });
+    }
+  });
+
+  // Additional code quality checks
+  const codeQualityChecks = [];
+
+  // Minified or packed payload detection
+  if (code.length > 4000 && !code.includes('\n')) {
+    codeQualityChecks.push({ 
+      pattern: 'minified_or_packed_payload', 
+      severity: 'high' as const, 
+      file: filename, 
+      line: 1 
+    });
+  }
+
+  // Excessive single character variables
+  const singleCharVars = code.match(/\b(?:const|let|var)\s+[a-zA-Z]\s*=/g) || [];
+  if (singleCharVars.length > 12) {
+    codeQualityChecks.push({ 
+      pattern: 'excessive_single_char_variables', 
+      severity: 'medium' as const, 
+      file: filename 
+    });
+  }
+
+  // Very long lines (potential obfuscation)
+  const lines = code.split('\n');
+  const longLines = lines.filter(line => line.length > 200);
+  if (longLines.length > 0) {
+    codeQualityChecks.push({ 
+      pattern: 'suspicious_long_lines', 
+      severity: 'medium' as const, 
       file: filename,
-      line: findLineNumber(code, p.regex),
-    }));
+      line: lines.findIndex(line => line.length > 200) + 1
+    });
+  }
 
-  const minifiedSuspicion = code.length > 4000 && !code.includes('\n')
-    ? [{ pattern: 'minified_or_packed_payload', severity: 'high' as const, file: filename, line: 1 }]
-    : [];
+  // High entropy detection (potential encryption/obfuscation)
+  const entropy = calculateStringEntropy(code);
+  if (entropy > 6) {
+    codeQualityChecks.push({ 
+      pattern: 'high_entropy_content', 
+      severity: 'high' as const, 
+      file: filename 
+    });
+  }
 
-  const excessiveSingleCharVars = (code.match(/\b(?:const|let|var)\s+[a-zA-Z]\s*=/g) || []).length > 12
-    ? [{ pattern: 'excessive_single_char_variables', severity: 'medium' as const, file: filename }]
-    : [];
+  // Suspicious comment patterns
+  const suspiciousComments = code.match(/\/\*[\s\S]{100,}?\*\/|\/\/[^\n]{50,}/g);
+  if (suspiciousComments && suspiciousComments.length > 0) {
+    codeQualityChecks.push({ 
+      pattern: 'suspicious_comments', 
+      severity: 'low' as const, 
+      file: filename 
+    });
+  }
 
-  return [...matches, ...minifiedSuspicion, ...excessiveSingleCharVars];
+  // Remove duplicates and combine all matches
+  const allMatches = [...matches, ...codeQualityChecks];
+  const uniqueMatches = allMatches.filter((match, index, arr) => {
+    return index === arr.findIndex((m) => 
+      m.pattern === match.pattern && 
+      m.file === match.file && 
+      m.line === match.line
+    );
+  });
+
+  return uniqueMatches;
+}
+
+// Helper function to calculate string entropy for obfuscation detection
+function calculateStringEntropy(str: string): number {
+  const freq: { [key: string]: number } = {};
+  let entropy = 0;
+  
+  for (const char of str) {
+    freq[char] = (freq[char] || 0) + 1;
+  }
+  
+  const len = str.length;
+  for (const char in freq) {
+    const p = freq[char] / len;
+    entropy -= p * Math.log2(p);
+  }
+  
+  return entropy;
 }
 
 function scanPackageJson(content: string): PatternMatch[] {

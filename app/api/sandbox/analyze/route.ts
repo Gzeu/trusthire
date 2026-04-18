@@ -20,8 +20,16 @@ export async function POST(req: NextRequest) {
         result = await SandboxService.executePatternDetection(data.code, data.language);
         break;
       
+      case 'email':
+        result = await SandboxService.analyzeEmail(data.email);
+        break;
+      
       default:
-        return NextResponse.json({ error: 'Invalid analysis type' }, { status: 400 });
+        return NextResponse.json({ 
+          error: 'Invalid analysis type', 
+          validTypes: ['repository', 'url', 'code', 'email'],
+          received: type 
+        }, { status: 400 });
     }
 
     return NextResponse.json({
@@ -36,7 +44,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Sandbox analysis failed', 
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
       }, 
       { status: 500 }
     );

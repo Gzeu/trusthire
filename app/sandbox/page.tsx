@@ -16,6 +16,7 @@ export default function SandboxPage() {
   const [repoUrl, setRepoUrl] = useState('');
   const [url, setUrl] = useState('');
   const [code, setCode] = useState('');
+  const [email, setEmail] = useState('');
 
   const analyzeRepository = async () => {
     if (!repoUrl) return;
@@ -77,6 +78,26 @@ export default function SandboxPage() {
     }
   };
 
+  const analyzeEmail = async () => {
+    if (!email) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch('/api/sandbox/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'email', data: { email } })
+      });
+      
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -113,7 +134,7 @@ export default function SandboxPage() {
         </div>
 
         {/* Analysis Tools */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Repository Analysis */}
           <div className="bg-white/5 border border-white/10 rounded-lg p-6">
             <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -179,6 +200,29 @@ export default function SandboxPage() {
             >
               <Play className="w-4 h-4" />
               Execute Code
+            </button>
+          </div>
+
+          {/* Email Analysis */}
+          <div className="bg-white/5 border border-white/10 rounded-lg p-6">
+            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-yellow-400" />
+              Email Analysis
+            </h3>
+            <input
+              type="email"
+              placeholder="Recruiter email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 mb-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400"
+            />
+            <button
+              onClick={analyzeEmail}
+              disabled={loading || !email}
+              className="w-full bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-600 text-white rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-colors"
+            >
+              <Play className="w-4 h-4" />
+              Analyze Email
             </button>
           </div>
         </div>
