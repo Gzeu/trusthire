@@ -170,43 +170,37 @@ export class CustomMLModels {
 
     // Profile features
     this.featureExtractors.set('profile', (data: any) => {
-      const profile = data.profileData || {};
+      const profile = data.profile || {};
+      const connections = profile.connections || [];
       
       return {
-        // Profile completeness
-        hasName: !!profile.name,
-        hasHeadline: !!profile.headline,
-        hasCompany: !!profile.company,
-        hasExperience: !!(profile.experience && profile.experience.length > 0),
-        hasConnections: !!(profile.connections && profile.connections > 0),
-        hasActivity: !!(profile.activity && profile.activity.length > 0),
-        completenessScore: this.calculateProfileCompleteness(profile),
+        // Completeness features (convert booleans to numbers)
+        hasName: profile.name ? 1 : 0,
+        hasHeadline: profile.headline ? 1 : 0,
+        hasCompany: profile.company ? 1 : 0,
+        hasExperience: profile.experience ? 1 : 0,
+        hasConnections: connections.length > 0 ? 1 : 0,
+        hasActivity: profile.activity ? 1 : 0,
+        completenessScore: Object.keys(profile).length / 10,
         
         // Network features
-        connectionCount: profile.connections || 0,
-        connectionGrowthRate: this.estimateConnectionGrowthRate(profile),
-        networkQuality: this.estimateNetworkQuality(profile),
-        
-        // Experience features
-        experienceCount: profile.experience?.length || 0,
-        averageJobDuration: this.calculateAverageJobDuration(profile.experience || []),
-        careerProgression: this.estimateCareerProgression(profile.experience || []),
+        connectionCount: connections.length,
+        connectionGrowthRate: profile.connectionGrowthRate || 0,
+        networkQuality: this.calculateNetworkQuality(connections),
+        mutualConnections: profile.mutualConnections || 0,
+        followerRatio: profile.followerRatio || 0,
         
         // Activity features
-        recentActivityCount: profile.activity?.filter((a: any) => 
-          Date.now() - new Date(a.timestamp).getTime() < 30 * 24 * 60 * 60 * 1000
-        ).length || 0,
-        activityRegularity: this.estimateActivityRegularity(profile.activity || []),
-        
-        // Content features
-        headlineLength: profile.headline?.length || 0,
-        descriptionKeywords: this.extractKeywords(profile.headline || ''),
+        postFrequency: profile.postFrequency || 0,
+        lastActiveDays: profile.lastActiveDays || 0,
+        regularityScore: profile.regularityScore || 0,
+        engagementRate: profile.engagementRate || 0,
         professionalLanguage: this.estimateProfileProfessionalism(profile),
         
         // Verification features
-        hasVerifiedEmail: this.hasVerifiedEmail(profile),
-        hasVerifiedPhone: this.hasVerifiedPhone(profile),
-        hasProfilePhoto: !!profile.profilePhoto,
+        hasVerifiedEmail: this.hasVerifiedEmail(profile) ? 1 : 0,
+        hasVerifiedPhone: this.hasVerifiedPhone(profile) ? 1 : 0,
+        hasProfilePhoto: !!profile.profilePhoto ? 1 : 0,
         verificationBadges: profile.verificationBadges?.length || 0,
       };
     });
@@ -258,7 +252,7 @@ export class CustomMLModels {
       },
       {
         name: 'Behavioral Analysis Model',
-        type: 'behavioral',
+        type: 'behavior',
         version: '1.0.0',
         modelType: 'ensemble',
         hyperparameters: {
@@ -539,10 +533,42 @@ export class CustomMLModels {
   }
 
   // Generate explanation for prediction
+  // Helper methods for profile analysis
+  private calculateNetworkQuality(connections: any[]): number {
+    if (!connections || connections.length === 0) return 0;
+    
+    // Simple network quality calculation based on connection count and profile completeness
+    const avgConnections = connections.length;
+    const qualityScore = Math.min(avgConnections / 100, 1); // Normalize to 0-1
+    
+    return qualityScore;
+  }
+
+  private estimateProfileProfessionalism(profile: any): number {
+    let score = 0;
+    
+    // Check for professional elements
+    if (profile.headline && profile.headline.length > 10) score += 0.2;
+    if (profile.experience && profile.experience.length > 0) score += 0.3;
+    if (profile.company) score += 0.2;
+    if (profile.email && profile.email.includes('@')) score += 0.2;
+    if (profile.summary && profile.summary.length > 50) score += 0.1;
+    
+    return Math.min(score, 1);
+  }
+
+  private hasVerifiedEmail(profile: any): boolean {
+    return !!(profile.email && profile.emailVerified);
+  }
+
+  private hasVerifiedPhone(profile: any): boolean {
+    return !!(profile.phone && profile.phoneVerified);
+  }
+
   private generateExplanation(prediction: any, features: Record<string, number>): string {
     const significantFeatures = Object.entries(features)
-      .filter(([_, value]) => value !== 0)
-      .sort(([_, a], [_, b]) => b - a)
+      .filter(([, value]) => value !== 0)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 3);
 
     const featureDescriptions = significantFeatures.map(([name, value]) => {
@@ -630,7 +656,7 @@ export class CustomMLModels {
     return suspiciousNames.some(name => lowerFilename.includes(name));
   }
 
-  private isSystemFile(path: string): string {
+  private isSystemFile(path: string): boolean {
     const systemPaths = ['/etc/', '/bin/', '/usr/bin/', '/system/', '/windows/', '/system32/', '/program files/'];
     return systemPaths.some(sysPath => path.toLowerCase().includes(sysPath));
   }
@@ -762,26 +788,10 @@ export class CustomMLModels {
 
   private extractKeywords(text: string): string[] {
     const keywords = text.toLowerCase().match(/\b(javascript|python|react|node|developer|engineer|manager|lead|senior|junior|fullstack|frontend|backend|devops|architect)\b/gi) || [];
-    return [...new Set(keywords)];
+    return Array.from(new Set(keywords));
   }
 
-  private estimateProfileProfessionalism(profile: any): number {
-    const headline = profile.headline || '';
-    const keywords = this.extractKeywords(headline);
-    const hasProfessionalTerms = keywords.length > 0;
-    const hasUnprofessionalTerms = headline.toLowerCase().includes('looking for new opportunities');
-    
-    return hasProfessionalTerms && !hasUnprofessionalTerms ? 80 : 50;
-  }
-
-  private hasVerifiedEmail(profile: any): boolean {
-    return profile.emailVerified || false;
-  }
-
-  private hasVerifiedPhone(profile: any): boolean {
-    return profile.phoneVerified || false;
-  }
-
+  
   // Get models for organization
   getModels(organizationId: string): ModelConfig[] {
     return Array.from(this.models.values()).filter(m => m.organizationId === organizationId);
