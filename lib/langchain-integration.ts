@@ -9,6 +9,7 @@ import { RunnableSequence } from "@langchain/core/runnables";
 import { Document } from "@langchain/core/documents";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { z } from "zod";
+import { Client } from "langsmith";
 
 export interface LangChainConfig {
   provider: 'openai' | 'groq';
@@ -77,6 +78,7 @@ export class LangChainService {
   private agents: Map<string, AgentConfig> = new Map();
   private memory: Map<string, MemoryConfig> = new Map();
   private rag: RAGConfig;
+  private langsmithClient: Client | null = null;
 
   constructor(config: LangChainConfig) {
     this.config = config;
@@ -87,6 +89,15 @@ export class LangChainService {
       maxDocuments: 1000,
       similarityThreshold: 0.7
     };
+
+    // Initialize LangSmith client if API key is available
+    if (process.env.LANGSMITH_API_KEY) {
+      this.langsmithClient = new Client({
+        apiUrl: "https://api.smith.langchain.com",
+        apiKey: process.env.LANGSMITH_API_KEY,
+      });
+      console.log('LangSmith client initialized for monitoring and debugging');
+    }
   }
 
   // Initialize the LangChain service
@@ -124,7 +135,7 @@ export class LangChainService {
 
   // Initialize default security analysis chains
   private async initializeDefaultChains(): Promise<void> {
-    // Security assessment chain
+    // Security assessment chain with LangSmith tracing
     const securityChain = ChatPromptTemplate.fromTemplate(`
       You are a security analysis expert. Analyze the following input for security risks:
       
@@ -139,11 +150,19 @@ export class LangChainService {
       Assessment:
     `).pipe(this.llm).pipe(new StringOutputParser());
 
+    // Wrap with LangSmith tracing if available
+    const tracedSecurityChain = this.langsmithClient 
+      ? securityChain.withConfig({
+          runName: "security-analysis",
+          tags: ["security", "assessment"],
+        })
+      : securityChain;
+
     this.chains.set('security', {
       id: 'security-analysis',
       name: 'Security Analysis Chain',
       description: 'Analyzes input for security threats and risks',
-      chain: securityChain,
+      chain: tracedSecurityChain,
       inputSchema: z.object({
         input: z.string()
       }),
@@ -155,7 +174,7 @@ export class LangChainService {
       })
     });
 
-    // Threat prediction chain
+    // Threat prediction chain with LangSmith tracing
     const threatChain = ChatPromptTemplate.fromTemplate(`
       You are a threat intelligence expert. Based on the following data, predict potential threats:
       
@@ -170,11 +189,19 @@ export class LangChainService {
       Threat Analysis:
     `).pipe(this.llm).pipe(new StringOutputParser());
 
+    // Wrap with LangSmith tracing if available
+    const tracedThreatChain = this.langsmithClient 
+      ? threatChain.withConfig({
+          runName: "threat-prediction",
+          tags: ["threat", "prediction", "intelligence"],
+        })
+      : threatChain;
+
     this.chains.set('threat', {
       id: 'threat-prediction',
       name: 'Threat Prediction Chain',
       description: 'Predicts potential security threats based on input data',
-      chain: threatChain,
+      chain: tracedThreatChain,
       inputSchema: z.object({
         input: z.string()
       }),
@@ -435,3 +462,10 @@ export const langChainService = new LangChainService({
   maxTokens: 2000,
   apiKey: process.env.OPENAI_API_KEY || ''
 });
+
+// Initialize LangSmith if API key is available
+if (process.env.LANGSMITH_API_KEY) {
+  process.env.LANGCHAIN_TRACING_V2 = 'true';
+  process.env.LANGCHAIN_PROJECT = 'trusthire';
+  console.log('LangSmith tracing enabled for project: trusthire');
+}
