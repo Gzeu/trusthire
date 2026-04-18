@@ -36,3 +36,30 @@ model ScamPattern {
   verified    Boolean  @default(false)
   anonymous   Boolean  @default(true)
 }
+
+model ScamReport {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now())
+  status        String    @default("pending") // pending / approved / rejected
+  reporterIp    String
+  recruiterName String
+  company       String
+  evidence      String    // text
+  category      String    // fake_job / malicious_repo / phishing_domain / scam_payment / other
+  resolvedAt    DateTime?
+  resolvedBy    String?
+
+  @@index([status])
+}
+
+model Blacklist {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  type        String   // domain / email / repo / github_user
+  value       String
+  reason      String
+  addedBy     String
+  reportCount Int      @default(1)
+
+  @@index([type, value])
+}
