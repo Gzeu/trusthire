@@ -114,6 +114,14 @@ TrustHire automates the detection of these patterns before you become a victim.
 - **Memory Management** - Conversation context and session preservation
 - **Performance Monitoring** - Built-in benchmarking and optimization
 - **Enterprise Tracing** - LangSmith integration for production monitoring
+
+### 📊 LangChain Features
+- **Security Analysis Chains** - Specialized workflows for threat detection
+- **AI Agents** - Multi-tool security analysis agents
+- **RAG System** - Retrieval-Augmented Generation with document context
+- **Memory Management** - Conversation context and session preservation
+- **Performance Monitoring** - Built-in benchmarking and optimization
+- **Enterprise Tracing** - LangSmith integration for production monitoring
 - **Real-time Analysis** - Instant AI-powered risk assessment with Groq integration
 - **Instant Results** - Complete report generation without multi-step navigation
 - **Enhanced UX** - Reduced friction and faster completion time
@@ -342,14 +350,6 @@ Scan a URL via VirusTotal.
 ```json
 { "url": "https://suspicious-domain.xyz" }
 ```
-
-### `GET /api/patterns`
-
-Returns known scam patterns from the community database.
-
-### `POST /api/sandbox/analyze`
-
-Analyze code, repositories, or URLs in isolated Vercel Sandboxes.
 
 ```json
 {

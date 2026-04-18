@@ -2,9 +2,12 @@
 // Provides AI-powered communication and threat analysis
 
 import { NextRequest, NextResponse } from 'next/server';
-import { aiAnalyzer } from '@/lib/ai-analyzer';
+import { AIAnalyzer } from '@/lib/ai-analyzer-classes';
 import { behavioralAnalyzer } from '@/lib/behavioral-analyzer';
 import { threatIntelligence } from '@/lib/threat-intelligence';
+
+// Initialize AI analyzer instance
+const aiAnalyzer = new AIAnalyzer();
 
 export async function POST(request: NextRequest) {
   try {
