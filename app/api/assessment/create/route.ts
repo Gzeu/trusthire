@@ -8,6 +8,7 @@ import { validateEmailWithAPI } from '@/lib/emailValidator';
 import { generateIncidentReport } from '@/lib/reportGenerator';
 import { generateRiskAssessmentWithGroq, generateReportSummaryWithGroq, analyzeProfileWithGroq, analyzeCodeWithGroq } from '@/lib/groq-analysis';
 import { normalizeAiAnalysis } from '@/lib/normalizeAiAnalysis';
+import { langChainService } from '@/lib/langchain-integration';
 import type { AssessmentInput, RepoScanResult } from '@/types';
 
 const EMPTY_REPO_SCAN: RepoScanResult = {
@@ -116,12 +117,31 @@ export async function POST(req: NextRequest) {
     const missingEvidence = generateMissingEvidence(body);
     const workflowAdvice = generateWorkflowAdvice(verdict, redFlags);
 
-    // Enhanced AI Analysis with Groq
+    // Enhanced AI Analysis with LangChain and Groq
     let aiAnalysis = null;
     const groqApiKey = process.env.GROQ_API_KEY;
+    
+    // First, try LangChain analysis for recruiter messages
+    let messageAnalysis = null;
+    if (body.recruiter.recruiterMessages && Array.isArray(body.recruiter.recruiterMessages) && body.recruiter.recruiterMessages.length > 0) {
+      try {
+        messageAnalysis = await langChainService.runChain('security', {
+          input: body.recruiter.recruiterMessages.join('\n'),
+          context: {
+            type: 'recruiter_messages',
+            platform: 'assessment'
+          }
+        });
+      } catch (error) {
+        console.error('LangChain message analysis failed:', error);
+      }
+    }
+    
+    // Fallback to Groq for profile analysis if LangChain fails
+    let profileAnalysis = null;
     if (groqApiKey) {
       try {
-        const profileAnalysis = await analyzeProfileWithGroq({
+        profileAnalysis = await analyzeProfileWithGroq({
           name: body.recruiter.name,
           company: body.recruiter.claimedCompany,
           jobTitle: body.recruiter.jobTitle,
@@ -164,6 +184,25 @@ export async function POST(req: NextRequest) {
 
         if (profileAnalysis?.greenFlags?.length > 0) {
           greenSignals.push(...profileAnalysis.greenFlags);
+        }
+
+        // Combine LangChain message analysis with profile analysis
+        if (messageAnalysis && messageAnalysis.success) {
+          // Add LangChain message insights to red flags
+          if (messageAnalysis.data.redFlags && messageAnalysis.data.redFlags.length > 0) {
+            redFlags.push(...messageAnalysis.data.redFlags.map((flag: any) => ({
+              category: 'communication' as const,
+              severity: 'high' as const,
+              signal: 'LangChain Analysis',
+              explanation: `Suspicious message pattern detected: ${flag.explanation}`,
+              recommendation: 'Review recruiter messages for scam indicators'
+            })));
+          }
+
+          // Add LangChain message insights to green signals
+          if (messageAnalysis.data.greenFlags && messageAnalysis.data.greenFlags.length > 0) {
+            greenSignals.push(...messageAnalysis.data.greenFlags);
+          }
         }
 
         const allCodeRecommendations = resolvedCodeAnalyses.flatMap((a) => a.recommendations ?? []);
