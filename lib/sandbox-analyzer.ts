@@ -45,34 +45,38 @@ export class SandboxAnalyzer {
       category: 'security' as const,
       title: 'Environment Variable Exfiltration',
       description: 'Code attempts to access or export environment variables',
-      recommendation: 'Remove all environment variable access and implement proper configuration management'
+      recommendation: 'Remove all environment variable access and implement proper configuration management',
+      references: []
     },
     {
       pattern: /(private|secret|key|mnemonic|wallet|seed|phrase)/gi,
-      type: 'critical',
+      type: 'critical' as const,
       severity: 10,
-      category: 'security',
+      category: 'security' as const,
       title: 'Private Key or Wallet Access',
       description: 'Code attempts to access private keys, wallet seeds, or mnemonics',
-      recommendation: 'Remove all private key handling and implement secure key management'
+      recommendation: 'Remove all private key handling and implement secure key management',
+      references: []
     },
     {
       pattern: /eval\s*\(/gi,
-      type: 'critical',
+      type: 'critical' as const,
       severity: 9,
-      category: 'security',
+      category: 'security' as const,
       title: 'Dynamic Code Execution',
       description: 'Use of eval() function allows dynamic code execution',
-      recommendation: 'Replace eval() with safer alternatives or remove entirely'
+      recommendation: 'Replace eval() with safer alternatives or remove entirely',
+      references: []
     },
     {
       pattern: /Function\s*\(\s*["'][^"']*["'][^)]*\)\s*\(/gi,
-      type: 'critical',
+      type: 'critical' as const,
       severity: 9,
-      category: 'security',
+      category: 'security' as const,
       title: 'Function Constructor Abuse',
       description: 'Use of Function constructor can lead to code injection',
-      recommendation: 'Remove Function constructor and use proper function definitions'
+      recommendation: 'Remove Function constructor and use proper function definitions',
+      references: []
     },
     {
       pattern: /child_process\.(exec|spawn|fork)/gi,
