@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Shield, LayoutDashboard, Database, AlertTriangle, PlusCircle } from 'lucide-react';
+import { Shield, LayoutDashboard, Database, FlaskConical, PlusCircle } from 'lucide-react';
 
 const links = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/patterns', label: 'Patterns', icon: Database },
-  { href: '/report', label: 'Report Scam', icon: AlertTriangle },
+  { href: '/sandbox', label: 'Sandbox', icon: FlaskConical },
 ];
 
 export default function Navbar() {
