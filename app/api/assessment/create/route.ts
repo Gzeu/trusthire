@@ -71,7 +71,17 @@ export async function POST(req: NextRequest) {
       domainTargets.map((url) => checkDomainSafety(url))
     );
     const domainChecks = domainCheckResults.map((r) =>
-      r.status === 'fulfilled' ? r.value : { safe: true, vtReputation: 0, vtMalicious: 0, vtCategories: [], domainAgeYears: null }
+      r.status === 'fulfilled' ? r.value : {
+        domain: 'unknown',
+        hasSuspiciousTLD: false,
+        isBrandSpoofing: false,
+        isShortlink: false,
+        domainAgeYears: null,
+        vtMalicious: 0,
+        vtReputation: 0,
+        vtCategories: [],
+        riskFlags: ['Domain check failed']
+      }
     );
 
     // Calculate scores and generate full assessment
