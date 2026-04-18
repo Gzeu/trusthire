@@ -33,7 +33,7 @@ const quickTools = [
 
 const mainNav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/patterns', label: 'Threat Intel', icon: Database },
+  { href: '/patterns', label: 'Patterns', icon: Database },
   { href: '/sandbox', label: 'Sandbox', icon: FlaskConical },
   { href: '/monitoring', label: 'Monitoring', icon: Activity },
 ];

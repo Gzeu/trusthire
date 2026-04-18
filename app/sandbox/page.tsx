@@ -100,41 +100,6 @@ export default function SandboxPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Navigation Header */}
-      <div className="border-b border-white/5">
-        <div className="container mx-auto px-4 py-4 max-w-6xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shield className="w-6 h-6 text-red-500" />
-              <span className="text-white font-mono text-sm">TrustHire Sandbox</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <a
-                href="/"
-                className="px-3 py-1.5 bg-white/5 border border-white/10 text-white font-mono text-xs rounded-lg hover:bg-white/10 transition-colors flex items-center gap-2"
-              >
-                <Shield className="w-3 h-3" />
-                Home
-              </a>
-              <a
-                href="/monitoring"
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-mono text-xs rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Activity className="w-3 h-3" />
-                Monitoring
-              </a>
-              <a
-                href="/assess"
-                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-mono text-xs rounded-lg transition-colors flex items-center gap-2"
-              >
-                <PlusCircle className="w-3 h-3" />
-                Assessment
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-      
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="text-center mb-12">

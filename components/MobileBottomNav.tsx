@@ -14,7 +14,9 @@ import {
   Menu,
   X,
   Zap,
-  Activity
+  Activity,
+  Database,
+  FlaskConical
 } from 'lucide-react';
 
 export default function MobileBottomNav() {
@@ -30,7 +32,8 @@ export default function MobileBottomNav() {
 
   const mainNav = [
     { href: '/', label: 'Home', icon: Home },
-    { href: '/assess', label: 'Assess', icon: Shield },
+    { href: '/patterns', label: 'Patterns', icon: Database },
+    { href: '/sandbox', label: 'Sandbox', icon: FlaskConical },
     { href: '/monitoring', label: 'Monitor', icon: Activity },
   ];
 
