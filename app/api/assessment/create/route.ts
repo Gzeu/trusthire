@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   );
 
   // Calculate scores and generate full assessment
-  const scores = calculateScores(body, repoScans, domainChecks);
+  const scores = await calculateScores(body, repoScans, domainChecks);
   const finalScore = scores.identityConfidence + scores.employerLegitimacy + scores.processLegitimacy + scores.technicalSafety;
   const verdict = getVerdict(finalScore);
   const redFlags = generateRedFlags(body, repoScans, domainChecks);
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
     }
   })),
     shareToken: 'temp',
-    aiAnalysis // Add AI analysis results
+    aiAnalysis
   };
 
   // Generate enhanced incident report with AI insights
@@ -205,7 +205,6 @@ ${aiAnalysis.summary?.nextSteps?.map((step: string) => `  1. ${step}`).join('\n'
       `.trim();
     } catch (error) {
       console.error('Failed to generate AI summary:', error);
-      // Continue with standard report
     }
   }
 
@@ -215,7 +214,7 @@ ${aiAnalysis.summary?.nextSteps?.map((step: string) => `  1. ${step}`).join('\n'
   try {
     const saved = await prisma.assessment.create({
       data: {
-        sessionId: `session_${Date.now()}`, // Generate a session ID
+        sessionId: `session_${Date.now()}`,
         recruiterName: body.recruiter.name,
         company: body.recruiter.claimedCompany,
         finalScore: finalScore,
@@ -230,7 +229,6 @@ ${aiAnalysis.summary?.nextSteps?.map((step: string) => `  1. ${step}`).join('\n'
     savedId = saved.id;
     shareToken = saved.shareToken;
   } catch {
-    // If DB is not configured, generate a temp ID
     savedId = `local_${Date.now()}`;
     shareToken = `share_${Math.random().toString(36).slice(2)}`;
   }
@@ -250,7 +248,7 @@ ${aiAnalysis.summary?.nextSteps?.map((step: string) => `  1. ${step}`).join('\n'
     workflowAdvice: workflowAdvice,
     repoScans,
     domainChecks,
-        incidentReport,
-        aiAnalysis,
+    incidentReport,
+    aiAnalysis,
   });
 }
