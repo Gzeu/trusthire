@@ -85,7 +85,7 @@ export class SandboxAnalyzer {
       references: []
     },
     {
-      pattern: /(curl|wget|fetch|axios)\s*\+\s*(["'][^"']*["'][^)]*\)\s*\+/gi,
+      pattern: /(curl|wget|fetch|axios).*\+/gi,
       type: 'critical' as const,
       severity: 8,
       category: 'security' as const,
