@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Linkedin, Search, Loader2, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import ReverseImageSearch from './ReverseImageSearch';
+import AIImageAnalysis from './AIImageAnalysis';
 
 interface LinkedInProfileData {
   url: string;
@@ -44,6 +46,8 @@ export default function QuickLinkedInCheck() {
   const [scanResult, setScanResult] = useState<LinkedInAnalysisResult | null>(null);
   const [scanError, setScanError] = useState('');
   const [showDetails, setShowDetails] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [aiAnalysisEnabled, setAiAnalysisEnabled] = useState(true);
 
   const analyzeLinkedInProfile = (data: LinkedInProfileData): LinkedInAnalysisResult => {
     let score = 100;
@@ -448,6 +452,45 @@ export default function QuickLinkedInCheck() {
       {scanError && (
         <div className="mt-6 bg-red-500/10 border border-red-500/20 rounded-lg p-4">
           <p className="text-red-400 text-sm font-mono">â {scanError}</p>
+        </div>
+      )}
+
+      {/* Profile Picture Analysis - Add after scan results */}
+      {scanResult && (
+        <div className="mt-8 space-y-6">
+          <ReverseImageSearch 
+            onImageUploaded={(imageUrl) => setProfileImageUrl(imageUrl)}
+            className="mb-6"
+          />
+          
+          {/* AI Image Analysis - Show when image is uploaded */}
+          {profileImageUrl && aiAnalysisEnabled && (
+            <AIImageAnalysis 
+              imageUrl={profileImageUrl}
+              onAnalysisComplete={(result) => {
+                console.log('AI Image Analysis Result:', result);
+              }}
+              className="mb-6"
+            />
+          )}
+          
+          {/* Toggle AI Analysis */}
+          <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
+            <div>
+              <h4 className="text-sm font-semibold text-white font-mono">AI Image Analysis</h4>
+              <p className="text-xs text-white/60 font-mono">Advanced AI-powered photo verification</p>
+            </div>
+            <button
+              onClick={() => setAiAnalysisEnabled(!aiAnalysisEnabled)}
+              className={`px-3 py-1.5 rounded-lg font-mono text-xs transition-colors ${
+                aiAnalysisEnabled 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white/10 text-white/60'
+              }`}
+            >
+              {aiAnalysisEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
         </div>
       )}
     </div>
