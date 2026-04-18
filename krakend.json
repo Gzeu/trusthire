@@ -1,0 +1,214 @@
+{
+  "version": 3,
+  "name": "trusthire-gateway",
+  "port": 8080,
+  "cache_ttl": "300s",
+  "timeout": "30s",
+  "output_encoding": "json",
+  "extra_config": {
+    "github.com/devopsfaith/krakend-cors": {
+      "allow_origins": [
+        "https://trusthire-git-main-gzeus-projects.vercel.app",
+        "http://localhost:3000",
+        "https://localhost:3000"
+      ],
+      "allow_methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "OPTIONS"
+      ],
+      "allow_headers": [
+        "Accept",
+        "Content-Type",
+        "Authorization",
+        "X-User-ID"
+      ],
+      "expose_headers": [
+        "X-Rate-Limit-Limit",
+        "X-Rate-Limit-Remaining",
+        "X-Rate-Limit-Reset"
+      ],
+      "max_age": "86400s",
+      "allow_credentials": true
+    },
+    "github.com/devopsfaith/krakend-gologging": {
+      "level": "INFO",
+      "prefix": "[TRUSTHIRE]",
+      "syslog": false,
+      "format": "json"
+    }
+  },
+  "endpoints": [
+    {
+      "endpoint": "/assessment",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/api/assessment/create",
+          "encoding": "json",
+          "method": "POST",
+          "extra_config": {
+            "github.com/devopsfaith/krakend-http/timeout": "20s"
+          }
+        }
+      ],
+      "concurrent_calls": 1,
+      "rate_limit": {
+        "rate": "20/min",
+        "client_max": 100
+      },
+      "headers_to_pass": [
+        "authorization",
+        "x-user-id",
+        "content-type"
+      ]
+    },
+    {
+      "endpoint": "/sandbox/analyze",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/api/sandbox/analyze",
+          "encoding": "json",
+          "method": "POST",
+          "extra_config": {
+            "github.com/devopsfaith/krakend-http/timeout": "60s"
+          }
+        }
+      ],
+      "concurrent_calls": 1,
+      "rate_limit": {
+        "rate": "5/min",
+        "client_max": 50
+      },
+      "cache": {
+        "ttl": "3600s",
+        "keygen": "params"
+      },
+      "headers_to_pass": [
+        "authorization",
+        "x-user-id",
+        "content-type"
+      ]
+    },
+    {
+      "endpoint": "/scan/repo",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/api/scan/repo",
+          "encoding": "json",
+          "method": "POST",
+          "extra_config": {
+            "github.com/devopsfaith/krakend-http/timeout": "30s"
+          }
+        }
+      ],
+      "concurrent_calls": 1,
+      "rate_limit": {
+        "rate": "10/min",
+        "client_max": 200
+      },
+      "cache": {
+        "ttl": "1800s",
+        "keygen": "params"
+      },
+      "headers_to_pass": [
+        "authorization",
+        "x-user-id",
+        "content-type"
+      ]
+    },
+    {
+      "endpoint": "/scan/url",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/api/scan/url",
+          "encoding": "json",
+          "method": "POST",
+          "extra_config": {
+            "github.com/devopsfaith/krakend-http/timeout": "25s"
+          }
+        }
+      ],
+      "concurrent_calls": 1,
+      "rate_limit": {
+        "rate": "100/min",
+        "client_max": 500
+      },
+      "cache": {
+        "ttl": "900s",
+        "keygen": "params"
+      },
+      "headers_to_pass": [
+        "authorization",
+        "x-user-id",
+        "content-type"
+      ]
+    },
+    {
+      "endpoint": "/patterns",
+      "method": "GET",
+      "backend": [
+        {
+          "url_pattern": "/api/patterns",
+          "encoding": "json",
+          "method": "GET"
+        }
+      ],
+      "concurrent_calls": 1,
+      "cache": {
+        "ttl": "3600s",
+        "keygen": "path"
+      }
+    },
+    {
+      "endpoint": "/assessments/recent",
+      "method": "GET",
+      "backend": [
+        {
+          "url_pattern": "/api/assessments/recent",
+          "encoding": "json",
+          "method": "GET"
+        }
+      ],
+      "concurrent_calls": 1,
+      "rate_limit": {
+        "rate": "50/min",
+        "client_max": 300
+      },
+      "cache": {
+        "ttl": "300s",
+        "keygen": "params"
+      },
+      "headers_to_pass": [
+        "authorization",
+        "x-user-id"
+      ]
+    },
+    {
+      "endpoint": "/report",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/api/report",
+          "encoding": "json",
+          "method": "POST"
+        }
+      ],
+      "concurrent_calls": 1,
+      "rate_limit": {
+        "rate": "30/min",
+        "client_max": 150
+      },
+      "headers_to_pass": [
+        "authorization",
+        "x-user-id",
+        "content-type"
+      ]
+    }
+  ]
+}
