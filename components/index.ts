@@ -52,7 +52,7 @@ export { default as QuickLinkedInCheck } from './QuickLinkedInCheck';
 export { default as ReverseImageSearch } from './ReverseImageSearch';
 export { RepoScanReport } from './RepoScanReport';
 export { VirusTotalPanel } from './VirusTotalPanel';
-export { SimpleChart } from './SimpleChart';
+export { default as SimpleChart } from './SimpleChart';
 
 // Advanced components
 export { CrossBrowserTester } from './CrossBrowserTester';
