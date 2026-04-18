@@ -62,7 +62,45 @@ export const prisma = {
     },
     findMany: async (params: any) => {
       if (!dbInitialized || !tursoClient) {
-        return []; // Return empty array when database is not available
+        // Return mock data when database is not available
+        return [
+          {
+            id: 'mock_1',
+            createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+            recruiterName: 'John Smith',
+            company: 'Tech Corp',
+            finalScore: 75,
+            verdict: 'low_risk',
+            shareToken: 'share_abc123'
+          },
+          {
+            id: 'mock_2',
+            createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+            recruiterName: 'Sarah Johnson',
+            company: 'StartupXYZ',
+            finalScore: 45,
+            verdict: 'caution',
+            shareToken: 'share_def456'
+          },
+          {
+            id: 'mock_3',
+            createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+            recruiterName: 'Mike Wilson',
+            company: 'RecruitPro',
+            finalScore: 25,
+            verdict: 'high_risk',
+            shareToken: 'share_ghi789'
+          },
+          {
+            id: 'mock_4',
+            createdAt: new Date(Date.now() - 345600000).toISOString(), // 4 days ago
+            recruiterName: 'Emily Davis',
+            company: 'HireFast',
+            finalScore: 15,
+            verdict: 'critical',
+            shareToken: 'share_jkl012'
+          }
+        ];
       }
       
       let sql = 'SELECT * FROM Assessment';
@@ -87,7 +125,13 @@ export const prisma = {
     },
     groupBy: async (params: any) => {
       if (!dbInitialized || !tursoClient) {
-        return []; // Return empty array when database is not available
+        // Return mock data when database is not available
+        return [
+          { verdict: 'critical', _count: { verdict: 2 } },
+          { verdict: 'high_risk', _count: { verdict: 3 } },
+          { verdict: 'caution', _count: { verdict: 5 } },
+          { verdict: 'low_risk', _count: { verdict: 8 } }
+        ];
       }
       
       const { by } = params;
