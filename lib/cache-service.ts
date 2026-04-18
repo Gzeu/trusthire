@@ -22,7 +22,6 @@ export class CacheService {
     const redisUrl = config?.url || process.env.REDIS_URL || 'redis://localhost:6379';
     
     this.redis = new Redis(redisUrl, {
-      retryDelayOnFailover: 100,
       maxRetriesPerRequest: 3,
       lazyConnect: true,
     });

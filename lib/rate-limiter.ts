@@ -272,7 +272,8 @@ export class AdvancedRateLimiter {
     const window = this.getSlidingWindow(key);
 
     // Get current token count and last refill time
-    const lastRefill = window.keys().length > 0 ? Math.max(...window.keys()) : now;
+    const windowKeys = Array.from(window.keys());
+    const lastRefill = windowKeys.length > 0 ? Math.max(...windowKeys) : now;
     const timeSinceRefill = now - lastRefill;
     const tokensToAdd = Math.floor(timeSinceRefill / (config.windowMs / config.maxRequests));
     
