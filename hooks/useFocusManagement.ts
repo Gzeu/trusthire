@@ -122,7 +122,6 @@ export function useFocusManagement(config: FocusConfig = {}) {
     return () => {
       container.removeEventListener('keydown', handleKeyDown);
     };
-  };
   }, [handleKeyDown, setFocusToElement, config.trapFocusWithin]);
 
   return {
