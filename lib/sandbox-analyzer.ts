@@ -84,10 +84,10 @@ export class SandboxAnalyzer {
       recommendation: 'Remove child process execution or implement strict validation'
     },
     {
-      pattern: /(curl|wget|fetch|axios)\s*\+\s*(["'].*["']\s*\+\s*(\||\&)/gi,
-      type: 'critical',
+      pattern: /(curl|wget|fetch|axios)\s*\+\s*(["'][^"']*["'][^)]*\)\s*\+\s*(\||\&)/gi,
+      type: 'critical' as const,
       severity: 8,
-      category: 'security',
+      category: 'security' as const,
       title: 'Command Injection via HTTP Requests',
       description: 'HTTP requests used to inject shell commands',
       recommendation: 'Validate all user input and use parameterized queries'
