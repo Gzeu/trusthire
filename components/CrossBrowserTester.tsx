@@ -21,7 +21,7 @@ interface FeatureTest {
   fallback?: string;
 }
 
-export default function CrossBrowserTester() {
+function CrossBrowserTester() {
   const [isTesting, setIsTesting] = useState(false);
   const [testProgress, setTestProgress] = useState(0);
   const [browserTests, setBrowserTests] = useState<BrowserTest[]>([]);
@@ -438,5 +438,3 @@ export default function CrossBrowserTester() {
     </div>
   );
 }
-
-export default CrossBrowserTester;
