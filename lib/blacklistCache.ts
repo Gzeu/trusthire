@@ -20,12 +20,20 @@ export async function getBlacklist(): Promise<BlacklistEntry[]> {
   if (cache && now < cacheExpiresAt) {
     return cache;
   }
-  const entries = await prisma.blacklist.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
-  cache = entries as BlacklistEntry[];
-  cacheExpiresAt = now + CACHE_TTL_MS;
-  return cache;
+  
+  try {
+    const entries = await prisma.blacklist.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    cache = entries as BlacklistEntry[];
+    cacheExpiresAt = now + CACHE_TTL_MS;
+    return cache;
+  } catch (error) {
+    console.warn('Blacklist database not available, using empty cache:', error);
+    cache = [];
+    cacheExpiresAt = now + CACHE_TTL_MS;
+    return cache;
+  }
 }
 
 export async function isBlacklisted(
@@ -43,5 +51,9 @@ export async function isBlacklisted(
 export async function refreshBlacklist(): Promise<void> {
   cache = null;
   cacheExpiresAt = 0;
-  await getBlacklist();
+  try {
+    await getBlacklist();
+  } catch (error) {
+    console.warn('Failed to refresh blacklist cache:', error);
+  }
 }
