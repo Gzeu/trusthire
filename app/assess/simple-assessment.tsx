@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Upload, Plus, Trash2, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Loader2, Upload, Plus, Trash2, Shield, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
 import type { RecruiterInput, JobInput, ArtifactInput } from '@/types';
 import { useTouchOptimized } from '@/hooks/useTouchOptimized';
 import { useFocusManagement } from '@/hooks/useFocusManagement';
@@ -116,7 +116,35 @@ export default function SimpleAssessmentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-white">
+    <div className="min-h-screen bg-black text-white">
+      {/* Navigation Header */}
+      <div className="border-b border-white/5">
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Shield className="w-6 h-6 text-red-500" />
+              <span className="text-white font-mono text-sm">TrustHire Assessment</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <a
+                href="/"
+                className="px-3 py-1.5 bg-white/5 border border-white/10 text-white font-mono text-xs rounded-lg hover:bg-white/10 transition-colors flex items-center gap-2"
+              >
+                <Shield className="w-3 h-3" />
+                Home
+              </a>
+              <a
+                href="/monitoring"
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-mono text-xs rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Activity className="w-3 h-3" />
+                Monitoring
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div className="max-w-6xl mx-auto px-6 pt-12 pb-20">
         {/* Header */}
         <div className="text-center mb-12">

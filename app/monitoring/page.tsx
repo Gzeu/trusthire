@@ -43,13 +43,31 @@ export default function MonitoringPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
-              <Activity className="w-6 h-6 text-blue-400" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
+                <Activity className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white font-mono">TrustHire Monitoring</h1>
+                <p className="text-white/60 font-mono">System monitoring, debugging, and analytics</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white font-mono">TrustHire Monitoring</h1>
-              <p className="text-white/60 font-mono">System monitoring, debugging, and analytics</p>
+            <div className="flex items-center gap-3">
+              <a
+                href="/"
+                className="px-4 py-2 bg-white/5 border border-white/10 text-white font-mono text-sm rounded-lg hover:bg-white/10 transition-colors flex items-center gap-2"
+              >
+                <Shield className="w-4 h-4" />
+                Back to Main
+              </a>
+              <a
+                href="/assess"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-mono text-sm rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Brain className="w-4 h-4" />
+                Quick Assessment
+              </a>
             </div>
           </div>
         </div>

@@ -145,6 +145,7 @@ export default function HomePage() {
         <div className="flex gap-6">
           <Link href="/disclaimer" className="text-white/30 text-xs font-mono hover:text-white/60 transition-colors">Disclaimer</Link>
           <Link href="/privacy" className="text-white/30 text-xs font-mono hover:text-white/60 transition-colors">Privacy</Link>
+          <Link href="/monitoring" className="text-white/30 text-xs font-mono hover:text-white/60 transition-colors">Monitoring</Link>
           <a href="https://github.com/Gzeu/trusthire" target="_blank" rel="noopener noreferrer" className="text-white/30 text-xs font-mono hover:text-white/60 transition-colors">GitHub</a>
         </div>
       </footer>
