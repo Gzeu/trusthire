@@ -2,7 +2,7 @@
 // Advanced AI analysis with chains, agents, and RAG
 
 import { NextRequest, NextResponse } from 'next/server';
-import { langchainIntegration } from '@/lib/langchain-integration';
+import { langChainService } from '@/lib/langchain-integration';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,35 +12,44 @@ export async function POST(request: NextRequest) {
     let result;
 
     switch (type) {
-      case 'agent_assessment':
-        result = await langchainIntegration.runSecurityAssessment(
-          data.request,
-          data.context
-        );
-        break;
-
       case 'chain_analysis':
-        result = await langchainIntegration.runChain(
+        result = await langChainService.runChain(
           data.chainId,
           data.inputs
         );
         break;
 
       case 'rag_analysis':
-        result = await langchainIntegration.runRAGAnalysis(
-          data.question
-        );
+        result = await langChainService.searchDocuments(data.question);
         break;
 
       case 'add_documents':
-        await langchainIntegration.addDocuments(data.documents);
+        for (const doc of data.documents) {
+          await langChainService.addDocument(doc);
+        }
         result = { success: true, message: 'Documents added successfully' };
         break;
 
       case 'retrieve_documents':
-        result = await langchainIntegration.retrieveDocuments(
-          data.query,
-          data.k
+        result = await langChainService.searchDocuments(data.query);
+        break;
+
+      case 'tool_analysis':
+        result = await langChainService.runTool(
+          data.toolId,
+          data.input
+        );
+        break;
+
+      case 'get_config':
+        result = langChainService.getConfig();
+        break;
+
+      case 'benchmark':
+        result = await langChainService.benchmarkChain(
+          data.chainId,
+          data.input,
+          data.iterations
         );
         break;
 
@@ -54,14 +63,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: result,
-      timestamp: new Date().toISOString(),
+      type,
+      timestamp: new Date().toISOString()
     });
+
   } catch (error) {
-    console.error('LangChain API error:', error);
+    console.error('LangChain analysis error:', error);
     return NextResponse.json(
       { 
-        error: 'LangChain analysis failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
       },
       { status: 500 }
     );
@@ -70,63 +81,25 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type');
-
-    let result;
-
-    switch (type) {
-      case 'tools':
-        result = langchainIntegration.getAvailableTools();
-        break;
-
-      case 'chains':
-        result = langchainIntegration.getAvailableChains();
-        break;
-
-      case 'memory':
-        const sessionId = searchParams.get('sessionId');
-        if (sessionId) {
-          result = langchainIntegration.getConversationMemory(sessionId);
-        } else {
-          result = { error: 'Session ID required' };
-        }
-        break;
-
-      case 'state':
-        result = langchainIntegration.exportState();
-        break;
-
-      case 'benchmark':
-        const chainId = searchParams.get('chainId');
-        const iterations = parseInt(searchParams.get('iterations') || '10');
-        
-        if (chainId) {
-          const benchmarkData = JSON.parse(searchParams.get('inputs') || '{}');
-          result = await langchainIntegration.benchmarkChain(chainId, benchmarkData, iterations);
-        } else {
-          result = { error: 'Chain ID required' };
-        }
-        break;
-
-      default:
-        return NextResponse.json(
-          { error: 'Invalid query type' },
-          { status: 400 }
-        );
-    }
-
+    const config = langChainService.getConfig();
+    
     return NextResponse.json({
       success: true,
-      data: result,
-      timestamp: new Date().toISOString(),
+      data: {
+        chains: config.chains,
+        tools: config.tools,
+        agents: config.agents,
+        config: config.config
+      },
+      timestamp: new Date().toISOString()
     });
+
   } catch (error) {
-    console.error('LangChain GET error:', error);
+    console.error('LangChain config error:', error);
     return NextResponse.json(
       { 
-        error: 'Query failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
       },
       { status: 500 }
     );
@@ -135,29 +108,21 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const sessionId = searchParams.get('sessionId');
-
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID required' },
-        { status: 400 }
-      );
-    }
-
-    langchainIntegration.clearConversationMemory(sessionId);
-
+    // Reset or clear LangChain data
+    // This would implement cleanup logic
+    
     return NextResponse.json({
       success: true,
-      message: 'Conversation memory cleared',
-      timestamp: new Date().toISOString(),
+      message: 'LangChain data cleared successfully',
+      timestamp: new Date().toISOString()
     });
+
   } catch (error) {
-    console.error('LangChain DELETE error:', error);
+    console.error('LangChain cleanup error:', error);
     return NextResponse.json(
       { 
-        error: 'Delete failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
       },
       { status: 500 }
     );

@@ -47,7 +47,7 @@ export default function LangChainPanel({ sessionId = 'default' }: LangChainPanel
 
       const result = await response.json();
       if (result.success) {
-        setResults(prev => ({ ...prev, agent: result.data }));
+        setResults((prev: any) => ({ ...prev, agent: result.data }));
       }
     } catch (error) {
       console.error('Agent analysis failed:', error);
@@ -76,7 +76,7 @@ export default function LangChainPanel({ sessionId = 'default' }: LangChainPanel
 
       const result = await response.json();
       if (result.success) {
-        setResults(prev => ({ ...prev, [chainId]: result.data }));
+        setResults((prev: any) => ({ ...prev, [chainId]: result.data }));
       }
     } catch (error) {
       console.error('Chain analysis failed:', error);
@@ -101,7 +101,7 @@ export default function LangChainPanel({ sessionId = 'default' }: LangChainPanel
 
       const result = await response.json();
       if (result.success) {
-        setResults(prev => ({ ...prev, rag: result.data }));
+        setResults((prev: any) => ({ ...prev, rag: result.data }));
       }
     } catch (error) {
       console.error('RAG analysis failed:', error);
@@ -416,7 +416,7 @@ export default function LangChainPanel({ sessionId = 'default' }: LangChainPanel
                               fetch(`/api/langchain/analyze?type=benchmark&chainId=${chain.id}&iterations=5&inputs=${encodeURIComponent('{"message":"test","context":{}}')}`)
                                 .then(res => res.json())
                                 .then(data => {
-                                  setResults(prev => ({ ...prev, [`benchmark_${chain.id}`]: data.data }));
+                                  setResults((prev: any) => ({ ...prev, [`benchmark_${chain.id}`]: data.data }));
                                 });
                             }}
                           >

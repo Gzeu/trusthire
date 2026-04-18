@@ -107,14 +107,14 @@ export class CustomMLModels {
         cryptoOperations: (code.match(/(crypto|encrypt|decrypt|hash|sign|verify)/gi) || []).length,
         
         // URL features
-        suspiciousDomains: urls.filter(url => this.isSuspiciousDomain(url)).length,
+        suspiciousDomains: urls.filter((url: string) => this.isSuspiciousDomain(url)).length,
         externalServices: urls.length,
-        shortUrls: urls.filter(url => this.isShortUrl(url)).length,
+        shortUrls: urls.filter((url: string) => this.isShortUrl(url)).length,
         
         // File features
-        executableFiles: files.filter(f => this.isExecutableFile(f.name || '')).length,
-        suspiciousFiles: files.filter(f => this.isSuspiciousFile(f.name || '')).length,
-        totalFileSize: files.reduce((sum, f) => sum + (f.size || 0), 0),
+        executableFiles: files.filter((f: any) => this.isExecutableFile(f)).length,
+        suspiciousFiles: files.filter((f: any) => this.isSuspiciousFile(f)).length,
+        totalFileSize: files.reduce((sum: number, f: any) => sum + (f.size || 0), 0),
         
         // Context features
         repositoryAge: this.estimateRepositoryAge(data.repositoryUrl),

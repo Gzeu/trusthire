@@ -40,7 +40,7 @@ export default function AIAnalysisPanel({ data, onAnalysis }: AIAnalysisProps) {
 
       const result = await response.json();
       if (result.success) {
-        setResults(prev => ({ ...prev, [type]: result.data }));
+        setResults((prev: any) => ({ ...prev, [type]: result.data }));
         onAnalysis?.(type, result.data);
       }
     } catch (error) {
