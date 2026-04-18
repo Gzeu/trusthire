@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { calculateScores, getVerdict, generateRedFlags, generateGreenSignals, generateMissingEvidence, generateWorkflowAdvice } from '@/lib/scoring';
 import { scanGithubRepo } from '@/lib/repoScanner';
 import { checkDomainSafety } from '@/lib/domainChecker';
+import { verifyCompany } from '@/lib/companyVerifier';
+import { validateEmailWithAPI } from '@/lib/emailValidator';
 import { generateIncidentReport } from '@/lib/reportGenerator';
 import { generateRiskAssessmentWithGroq, generateReportSummaryWithGroq, analyzeProfileWithGroq, analyzeCodeWithGroq } from '@/lib/groq-analysis';
 import { normalizeAiAnalysis } from '@/lib/normalizeAiAnalysis';
@@ -83,6 +85,27 @@ export async function POST(req: NextRequest) {
         riskFlags: ['Domain check failed']
       }
     );
+
+    // Enhanced company verification
+    let companyVerification = null;
+    try {
+      companyVerification = await verifyCompany(
+        body.recruiter.claimedCompany,
+        domainChecks.length > 0 ? domainChecks[0].domain : undefined
+      );
+    } catch (error) {
+      console.error('Company verification failed:', error);
+    }
+
+    // Email validation for recruiter
+    let emailValidation = null;
+    if (body.recruiter.emailReceived) {
+      try {
+        emailValidation = await validateEmailWithAPI(body.recruiter.emailReceived);
+      } catch (error) {
+        console.error('Email validation failed:', error);
+      }
+    }
 
     // Calculate scores and generate full assessment
     const scores = await calculateScores(body, repoScans, domainChecks);
@@ -181,7 +204,10 @@ export async function POST(req: NextRequest) {
         }
       })),
       shareToken: 'temp',
-      aiAnalysis
+      aiAnalysis,
+      // Enhanced verification results
+      companyVerification,
+      emailValidation
     };
 
     let incidentReport = generateIncidentReport(assessmentResult);
