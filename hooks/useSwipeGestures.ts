@@ -70,7 +70,7 @@ export function useSwipeGestures(config: Partial<SwipeConfig> = {}) {
       // Determine if this is a valid swipe
       const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);
       const isVerticalSwipe = Math.abs(deltaY) > Math.abs(deltaX);
-      
+
       if (deltaTime <= swipeConfig.timeThreshold) {
         if (isHorizontalSwipe && Math.abs(deltaX) >= swipeConfig.threshold) {
           const direction = deltaX > 0 ? 'right' : 'left';
@@ -105,7 +105,7 @@ export function useSwipeGestures(config: Partial<SwipeConfig> = {}) {
     startTouch.current = null;
     isTracking.current = false;
     
-    // Clear the swipe gesture after a short delay
+    // Clear: swipe gesture after a short delay
     setTimeout(() => setSwipeGesture(null), 100);
   }, [swipeConfig.threshold, swipeConfig.timeThreshold]);
 
