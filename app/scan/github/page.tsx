@@ -119,51 +119,51 @@ export default function GitHubScanPage() {
         id: '1',
         type: 'SQL Injection',
         severity: 'high',
-        description: 'Potential SQL injection vulnerability in database query',
-        file: 'src/api/users.ts',
+        description: 'Potential SQL injection vulnerability found in database query',
+        file: 'src/database/connection.js',
         line: 45,
-        recommendation: 'Use parameterized queries or prepared statements',
-        cwe: 'CWE-89'
+        cwe: 'CWE-89',
+        recommendation: 'Use parameterized queries and input validation'
       },
       {
         id: '2',
-        type: 'Cross-Site Scripting (XSS)',
-        severity: 'medium',
-        description: 'Unsanitized user input in template rendering',
-        file: 'src/components/Profile.tsx',
-        line: 23,
-        recommendation: 'Sanitize user input before rendering',
-        cwe: 'CWE-79'
+        type: 'Hardcoded Credentials',
+        severity: 'critical',
+        description: 'Database credentials found in source code',
+        file: '.env',
+        line: 1,
+        cwe: 'CWE-798',
+        recommendation: 'Remove hardcoded credentials and use environment variables'
       },
       {
         id: '3',
-        type: 'Hardcoded Secrets',
-        severity: 'critical',
-        description: 'API key found in source code',
-        file: 'src/config/database.ts',
-        line: 12,
-        recommendation: 'Use environment variables for secrets',
-        cwe: 'CWE-798'
+        'type': 'Cross-Site Scripting (XSS)',
+        severity: 'medium',
+        description: 'Potential XSS vulnerability in user input handling',
+        file: 'src/components/CommentSection.jsx',
+        line: 23,
+        cwe: 'CWE-79',
+        recommendation: 'Sanitize user input and use proper output encoding'
       },
       {
         id: '4',
-        type: 'Insecure Deserialization',
-        severity: 'high',
-        description: 'Unsafe deserialization of user data',
-        file: 'src/utils/parser.ts',
-        line: 67,
-        recommendation: 'Validate and sanitize serialized data',
-        cwe: 'CWE-502'
+        type: 'Insecure Direct Object Reference',
+        severity: 'low',
+        description: 'Direct object reference may expose internal state',
+        file: 'src/store/userStore.js',
+        line: 12,
+        cwe: 'CWE-1321',
+        recommendation: 'Use proper data structures and access controls'
       },
       {
         id: '5',
-        type: 'Broken Authentication',
+        type: 'Missing Input Validation',
         severity: 'medium',
-        description: 'Weak password policy implementation',
-        file: 'src/auth/password.ts',
-        line: 34,
-        recommendation: 'Implement strong password requirements',
-        cwe: 'CWE-521'
+        description: 'Form inputs lack proper validation and sanitization',
+        file: 'src/forms/ContactForm.js',
+        line: 67,
+        cwe: 'CWE-20',
+        recommendation: 'Implement comprehensive input validation and sanitization'
       }
     ];
 
@@ -171,22 +171,22 @@ export default function GitHubScanPage() {
       {
         name: 'express',
         version: '4.18.2',
-        vulnerabilities: 3,
-        severity: 'medium',
+        vulnerabilities: 2,
+        severity: 'high',
         lastUpdated: '2024-01-15'
       },
       {
         name: 'lodash',
         version: '4.17.21',
-        vulnerabilities: 1,
+        vulnerabilities: 0,
         severity: 'low',
-        lastUpdated: '2024-01-10'
+        lastUpdated: '2024-01-20'
       },
       {
         name: 'axios',
-        version: '1.6.0',
-        vulnerabilities: 2,
-        severity: 'medium',
+        version: '1.6.7',
+        vulnerabilities: 0,
+        severity: 'low',
         lastUpdated: '2024-01-08'
       },
       {
@@ -195,6 +195,13 @@ export default function GitHubScanPage() {
         vulnerabilities: 0,
         severity: 'low',
         lastUpdated: '2024-01-20'
+      },
+      {
+        name: 'moment',
+        version: '2.30.1',
+        vulnerabilities: 1,
+        severity: 'medium',
+        lastUpdated: '2024-01-10'
       }
     ];
 
@@ -217,12 +224,356 @@ export default function GitHubScanPage() {
         'Implement input validation for all user inputs',
         'Use environment variables for sensitive configuration',
         'Add comprehensive logging and monitoring',
-        'Implement proper error handling',
-        'Add security headers to HTTP responses',
-        'Regular security audits and penetration testing',
-        'Implement rate limiting for API endpoints'
+        'Implement automated security testing',
+        'Use security linters and code analysis tools',
+        'Regular security audits and penetration testing'
       ]
     };
+  };
+
+  const analyzeGitHubRepository = async (owner: string, repo: string) => {
+    try {
+      const { githubClient } = await import('@/lib/api/github/github-client');
+      
+      // Check if GitHub client is authenticated
+      if (!githubClient.isAuthenticated()) {
+        throw new Error('GitHub token not configured. Please set GITHUB_TOKEN environment variable.');
+      }
+
+      // Check rate limits
+      const rateLimit = await githubClient.getRateLimitInfo();
+      if (rateLimit && rateLimit.resources.core.remaining < 10) {
+        console.warn('GitHub API rate limit low:', rateLimit.resources.core.remaining, 'remaining requests');
+      }
+
+      // Get repository information
+      const repoData = await githubClient.getRepository(owner, repo);
+      
+      // Get repository contents for analysis
+      const contents = await githubClient.getRepositoryContents(owner, repo);
+      
+      // Get languages breakdown
+      const languages = await githubClient.getRepositoryLanguages(owner, repo);
+      
+      // Get commits for analysis
+      const commits = await githubClient.getCommits(owner, repo, repoData.default_branch, 50);
+      
+      // Get issues for security analysis
+      const issues = await githubClient.getRepositoryIssues(owner, repo, 'open', 50);
+      
+      // Get contributors
+      const contributors = await githubClient.getRepositoryContributors(owner, repo);
+
+      // Analyze security issues based on repository data
+      const securityIssues = await analyzeSecurityIssues(repoData, contents, commits, issues);
+      
+      // Analyze dependencies (mock for now, can be enhanced with package.json parsing)
+      const dependencies = await analyzeDependencies(contents, languages, repoData);
+      
+      // Calculate metrics
+      const metrics = calculateMetrics(repoData, languages, commits, contributors);
+      
+      // Generate recommendations
+      const recommendations = generateRecommendations(repoData, securityIssues, dependencies, metrics);
+
+      return {
+        overallRiskScore: calculateRiskScore(securityIssues, dependencies),
+        issues: securityIssues,
+        dependencies,
+        metrics,
+        recommendations
+      };
+
+    } catch (error) {
+      console.error('GitHub repository analysis failed:', error);
+      throw error;
+    }
+  };
+
+  const analyzeSecurityIssues = async (repo: any, contents: any[], commits: any[], issues: any[]) => {
+    const securityIssues: SecurityIssue[] = [];
+    
+    // Analyze commits for potential security issues
+    for (const commit of commits.slice(0, 20)) {
+      const message = commit.message.toLowerCase();
+      
+      // Check for hardcoded secrets in commit messages
+      if (message.includes('password') || message.includes('secret') || message.includes('key') || message.includes('token')) {
+        securityIssues.push({
+          id: `commit-${commit.sha.substring(0, 7)}`,
+          type: 'Potential Secret Exposure',
+          severity: 'high',
+          description: `Commit message may contain sensitive information: "${commit.message}"`,
+          file: 'commit',
+          line: 0,
+          cwe: 'CWE-798',
+          recommendation: 'Review commit message and remove any sensitive information'
+        });
+      }
+      
+      // Check for merge commits without proper review
+      if (message.includes('merge branch') && message.includes('without review')) {
+        securityIssues.push({
+          id: `commit-${commit.sha.substring(0, 7)}`,
+          type: 'Merge Without Review',
+          severity: 'medium',
+          description: 'Code merged without proper review process',
+          file: 'commit',
+          line: 0,
+          cwe: 'CWE-1064',
+          recommendation: 'Implement proper code review process before merging'
+        });
+      }
+    }
+
+    // Analyze repository files for security patterns
+    for (const file of contents.slice(0, 50)) {
+      if (file.name.toLowerCase().includes('password') || 
+          file.name.toLowerCase().includes('secret') ||
+          file.name.toLowerCase().includes('key') ||
+          file.name.toLowerCase().includes('token')) {
+        
+        securityIssues.push({
+          id: `file-${file.sha}`,
+          type: 'Sensitive File Name',
+          severity: 'high',
+          description: `File name suggests it may contain sensitive information: ${file.name}`,
+          file: file.path,
+          line: 0,
+          cwe: 'CWE-200',
+          recommendation: 'Review file contents and ensure proper security measures'
+        });
+      }
+      
+      // Check for common configuration files that may have security implications
+      if (file.name === '.env' || file.name === 'config.json' || file.name === 'settings.json') {
+        securityIssues.push({
+          id: `file-${file.sha}`,
+          type: 'Configuration File',
+          severity: 'medium',
+          description: `Configuration file found: ${file.name}`,
+          file: file.path,
+          line: 0,
+          cwe: 'CWE-200',
+          recommendation: 'Ensure configuration files do not contain sensitive information'
+        });
+      }
+    }
+
+    // Analyze issues for security-related problems
+    for (const issue of issues.slice(0, 10)) {
+      const title = issue.title.toLowerCase();
+      
+      if (title.includes('security') || title.includes('vulnerability') || title.includes('exploit')) {
+        securityIssues.push({
+          id: `issue-${issue.id}`,
+          type: 'Security Issue Reported',
+          severity: 'high',
+          description: `Issue tagged with security concerns: ${issue.title}`,
+          file: 'issues',
+          line: 0,
+          cwe: 'CWE-16',
+          recommendation: 'Address security concerns raised in the issue'
+        });
+      }
+    }
+
+    return securityIssues;
+  };
+
+  const analyzeDependencies = async (contents: any[], languages: Record<string, number>, repoData: any) => {
+    const dependencies: Dependency[] = [];
+    
+    // Look for package.json, requirements.txt, or other dependency files
+    const packageFiles = contents.filter(file => 
+      file.name === 'package.json' || 
+      file.name === 'requirements.txt' || 
+      file.name === 'Gemfile' ||
+      file.name === 'composer.json' ||
+      file.name === 'Cargo.toml'
+    );
+
+    for (const file of packageFiles) {
+      try {
+        const { githubClient } = await import('@/lib/api/github/github-client');
+        const pathParts = file.path.split('/');
+        const content = await githubClient.getFileContent(pathParts[0], pathParts.slice(1).join('/'), repoData.default_branch);
+        
+        if (content && content.content) {
+          const packageData = JSON.parse(atob(content.content));
+          
+          if (packageData.dependencies) {
+            for (const [name, version] of Object.entries(packageData.dependencies)) {
+              // Mock vulnerability detection (in real implementation, use vulnerability database)
+              const vulnerabilities = Math.floor(Math.random() * 5);
+              const severity = vulnerabilities > 2 ? 'high' : vulnerabilities > 0 ? 'medium' : 'low';
+              
+              dependencies.push({
+                name,
+                version: typeof version === 'string' ? version : 'unknown',
+                vulnerabilities,
+                severity,
+                lastUpdated: new Date().toISOString().split('T')[0]
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.warn(`Could not analyze dependencies in ${file.name}:`, error);
+      }
+    }
+
+    // Add common high-risk packages if detected in languages
+    const highRiskPackages = ['axios', 'request', 'node-fetch', 'express', 'lodash', 'moment', 'underscore'];
+    for (const pkg of highRiskPackages) {
+      if (languages[pkg] && languages[pkg] > 0) {
+        dependencies.push({
+          name: pkg,
+          version: 'detected',
+          vulnerabilities: 1,
+          severity: 'medium',
+          lastUpdated: new Date().toISOString().split('T')[0]
+        });
+      }
+    }
+
+    return dependencies;
+  };
+
+  const calculateMetrics = (repo: any, languages: Record<string, number>, commits: any[], contributors: any[]) => {
+    const totalFiles = Object.values(languages).reduce((sum, count) => sum + count, 0);
+    const avgCommitsPerWeek = commits.length > 0 ? Math.round((commits.length / 30) * 7) : 0;
+    const codeQuality = calculateCodeQuality(repo, commits, contributors);
+    const securityScore = calculateSecurityScore(repo, languages);
+    
+    return {
+      totalFiles,
+      linesOfCode: totalFiles * 100, // Rough estimate
+      testCoverage: Math.floor(Math.random() * 40) + 60, // Mock - would analyze test files
+      codeQuality,
+      securityScore,
+      maintainabilityIndex: Math.floor(Math.random() * 30) + 70, // Mock calculation
+      contributors: contributors.length,
+      avgCommitsPerWeek,
+      languages,
+      totalCommits: commits.length
+    };
+  };
+
+  const calculateCodeQuality = (repo: any, commits: any[], contributors: any[]) => {
+    let score = 75; // Base score
+    
+    // Bonus for having README
+    if (repo.description && repo.description.length > 50) score += 5;
+    
+    // Bonus for having license
+    if (repo.license) score += 5;
+    
+    // Bonus for recent activity
+    const lastCommit = new Date(repo.pushed_at);
+    const daysSinceLastCommit = (Date.now() - lastCommit.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceLastCommit < 30) score += 10;
+    else if (daysSinceLastCommit < 90) score += 5;
+    
+    // Bonus for multiple contributors
+    if (contributors.length > 1) score += 10;
+    if (contributors.length > 5) score += 5;
+    
+    // Bonus for issues tracking
+    if (repo.open_issues_count > 0 && repo.open_issues_count < 10) score += 5;
+    
+    return Math.min(100, score);
+  };
+
+  const calculateSecurityScore = (repo: any, languages: Record<string, number>) => {
+    let score = 80; // Base score
+    
+    // Deduction for no license
+    if (!repo.license) score -= 10;
+    
+    // Deduction for being too new (less than 30 days)
+    const createdAt = new Date(repo.created_at);
+    const daysSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceCreation < 30) score -= 15;
+    
+    // Deduction for too many open issues
+    if (repo.open_issues_count > 50) score -= 10;
+    
+    // Bonus for having security topics
+    if (repo.topics && repo.topics.some((topic: string) => 
+      topic.toLowerCase().includes('security') || 
+      topic.toLowerCase().includes('safe') || 
+      topic.toLowerCase().includes('audit')
+    )) score += 10;
+    
+    return Math.max(0, score);
+  };
+
+  const calculateRiskScore = (securityIssues: SecurityIssue[], dependencies: Dependency[]) => {
+    let score = 0;
+    
+    // Calculate risk from security issues
+    const criticalIssues = securityIssues.filter(issue => issue.severity === 'critical').length;
+    const highIssues = securityIssues.filter(issue => issue.severity === 'high').length;
+    const mediumIssues = securityIssues.filter(issue => issue.severity === 'medium').length;
+    const lowIssues = securityIssues.filter(issue => issue.severity === 'low').length;
+    
+    score += criticalIssues * 25;
+    score += highIssues * 15;
+    score += mediumIssues * 8;
+    score += lowIssues * 3;
+    
+    // Calculate risk from dependencies
+    const criticalDeps = dependencies.filter(dep => dep.severity === 'critical').length;
+    const highDeps = dependencies.filter(dep => dep.severity === 'high').length;
+    const mediumDeps = dependencies.filter(dep => dep.severity === 'medium').length;
+    const lowDeps = dependencies.filter(dep => dep.severity === 'low').length;
+    
+    score += criticalDeps * 20;
+    score += highDeps * 10;
+    score += mediumDeps * 5;
+    score += lowDeps * 2;
+    
+    return Math.min(100, score);
+  };
+
+  const generateRecommendations = (repo: any, securityIssues: SecurityIssue[], dependencies: Dependency[], metrics: any) => {
+    const recommendations: string[] = [];
+    
+    // Security recommendations
+    if (securityIssues.length > 0) {
+      recommendations.push('Address identified security issues immediately');
+      recommendations.push('Implement security code review process');
+      recommendations.push('Add automated security testing to CI/CD pipeline');
+    }
+    
+    // Dependency recommendations
+    const vulnerableDeps = dependencies.filter(dep => dep.vulnerabilities > 0);
+    if (vulnerableDeps.length > 0) {
+      recommendations.push('Update vulnerable dependencies to latest versions');
+      recommendations.push('Use dependency scanning tools like npm audit or Snyk');
+    }
+    
+    // Repository health recommendations
+    if (!repo.license) {
+      recommendations.push('Add an open source license to your repository');
+    }
+    
+    if (repo.open_issues_count > 20) {
+      recommendations.push('Address open issues to improve repository health');
+    }
+    
+    if (metrics.codeQuality < 70) {
+      recommendations.push('Improve code quality with better documentation and structure');
+    }
+    
+    // General best practices
+    recommendations.push('Implement automated testing');
+    recommendations.push('Use continuous integration/deployment');
+    recommendations.push('Regular security audits and penetration testing');
+    recommendations.push('Monitor repository for security advisories');
+    
+    return recommendations;
   };
 
   const getSeverityColor = (severity: string) => {
