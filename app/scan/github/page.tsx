@@ -1,13 +1,6 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'GitHub Repository Security Scanner',
-  description: 'Analyze GitHub repositories for security vulnerabilities, dependency issues, and code quality problems. Get detailed security reports with actionable recommendations.',
-  keywords: ['github scanner', 'repository security', 'code analysis', 'vulnerability detection', 'dependency security'],
-};
 import { Shield, Search, AlertTriangle, CheckCircle, Play, FileText, Users, Zap, Copy, Download, Share2, Clock, TrendingUp, Upload, Target, Activity, BarChart3, FileCheck, Globe, Lock, Eye, EyeOff, GitBranch, Package, Code, AlertCircle, Info } from 'lucide-react';
 import { Card, Button, Badge, Container, Section, Skeleton } from '@/components/ui/DesignSystem';
 
