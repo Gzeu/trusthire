@@ -1062,7 +1062,7 @@ class BehavioralAnalyticsService {
       await this.redis.setex(`ueba_alert:${alert.id}`, 86400, JSON.stringify(alert));
       
       // Store in database
-      await this.prisma.uebaAlert.create({
+      await this.prisma.uEBAAlert.create({
         data: {
           id: alert.id,
           title: alert.title,
