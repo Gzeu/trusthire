@@ -908,6 +908,24 @@ model CompliancePolicy {
   @@index([effectiveDate])
 }
 
+model AssessmentShare {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  assessmentId    String   // Reference to Assessment
+  isPublic        Boolean  @default(false)
+  includeDetails   Boolean  @default(true)
+  includeRecommendations Boolean @default(true)
+  customMessage    String?
+  expiresAt       DateTime @default(dbgenerated("(datetime('now', '+30 days'))"))
+  viewCount       Int      @default(0)
+  lastViewedAt    DateTime?
+  settings        String   // JSON with share settings
+
+  @@index([assessmentId])
+  @@index([expiresAt])
+}
+
 model ThreatActor {
   id              String   @id @default(cuid())
   createdAt       DateTime @default(now())

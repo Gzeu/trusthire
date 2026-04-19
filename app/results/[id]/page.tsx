@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Shield, AlertTriangle, CheckCircle, XCircle, HelpCircle,
-  Copy, Download, ExternalLink, ChevronRight, Loader2
+  Copy, Download, ExternalLink, ChevronRight, Loader2, Share2
 } from 'lucide-react';
 import type { AssessmentResult, RedFlag, WorkflowStep, RepoScanResult, DomainCheckResult } from '@/types';
 import { AiAnalysisSection } from '@/components/AiAnalysisSection';
@@ -108,6 +108,40 @@ export default function ResultsPage() {
     a.href = url;
     a.download = `trusthire-report-${data.id}.txt`;
     a.click();
+  };
+
+  const shareAssessment = async () => {
+    if (!data) return;
+    
+    try {
+      const response = await fetch('/api/share/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          assessmentId: data.id,
+          settings: {
+            isPublic: true,
+            includeDetails: true,
+            includeRecommendations: true,
+            customMessage: 'Check out this security assessment from TrustHire'
+          }
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        const shareUrl = `${window.location.origin}/share/${result.token}`;
+        navigator.clipboard.writeText(shareUrl);
+        alert(`Share link copied to clipboard!\n\n${shareUrl}`);
+      } else {
+        alert('Failed to generate share link: ' + result.error);
+      }
+    } catch (error) {
+      alert('Error generating share link: ' + error);
+    }
   };
 
   const generateFullReport = () => {
@@ -222,6 +256,9 @@ due diligence before making employment decisions.
           </button>
           <button onClick={downloadReport} className="flex items-center gap-2 text-sm font-mono text-white/50 hover:text-white border border-white/10 px-3 py-2 rounded-lg transition-colors">
             <Download className="w-4 h-4" /> Export
+          </button>
+          <button onClick={shareAssessment} className="flex items-center gap-2 text-sm font-mono text-white/50 hover:text-white border border-white/10 px-3 py-2 rounded-lg transition-colors">
+            <Share2 className="w-4 h-4" /> Share
           </button>
           <Link href="/assess" className="text-sm font-mono bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
             New Assessment

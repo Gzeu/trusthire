@@ -49,6 +49,17 @@ export const UrlScanSchema = z.object({
   url: z.string().url('Invalid URL'),
 });
 
+// Share settings schema
+export const ShareSettingsSchema = z.object({
+  assessmentId: z.string().min(1, 'Assessment ID is required'),
+  settings: z.object({
+    isPublic: z.boolean(),
+    includeDetails: z.boolean(),
+    includeRecommendations: z.boolean(),
+    customMessage: z.string().max(500, 'Custom message too long').optional(),
+  }),
+});
+
 // AI analysis schema
 export const AiAnalysisSchema = z.object({
   recruiterMessages: z.array(z.string().max(1000, 'Message too long')).min(1, 'At least one message required'),
