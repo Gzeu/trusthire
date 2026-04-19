@@ -1,0 +1,91 @@
+{
+  "name": "TrustHire - AI-Powered Security Operations Platform",
+  "short_name": "TrustHire",
+  "description": "Advanced cybersecurity platform with AI-driven threat detection, automated compliance, and intelligent security orchestration",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["security", "business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "TrustHire Desktop Dashboard"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "375x667",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "TrustHire Mobile Interface"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick Scan",
+      "short_name": "Scan",
+      "description": "Quick security scan of repositories and URLs",
+      "url": "/scan",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Threat Intelligence",
+      "short_name": "Intel",
+      "description": "View threat intelligence and analytics",
+      "url": "/intelligence",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Security operations dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://trusthire-git-main-gzeus-projects.vercel.app"
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}
