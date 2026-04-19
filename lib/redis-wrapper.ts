@@ -15,7 +15,7 @@ class RedisWrapper {
   private async initializeRedis() {
     try {
       // Dynamic import to prevent build errors
-      const redisModule = await import('redis').catch(() => null);
+      const redisModule = await eval('import("redis")').catch(() => null);
       if (!redisModule) {
         console.warn('Redis module not available, using fallback');
         return;
