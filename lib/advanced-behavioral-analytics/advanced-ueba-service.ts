@@ -1902,7 +1902,7 @@ export class AdvanceduebaService extends EventEmitter {
         total: models.length,
         active: models.filter(m => m.status === 'active').length,
         training: models.filter(m => m.status === 'training').length,
-        avgAccuracy: this.calculateAverage(models, 'performance.accuracy'),
+        avgAccuracy: this.calculateAverage(models, 'performance.accuracy' as keyof DeepLearningModel),
         byModelType: this.groupBy(models, 'modelType')
       },
       anomalies: {
@@ -1918,9 +1918,9 @@ export class AdvanceduebaService extends EventEmitter {
         byType: this.groupBy(correlations, 'correlationType')
       },
       performance: {
-        avgInferenceTime: this.calculateAverage(models, 'performance.inferenceMetrics.averageInferenceTime'),
+        avgInferenceTime: this.calculateAverage(models, 'performance.inferenceMetrics.averageInferenceTime' as keyof DeepLearningModel),
         avgTrainingTime: this.calculateAverage(profiles, 'metadata.lastModified'), // Mock
-        modelAccuracy: this.calculateAverage(models, 'performance.accuracy'),
+        modelAccuracy: this.calculateAverage(models, 'performance.accuracy' as keyof DeepLearningModel),
         anomalyDetectionRate: this.calculateAnomalyDetectionRate(anomalies),
         falsePositiveRate: this.calculateFalsePositiveRate(anomalies)
       }
