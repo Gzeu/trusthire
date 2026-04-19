@@ -122,7 +122,8 @@ export default function LinkedInScanPage() {
         severity: 'medium',
         description: 'Profile photo appears to be AI-generated or stock image',
         evidence: 'Unnatural facial features, inconsistent lighting',
-        recommendation: 'Request video call or additional photo verification'
+        recommendation: 'Request video call or additional photo verification',
+        category: 'profile' as const
       },
       {
         id: '2',
@@ -130,7 +131,8 @@ export default function LinkedInScanPage() {
         severity: 'high',
         description: 'Unusual connection pattern with many fake or bot accounts',
         evidence: 'High percentage of connections with incomplete profiles',
-        recommendation: 'Manually verify key connections before engagement'
+        recommendation: 'Manually verify key connections before engagement',
+        category: 'connections' as const
       },
       {
         id: '3',
@@ -138,7 +140,8 @@ export default function LinkedInScanPage() {
         severity: 'medium',
         description: 'Significant gaps in employment history',
         evidence: '2+ year gaps between positions without explanation',
-        recommendation: 'Request clarification on career timeline gaps'
+        recommendation: 'Request clarification on career timeline gaps',
+        category: 'experience' as const
       },
       {
         id: '4',
@@ -146,7 +149,8 @@ export default function LinkedInScanPage() {
         severity: 'low',
         description: 'High number of endorsements from unknown connections',
         evidence: 'Endorsements primarily from connections with no interaction history',
-        recommendation: 'Verify skills through practical assessment or references'
+        recommendation: 'Verify skills through practical assessment or references',
+        category: 'skills' as const
       },
       {
         id: '5',
@@ -154,7 +158,8 @@ export default function LinkedInScanPage() {
         severity: 'medium',
         description: 'Inconsistent posting and engagement patterns',
         evidence: 'Burst activity followed by long periods of inactivity',
-        recommendation: 'Monitor for automated or scheduled posting behavior'
+        recommendation: 'Monitor for automated or scheduled posting behavior',
+        category: 'activity' as const
       }
     ];
 
