@@ -3,8 +3,8 @@
 
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { authenticator } from 'otplib';
-import { qrcode } from 'qrcode';
+import * as speakeasy from 'speakeasy';
+import QRCode from 'qrcode';
 import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 
@@ -50,6 +50,8 @@ export interface RegisterRequest {
   password: string;
   confirmPassword: string;
   acceptTerms: boolean;
+  language?: string;
+  deviceInfo?: any;
 }
 
 export interface SessionInfo {
@@ -222,7 +224,7 @@ class EnhancedAuthService {
           throw new Error('MFA not properly configured');
         }
 
-        const isValidMFA = authenticator.verify({
+        const isValidMFA = speakeasy.totp.verify({
           token: request.mfaCode,
           secret: user.mfaSecret
         });
@@ -347,13 +349,17 @@ class EnhancedAuthService {
       }
 
       // Generate secret
-      const secret = authenticator.generateSecret();
+      const secret = speakeasy.generateSecret();
       const serviceName = 'TrustHire Security Platform';
       const issuer = 'TrustHire';
-      const manualEntryKey = authenticator.keyuri(user.email, serviceName, secret);
+      const manualEntryKey = speakeasy.otpauthURL({
+        secret: secret.base32,
+        label: user.email,
+        issuer: serviceName
+      });
 
       // Generate QR code
-      const qrCode = await qrcode(manualEntryKey);
+      const qrCode = await QRCode.toDataURL(manualEntryKey);
 
       // Generate backup codes
       const backupCodes = Array.from({ length: 10 }, () => 
@@ -364,7 +370,7 @@ class EnhancedAuthService {
       await this.prisma.user.update({
         where: { id: userId },
         data: {
-          mfaSecret: secret,
+          mfaSecret: secret.base32,
           backupCodes: JSON.stringify(backupCodes)
         }
       });
@@ -377,7 +383,7 @@ class EnhancedAuthService {
       });
 
       return {
-        secret,
+        secret: secret.base32,
         qrCode,
         backupCodes,
         manualEntryKey
@@ -399,7 +405,7 @@ class EnhancedAuthService {
         throw new Error('MFA setup not found');
       }
 
-      const isValidCode = authenticator.verify({
+      const isValidCode = speakeasy.totp.verify({
         token: code,
         secret: user.mfaSecret
       });
@@ -479,7 +485,7 @@ class EnhancedAuthService {
           name: request.name,
           key,
           keyPrefix,
-          permissions: request.permissions,
+          permissions: JSON.stringify(request.permissions),
           expiresAt: request.expiresAt,
           rateLimit: request.rateLimit,
           metadata: request.metadata ? JSON.stringify(request.metadata) : undefined
@@ -501,21 +507,6 @@ class EnhancedAuthService {
       };
     } catch (error) {
       console.error('API key creation failed:', error);
-      throw error;
-    }
-  }
-
-  // Get user API keys
-  async getUserApiKeys(userId: string): Promise<ApiKeyInfo[]> {
-    try {
-      const apiKeys = await this.prisma.apiKey.findMany({
-        where: { userId, isActive: true },
-        orderBy: { createdAt: 'desc' }
-      });
-
-      return apiKeys.map(key => this.formatApiKey(key));
-    } catch (error) {
-      console.error('Failed to get API keys:', error);
       throw error;
     }
   }
@@ -559,7 +550,7 @@ class EnhancedAuthService {
         orderBy: { lastActivityAt: 'desc' }
       });
 
-      return sessions.map(session => ({
+      return sessions.map((session: any) => ({
         sessionId: session.sessionId,
         userId: session.userId,
         ipAddress: session.ipAddress,
@@ -679,7 +670,7 @@ class EnhancedAuthService {
       
       await this.prisma.userSession.updateMany({
         where: {
-          id: { in: sessionsToRevoke.map(s => s.id) }
+          id: { in: sessionsToRevoke.map((s: any) => s.id) }
         },
         data: { isActive: false }
       });
@@ -805,14 +796,3 @@ class EnhancedAuthService {
 // Singleton instance
 export const enhancedAuthService = new EnhancedAuthService();
 
-// Export types
-export type { 
-  User, 
-  AuthTokens, 
-  LoginRequest, 
-  RegisterRequest, 
-  SessionInfo, 
-  MFASetupResult, 
-  ApiKeyCreateRequest, 
-  ApiKeyInfo 
-};

@@ -443,5 +443,3 @@ class ScanHistoryService {
 // Singleton instance
 export const scanHistoryService = new ScanHistoryService();
 
-// Export types
-export type { ScanHistoryEntry, CreateScanHistoryRequest, ScanHistoryFilter, ScanHistoryStats };

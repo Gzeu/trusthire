@@ -18,14 +18,22 @@ import {
   CheckCircle,
   RefreshCw,
   Download,
-  Share2
+  Share2,
+  Activity,
+  TrendingDown,
+  GitBranch,
+  Eye,
+  AlertCircle,
+  Cpu,
+  Network,
+  Calendar
 } from 'lucide-react';
 import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
 import { Card, Button, Badge, Container, Section, Skeleton } from '@/components/ui/DesignSystem';
 
 interface AnalysisResult {
   id: string;
-  type: 'threat_pattern' | 'code_analysis' | 'social_engineering' | 'malicious_intent';
+  type: 'threat_pattern' | 'code_analysis' | 'social_engineering' | 'malicious_intent' | 'ml_prediction' | 'anomaly_detection';
   confidence: number;
   severity: 'low' | 'medium' | 'high' | 'critical';
   title: string;
@@ -36,7 +44,34 @@ interface AnalysisResult {
     modelUsed: string;
     processingTime: number;
     tokensConsumed: number;
+    mlInsights?: MLInsights;
+    predictions?: ThreatPrediction[];
+    anomalies?: AnomalyData[];
   };
+}
+
+interface MLInsights {
+  modelAccuracy: number;
+  featureImportance: Array<{ feature: string; importance: number; }>;
+  classification: string;
+  riskScore: number;
+  patterns: string[];
+}
+
+interface ThreatPrediction {
+  threatType: string;
+  probability: number;
+  timeframe: string;
+  severity: string;
+  factors: Array<{ name: string; weight: number; value: number; }>;
+}
+
+interface AnomalyData {
+  type: string;
+  severity: string;
+  confidence: number;
+  description: string;
+  indicators: Array<{ name: string; value: number; threshold: number; }>;
 }
 
 interface AIModel {
@@ -47,6 +82,9 @@ interface AIModel {
   capabilities: string[];
   maxTokens: number;
   costPerToken: number;
+  mlEnabled?: boolean;
+  predictionEnabled?: boolean;
+  anomalyDetectionEnabled?: boolean;
 }
 
 const aiModels: AIModel[] = [
@@ -107,17 +145,26 @@ const analysisTypes = [
 ];
 
 export default function AdvancedAnalysisPanel() {
-  const [selectedModel, setSelectedModel] = useState<string>('gpt-4-turbo');
+  const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
   const [selectedAnalysis, setSelectedAnalysis] = useState<string>('threat_pattern');
   const [input, setInput] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
+  const [messages, setMessages] = useState<(HumanMessage | AIMessage | SystemMessage)[]>([]);
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
+  const [mlInsights, setMlInsights] = useState<MLInsights | null>(null);
+  const [threatPredictions, setThreatPredictions] = useState<ThreatPrediction[]>([]);
+  const [anomalies, setAnomalies] = useState<AnomalyData[]>([]);
+  const [showMLPanel, setShowMLPanel] = useState(false);
+  const [showPredictions, setShowPredictions] = useState(false);
+  const [showAnomalies, setShowAnomalies] = useState(false);
 
   const runAnalysis = useCallback(async () => {
     if (!input.trim()) return;
     
     setIsAnalyzing(true);
+    setAnalysisResults([]);
     setResults([]);
     
     try {
@@ -194,9 +241,9 @@ export default function AdvancedAnalysisPanel() {
               {aiModels.map((model) => (
                 <div
                   key={model.id}
-                  onClick={() => setSelectedModel(model.id)}
+                  onClick={() => setSelectedModel(model)}
                   className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
-                    selectedModel === model.id
+                    selectedModel?.id === model.id
                       ? 'border-purple-500/50 bg-purple-500/10'
                       : 'border-white/10 bg-white/5 hover:border-white/20'
                   }`}
@@ -296,7 +343,7 @@ export default function AdvancedAnalysisPanel() {
                   {results.length} threats detected
                 </Badge>
                 <Badge variant="default">
-                  {aiModels.find(m => m.id === selectedModel)?.name || 'AI Model'}
+                  {selectedModel?.name || 'AI Model'}
                 </Badge>
               </div>
             </div>

@@ -649,11 +649,3 @@ class AnalyticsService {
 // Singleton instance
 export const analyticsService = new AnalyticsService();
 
-// Export types
-export type { 
-  AnalyticsEvent, 
-  CreateAnalyticsEventRequest, 
-  AnalyticsFilter, 
-  AnalyticsMetrics, 
-  DashboardMetrics 
-};

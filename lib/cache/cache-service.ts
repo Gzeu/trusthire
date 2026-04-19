@@ -279,7 +279,7 @@ class CacheService {
       const keySets = await this.redis.mget(...tagKeys);
       
       const allKeys: string[] = [];
-      keySets.forEach(keySet => {
+      keySets.forEach((keySet: any) => {
         if (keySet) {
           try {
             const keys = JSON.parse(keySet);
@@ -608,5 +608,3 @@ class CacheService {
 // Singleton instance
 export const cacheService = new CacheService();
 
-// Export types
-export type { CacheEntry, CacheOptions, CacheStats, CachePattern };

@@ -172,8 +172,7 @@ class OAuthService {
         await this.prisma.oAuthAccount.update({
           where: { id: existingOAuthAccount.id },
           data: {
-            providerEmail: userInfo.email,
-            lastUsedAt: new Date()
+            providerEmail: userInfo.email
           }
         });
 
@@ -248,13 +247,12 @@ class OAuthService {
         orderBy: { createdAt: 'desc' }
       });
 
-      return accounts.map(account => ({
+      return accounts.map((account: any) => ({
         id: account.id,
         provider: account.provider,
         providerId: account.providerId,
         providerEmail: account.providerEmail,
-        createdAt: account.createdAt.toISOString(),
-        lastUsedAt: account.lastUsedAt?.toISOString()
+        createdAt: account.createdAt.toISOString()
       }));
     } catch (error) {
       console.error('Failed to get OAuth accounts:', error);
@@ -387,7 +385,7 @@ class OAuthService {
           email: data.mail || data.userPrincipalName,
           name: data.displayName,
           username: data.userPrincipalName?.split('@')[0],
-          avatar: null, // Microsoft doesn't provide avatar in basic response
+          avatar: undefined, // Microsoft doesn't provide avatar in basic response
           provider,
           raw: data
         };
@@ -432,8 +430,10 @@ class OAuthService {
     const now = Date.now();
     const expiredStates: string[] = [];
 
-    for (const [state, oauthState] of this.stateStore.entries()) {
-      if (now - oauthState.timestamp > 10 * 60 * 1000) { // 10 minutes
+    const states = Array.from(this.stateStore.keys());
+    for (const state of states) {
+      const oauthState = this.stateStore.get(state);
+      if (oauthState && now - oauthState.timestamp > 10 * 60 * 1000) { // 10 minutes
         expiredStates.push(state);
       }
     }
@@ -445,5 +445,3 @@ class OAuthService {
 // Singleton instance
 export const oauthService = new OAuthService();
 
-// Export types
-export type { OAuthProvider, OAuthState, OAuthUserInfo, OAuthTokenResponse };

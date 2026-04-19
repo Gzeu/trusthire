@@ -170,8 +170,8 @@ model User {
   lastName        String?
   passwordHash    String
   salt            String
-  role            UserRole @default(USER)
-  status          UserStatus @default(ACTIVE)
+  role            String   @default("USER")
+  status          String   @default("ACTIVE")
   emailVerified   Boolean  @default(false)
   emailVerifiedAt DateTime?
   lastLoginAt     DateTime?
@@ -232,7 +232,7 @@ model ApiKey {
   name            String
   key             String   @unique
   keyPrefix       String   // First 8 characters for display
-  permissions     String[] // Array of permissions
+  permissions     String   // JSON array of permissions
   isActive         Boolean  @default(true)
   lastUsedAt      DateTime?
   expiresAt        DateTime?
@@ -278,13 +278,13 @@ model OAuthAccount {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   userId          String
-  provider        OAuthProvider
+  provider        String   // OAuth provider name
   providerId      String   // Provider's user ID
   providerEmail   String?
   accessToken     String?  // Encrypted
   refreshToken   String?  // Encrypted
   expiresAt       DateTime?
-  scopes          String[] // Array of granted scopes
+  scopes          String?  // JSON array of granted scopes
   metadata        String?  // JSON with provider-specific data
   
   // Relations
@@ -300,7 +300,7 @@ model AuditLog {
   createdAt       DateTime @default(now())
   userId          String?
   sessionId       String?
-  action          AuditAction
+  action          String   // Audit action type
   resource        String?  // Resource that was acted upon
   resourceId      String?  // ID of the resource
   ipAddress       String?
@@ -369,46 +369,598 @@ model RolePermission {
   @@index([permissionId])
 }
 
-// Enums
-enum UserRole {
-  USER
-  ANALYST
-  ADMIN
-  SUPER_ADMIN
+// ML Model and Training Tables
+model MLModel {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String
+  type            String   // classification, prediction, anomaly, recommendation
+  version         String
+  status          String   @default("training") // training, ready, failed, deprecated
+  accuracy        Float?
+  precision       Float?
+  recall          Float?
+  f1Score         Float?
+  features        String   // JSON array of feature names
+  hyperparameters  String   // JSON with hyperparameters
+  trainingData    String   // JSON with training data info
+  lastTrainedAt   DateTime?
+  metadata        String?  // JSON with model data and evaluation
+  
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@index([lastTrainedAt])
 }
 
-enum UserStatus {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
-  PENDING_VERIFICATION
-  DELETED
+model TrainingJob {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  modelId         String
+  status          String   // queued, running, completed, failed
+  progress        Int      @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  errorMessage    String?
+  metrics         String?  // JSON with training metrics
+  config          String   // JSON with training configuration
+  
+  @@index([modelId])
+  @@index([status])
+  @@index([createdAt])
 }
 
-enum OAuthProvider {
-  GITHUB
-  GOOGLE
-  MICROSOFT
-  LINKEDIN
+model PredictionResult {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  modelId         String
+  inputFeatures   String   // JSON with input features
+  prediction      String   // Predicted class/value
+  confidence      Float    // Confidence score
+  actualValue     String?  // Actual value (for evaluation)
+  isCorrect       Boolean?
+  metadata        String?  // JSON with additional data
+  
+  @@index([modelId])
+  @@index([createdAt])
+  @@index([isCorrect])
 }
 
-enum AuditAction {
-  LOGIN
-  LOGOUT
-  REGISTER
-  PASSWORD_CHANGE
-  MFA_ENABLED
-  MFA_DISABLED
-  API_KEY_CREATED
-  API_KEY_DELETED
-  USER_CREATED
-  USER_UPDATED
-  USER_DELETED
-  ROLE_CHANGED
-  PERMISSION_GRANTED
-  PERMISSION_REVOKED
-  SCAN_STARTED
-  SCAN_COMPLETED
-  DATA_EXPORTED
-  SETTINGS_UPDATED
+model FeatureImportance {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  modelId         String
+  featureName     String
+  importance      Float
+  rank            Int
+  metadata        String?  // JSON with feature details
+  
+  @@index([modelId])
+  @@index([rank])
 }
+
+model AnomalyDetection {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  type            String   // statistical, behavioral, network, temporal, resource, pattern, correlation, threshold, hybrid
+  severity        String   // low, medium, high, critical
+  confidence      Float
+  description      String
+  source          String
+  timestamp       DateTime
+  affectedResources String // JSON array of affected resources
+  indicators       String   // JSON array of anomaly indicators
+  context         String   // JSON with anomaly context
+  recommendations  String   // JSON array of recommendations
+  status          String   @default("active") // active, resolved, false_positive
+  resolvedAt       DateTime?
+  resolvedBy       String?
+  
+  @@index([status])
+  @@index([type])
+  @@index([severity])
+  @@index([timestamp])
+  @@index([source])
+}
+
+model AutomatedResponse {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  threatId        String
+  threatType      String
+  severity        String   // low, medium, high, critical
+  status          String   @default("pending") // pending, executing, completed, failed, cancelled
+  triggeredAt     DateTime
+  executedAt      DateTime?
+  completedAt     DateTime?
+  errorMessage    String?
+  context         String   // JSON with response context
+  actions         String   // JSON array of response actions
+  results         String   // JSON array of response results
+  
+  @@index([status])
+  @@index([threatType])
+  @@index([severity])
+  @@index([triggeredAt])
+  @@index([threatId])
+}
+
+model SOARPlaybook {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String
+  description      String
+  category        String
+  severity        String   // low, medium, high, critical
+  enabled         Boolean  @default(true)
+  triggers        String   // JSON array of playbook triggers
+  steps           String   // JSON array of playbook steps
+  conditions      String   // JSON array of playbook conditions
+  variables       String   // JSON array of playbook variables
+  timeout         Int      @default(3600) // seconds
+  retryPolicy     String   // JSON with retry policy
+  notifications   String   // JSON array of notification configs
+  metrics         String   // JSON with playbook metrics
+  createdBy       String
+  version         String   @default("1.0.0")
+  
+  @@index([enabled])
+  @@index([category])
+  @@index([severity])
+  @@index([createdBy])
+}
+
+model SOARExecution {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  playbookId      String
+  playbookName    String
+  status          String   @default("pending") // pending, running, completed, failed, cancelled, paused
+  triggeredBy     String
+  triggeredAt     DateTime
+  startedAt       DateTime?
+  completedAt     DateTime?
+  context         String   // JSON with execution context
+  steps           String   // JSON array of step executions
+  variables       String   // JSON with execution variables
+  metrics         String   // JSON with execution metrics
+  errorMessage    String?
+  
+  @@index([status])
+  @@index([playbookId])
+  @@index([triggeredBy])
+  @@index([triggeredAt])
+  @@index([startedAt])
+  @@index([completedAt])
+}
+
+model SOARApprovalRequest {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  stepId          String
+  playbookExecutionId String
+  requester       String
+  approvers       String   // JSON array of approvers
+  title           String
+  description      String
+  context         String   // JSON with approval context
+  status          String   @default("pending") // pending, approved, rejected, expired
+  expiresAt       DateTime
+  responses       String   // JSON array of approval responses
+  
+  @@index([status])
+  @@index([stepId])
+  @@index([playbookExecutionId])
+  @@index([requester])
+  @@index([expiresAt])
+}
+
+model IntelligenceSource {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String
+  type            String   // internal, external, open_source, commercial, government, partner
+  category        String   // malware, vulnerability, threat_actor, ioc, campaign, general
+  priority        String   // low, medium, high, critical
+  reliability      Float    @default(0.5) // 0-1
+  timeliness      Float    @default(0.5) // 0-1
+  confidence      Float    @default(0.5) // 0-1
+  enabled         Boolean  @default(true)
+  apiConfig       String?  // JSON with API configuration
+  feedConfig      String?  // JSON with feed configuration
+  lastSync        DateTime @default(now())
+  syncFrequency   Int      @default(60) // minutes
+  metrics         String   // JSON with source metrics
+  
+  @@index([enabled])
+  @@index([type])
+  @@index([category])
+  @@index([priority])
+  @@index([lastSync])
+}
+
+model IntelligenceItem {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  sourceId        String
+  externalId      String?
+  type            String   // indicator, threat_actor, campaign, malware, vulnerability, report, alert
+  title           String
+  description      String
+  severity        String   // info, low, medium, high, critical
+  confidence      Float    @default(0.5) // 0-1
+  reliability      Float    @default(0.5) // 0-1
+  timestamp       DateTime @default(now())
+  firstSeen       DateTime @default(now())
+  lastSeen        DateTime @default(now())
+  tags            String   // JSON array of tags
+  indicators      String   // JSON array of indicators
+  attributes      String   // JSON with item attributes
+  context         String   // JSON with item context
+  relationships    String   // JSON array of relationships
+  analysis        String   // JSON with item analysis
+  
+  @@index([sourceId])
+  @@index([type])
+  @@index([severity])
+  @@index([timestamp])
+  @@index([firstSeen])
+  @@index([lastSeen])
+}
+
+model FusionRule {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String
+  description      String
+  enabled         Boolean  @default(true)
+  priority        Int      @default(1)
+  conditions      String   // JSON array of rule conditions
+  actions         String   // JSON array of rule actions
+  confidenceThreshold Float @default(0.5) // 0-1
+  correlationWindow Int     @default(24) // hours
+  tags            String   // JSON array of tags
+  
+  @@index([enabled])
+  @@index([priority])
+}
+
+model FusionResult {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  ruleId          String
+  items           String   // JSON array of item IDs
+  confidence      Float    // 0-1
+  riskScore       Float    // 0-1
+  correlations    String   // JSON array of correlations
+  analysis        String
+  recommendations  String   // JSON array of recommendations
+  
+  @@index([ruleId])
+  @@index([createdAt])
+  @@index([confidence])
+  @@index([riskScore])
+}
+
+model ZeroTrustPolicy {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String
+  description      String
+  enabled         Boolean  @default(true)
+  priority        String   // low, medium, high, critical
+  scope           String   // JSON with policy scope
+  rules           String   // JSON array of policy rules
+  conditions      String   // JSON array of policy conditions
+  actions         String   // JSON array of policy actions
+  verification    String   // JSON with verification config
+  compliance      String   // JSON with compliance config
+  metrics         String   // JSON with policy metrics
+  createdBy       String
+  version         String
+  
+  @@index([enabled])
+  @@index([priority])
+  @@index([createdBy])
+}
+
+model AccessRequest {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  userId          String
+  resourceId      String
+  accessType      String   // read, write, execute, admin
+  requestedAt     DateTime @default(now())
+  expiresAt       DateTime?
+  justification    String
+  context         String   // JSON with request context
+  evaluation      String   // JSON with evaluation result
+  status          String   @default("pending") // pending, approved, denied, expired, cancelled
+  approvedBy      String?
+  approvedAt      DateTime?
+  deniedReason    String?
+  conditions      String   // JSON array of access conditions
+  
+  @@index([userId])
+  @@index([resourceId])
+  @@index([status])
+  @@index([requestedAt])
+  @@index([expiresAt])
+}
+
+model TAXIIServer {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String
+  description      String
+  url             String
+  apiRoot         String
+  discovery       String   // JSON with TAXII discovery
+  authentication   String   // JSON with authentication config
+  status          String   // JSON with server status
+  lastSync        DateTime @default(now())
+  syncFrequency   Int      @default(60) // minutes
+  
+  @@index([url])
+  @@index([lastSync])
+}
+
+model SharingPolicy {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String
+  description      String
+  enabled         Boolean  @default(true)
+  priority        String   // low, medium, high, critical
+  sourceFilters   String   // JSON array of source filters
+  destinationFilters String // JSON array of destination filters
+  transformationRules String // JSON array of transformation rules
+  sharingRules    String   // JSON array of sharing rules
+  schedule        String   // JSON with schedule config
+  monitoring       String   // JSON with monitoring config
+  createdBy       String
+  
+  @@index([enabled])
+  @@index([priority])
+  @@index([createdBy])
+}
+
+model SharingSession {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  policyId        String
+  sourceServerId  String?
+  destinationServerId String?
+  status          String   @default("pending") // pending, running, completed, failed, cancelled
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+  objectsProcessed Int      @default(0)
+  objectsTotal    Int      @default(0)
+  errors          String   // JSON array of errors
+  metrics         String   // JSON with session metrics
+  
+  @@index([policyId])
+  @@index([status])
+  @@index([startedAt])
+  @@index([completedAt])
+}
+
+model BehavioralProfile {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  entityId        String
+  entityType      String   // user, device, application, service, network
+  baselineMetrics String   // JSON with baseline metrics
+  currentMetrics  String   // JSON with current metrics
+  behaviorPatterns String // JSON array of behavior patterns
+  riskFactors     String   // JSON array of risk factors
+  anomalies       String   // JSON array of anomalies
+  riskScore       Float    @default(0)
+  confidence      Float    @default(0)
+  lastUpdated     DateTime @default(now())
+  
+  @@unique([entityId, entityType])
+  @@index([entityType])
+  @@index([riskScore])
+  @@index([lastUpdated])
+}
+
+model Anomaly {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  type            String   // statistical, behavioral, temporal, contextual, resource
+  severity        String   // info, low, medium, high, critical
+  description      String
+  confidence      Float    @default(0)
+  detectedAt      DateTime @default(now())
+  entityId        String
+  entityType      String
+  indicators      String   // JSON array of indicators
+  baselineValue   String   // JSON with baseline value
+  currentValue    String   // JSON with current value
+  deviation       Float    @default(0)
+  riskImpact      Float    @default(0)
+  status          String   @default("new") // new, investigating, confirmed, false_positive, resolved
+  resolution      String?
+  resolvedAt      DateTime?
+  
+  @@index([entityId, entityType])
+  @@index([type])
+  @@index([severity])
+  @@index([status])
+  @@index([detectedAt])
+}
+
+model UEBAAlert {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  title           String
+  description      String
+  severity        String   // info, low, medium, high, critical
+  entityId        String
+  entityType      String
+  anomalyIds      String   // JSON array of anomaly IDs
+  riskScore       Float    @default(0)
+  confidence      Float    @default(0)
+  indicators      String   // JSON array of indicators
+  recommendations  String   // JSON array of recommendations
+  status          String   @default("new") // new, investigating, escalated, resolved
+  assignedTo      String?
+  resolvedAt      DateTime?
+  
+  @@index([entityId, entityType])
+  @@index([severity])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([createdAt])
+}
+
+model ComplianceFramework {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String
+  version         String
+  description      String
+  category        String   // security, privacy, financial, healthcare, industry_specific
+  requirements    String   // JSON array of requirements
+  controls        String   // JSON array of controls
+  mappings        String   // JSON array of mappings
+  enabled         Boolean  @default(true)
+  
+  @@index([category])
+  @@index([enabled])
+}
+
+model ComplianceAudit {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  title           String
+  description      String
+  auditType       String   // internal, external, regulatory, certification
+  scope           String   // JSON with audit scope
+  frameworkIds    String   // JSON array of framework IDs
+  requirements    String   // JSON array of requirements
+  status          String   @default("planned") // planned, in_progress, completed, failed, cancelled
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  auditor         String
+  auditTeam       String   // JSON array of team members
+  methodology     String
+  findings        String   // JSON array of findings
+  recommendations  String   // JSON array of recommendations
+  evidence        String   // JSON array of evidence
+  score           Float    @default(0)
+  grade           String   // A, B, C, D, F
+  report          String   // JSON with audit report
+  followUpActions String   // JSON array of follow-up actions
+  
+  @@index([status])
+  @@index([auditType])
+  @@index([auditor])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model CompliancePolicy {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String
+  description      String
+  category        String   // security, privacy, access, data_protection, incident_response, business_continuity
+  frameworkReferences String // JSON array of framework IDs
+  requirements    String   // JSON array of requirement IDs
+  controls        String   // JSON array of control IDs
+  procedures      String   // JSON array of procedures
+  enforcement     String   // JSON with enforcement policy
+  monitoring      String   // JSON with monitoring policy
+  exceptions      String   // JSON array of exceptions
+  version         String
+  status          String   @default("draft") // draft, review, approved, deprecated
+  effectiveDate   DateTime
+  reviewDate      DateTime
+  owner           String
+  approvers       String   // JSON array of approvers
+  
+  @@index([category])
+  @@index([status])
+  @@index([owner])
+  @@index([effectiveDate])
+}
+
+model ThreatActor {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String
+  aliases         String   // JSON array of aliases
+  description      String
+  actorType       String   // apt, cybercrime, hacktivist, insider, state_sponsored, terrorist, unknown
+  sophistication   String   // low, medium, high, advanced
+  motivations     String   // JSON array of motivations
+  capabilities    String   // JSON array of capabilities
+  infrastructure   String   // JSON array of infrastructure
+  tools           String   // JSON array of tools
+  tactics         String   // JSON with tactics information
+  techniques      String   // JSON array of techniques
+  procedures      String   // JSON array of procedures
+  targets         String   // JSON array of targets
+  campaigns       String   // JSON array of campaigns
+  attribution     String   // JSON with attribution information
+  timeline        String   // JSON array of timeline events
+  indicators      String   // JSON array of indicators
+  relationships   String   // JSON array of relationships
+  riskAssessment  String   // JSON with risk assessment
+  intelligenceSources String // JSON array of intelligence sources
+  confidence      Float    @default(0)
+  status          String   @default("unknown") // active, dormant, disbanded, unknown
+  lastUpdated     DateTime @default(now())
+  
+  @@index([actorType])
+  @@index([sophistication])
+  @@index([status])
+  @@index([confidence])
+  @@index([lastUpdated])
+}
+
+model ThreatActorProfile {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  actorId         String
+  analysis        String   // JSON with actor analysis
+  predictions      String   // JSON array of predictions
+  recommendations  String   // JSON array of recommendations
+  monitoring      String   // JSON with monitoring configuration
+  
+  @@index([actorId])
+}
+
+// Note: Enums are defined as string constants for SQLite compatibility
+// User roles: USER, ANALYST, ADMIN, SUPER_ADMIN
+// User statuses: ACTIVE, INACTIVE, SUSPENDED, PENDING_VERIFICATION, DELETED
+// OAuth providers: GITHUB, GOOGLE, MICROSOFT, LINKEDIN
+// Audit actions: LOGIN, LOGOUT, REGISTER, PASSWORD_CHANGE, MFA_ENABLED, MFA_DISABLED, 
+//              API_KEY_CREATED, API_KEY_DELETED, USER_CREATED, USER_UPDATED, USER_DELETED,
+//              ROLE_CHANGED, PERMISSION_GRANTED, PERMISSION_REVOKED, SCAN_STARTED, 
+//              SCAN_COMPLETED, DATA_EXPORTED, SETTINGS_UPDATED

@@ -124,3 +124,6 @@ export const redis = {
   flush: () => redisWrapper.flush(),
   isAvailable: () => redisWrapper.isRedisAvailable(),
 };
+
+// Export getRedisClient function
+export const getRedisClient = () => redisWrapper;
