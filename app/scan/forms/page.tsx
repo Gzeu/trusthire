@@ -119,7 +119,8 @@ export default function FormsScanPage() {
         severity: 'high',
         description: 'Form does not use HTTPS encryption for data transmission',
         evidence: 'Form URL uses HTTP instead of HTTPS protocol',
-        recommendation: 'Implement SSL/TLS encryption for all form submissions'
+        recommendation: 'Implement SSL/TLS encryption for all form submissions',
+        category: 'security' as const
       },
       {
         id: '2',
@@ -127,7 +128,8 @@ export default function FormsScanPage() {
         severity: 'medium',
         description: 'Form lacks proper input validation and sanitization',
         evidence: 'No visible client-side validation patterns detected',
-        recommendation: 'Add comprehensive input validation for all form fields'
+        recommendation: 'Add comprehensive input validation for all form fields',
+        category: 'security' as const
       },
       {
         id: '3',
@@ -135,7 +137,8 @@ export default function FormsScanPage() {
         severity: 'medium',
         description: 'Form does not provide clear privacy policy information',
         evidence: 'No privacy policy link found in form vicinity',
-        recommendation: 'Add visible privacy policy link before form submission'
+        recommendation: 'Add visible privacy policy link before form submission',
+        category: 'privacy' as const
       },
       {
         id: '4',
@@ -143,7 +146,8 @@ export default function FormsScanPage() {
         severity: 'low',
         description: 'Form collects more personal data than necessary',
         evidence: 'Form requests sensitive information not relevant to purpose',
-        recommendation: 'Review and minimize data collection to essential fields only'
+        recommendation: 'Review and minimize data collection to essential fields only',
+        category: 'privacy' as const
       },
       {
         id: '5',
@@ -151,7 +155,8 @@ export default function FormsScanPage() {
         severity: 'medium',
         description: 'Form lacks bot protection mechanisms',
         evidence: 'No CAPTCHA or bot detection system detected',
-        recommendation: 'Implement CAPTCHA or similar bot protection'
+        recommendation: 'Implement CAPTCHA or similar bot protection',
+        category: 'technical' as const
       }
     ];
 
