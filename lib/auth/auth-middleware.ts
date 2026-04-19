@@ -59,7 +59,7 @@ export interface AuthMiddlewareOptions {
   /** Rate limiting configuration */
   rateLimit?: RateLimitOptions;
   /** Whether to add security headers */
-  addSecurityHeaders?: boolean;
+  enableSecurityHeaders?: boolean;
   /** Whether to log authentication attempts */
   logAttempts?: boolean;
 }
@@ -154,8 +154,8 @@ export function createAuthMiddleware(options: AuthMiddlewareOptions = {}) {
       includeRetryAfter: true,
       skipPaths: ['/health', '/metrics']
     },
-    addSecurityHeaders = true,
-    logAttempts = false
+    enableSecurityHeaders = true,
+    logAttempts = true
   } = options;
 
   return async (req: NextRequest, res?: NextResponse) => {
@@ -314,7 +314,7 @@ export function createAuthMiddleware(options: AuthMiddlewareOptions = {}) {
             const response = NextResponse.next();
             
             // Add security headers if enabled
-            if (addSecurityHeaders) {
+            if (enableSecurityHeaders) {
               return addSecurityHeaders(response);
             }
             
@@ -349,7 +349,7 @@ export function createAuthMiddleware(options: AuthMiddlewareOptions = {}) {
       // If no authentication required, proceed with security headers
       const response = NextResponse.next();
       
-      if (addSecurityHeaders) {
+      if (enableSecurityHeaders) {
         return addSecurityHeaders(response);
       }
       
@@ -643,13 +643,14 @@ function shouldSkipRateLimit(path: string, skipPaths?: string[]): boolean {
 export const authMiddleware = createAuthMiddleware({
   requireAuth: true,
   requireRateLimit: true,
-  addSecurityHeaders: true,
+  enableSecurityHeaders: true,
   logAttempts: true,
   rateLimit: {
     windowMs: 60000,
     maxRequests: 100,
+    message: 'Too many requests',
     includeRetryAfter: true,
-    skipPaths: ['/health', '/metrics', '/status']
+    skipPaths: ['/health', '/metrics']
   }
 });
 
@@ -659,7 +660,7 @@ export const authMiddleware = createAuthMiddleware({
 export const apiKeyMiddleware = createAuthMiddleware({
   requireAuth: false,
   requireApiKey: true,
-  addSecurityHeaders: true,
+  enableSecurityHeaders: true,
   logAttempts: true,
   requireRateLimit: true,
   rateLimit: {
@@ -676,7 +677,7 @@ export const publicMiddleware = createAuthMiddleware({
   requireAuth: false,
   requireApiKey: false,
   requireRateLimit: true,
-  addSecurityHeaders: true,
+  enableSecurityHeaders: true,
   rateLimit: {
     windowMs: 60000,
     maxRequests: 200,
@@ -692,7 +693,7 @@ export const devMiddleware = createAuthMiddleware({
   requireAuth: false,
   requireApiKey: false,
   requireRateLimit: false,
-  addSecurityHeaders: false,
+  enableSecurityHeaders: false,
   allowedOrigins: ['http://localhost:3000', 'http://localhost:3001']
 });
 
@@ -703,7 +704,7 @@ export const prodMiddleware = createAuthMiddleware({
   requireAuth: true,
   requireApiKey: false,
   requireRateLimit: true,
-  addSecurityHeaders: true,
+  enableSecurityHeaders: true,
   logAttempts: true,
   rateLimit: {
     windowMs: 60000,
