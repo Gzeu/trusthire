@@ -107,7 +107,11 @@ export class RealTimeWebSocketClient {
 
         this.ws.onmessage = (event) => {
           try {
-            const message: WebSocketMessage = JSON.parse(event.data);
+            const dataStr = typeof event.data === 'string' ? event.data : 
+                      event.data instanceof ArrayBuffer ? new TextDecoder().decode(event.data) :
+                      Buffer.isBuffer(event.data) ? event.data.toString() :
+                      String(event.data);
+            const message: WebSocketMessage = JSON.parse(dataStr);
             this.handleMessage(message);
           } catch (error) {
             console.error('Failed to parse WebSocket message:', error);

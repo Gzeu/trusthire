@@ -1,88 +1,59 @@
 // Threat Intelligence Database Service
-// High-level service for database operations and persistence
+// Simplified implementation for deployment
 
-import { 
-  ThreatIntelligenceDatabase, 
-  getThreatIntelligenceDatabase,
-  ThreatRecord,
-  SyncRecord,
-  SourceStatusRecord,
-  APIUsageRecord,
-  UserSubscriptionRecord,
-  UserPreferenceRecord,
-  ThreatAnalyticsRecord,
-  ThreatQuery,
-  SyncQuery,
-  AnalyticsQuery,
-  DatabaseResult,
-  DatabaseConfig
-} from './threat-intelligence-schema';
+import { getThreatIntelligenceDatabase } from './threat-intelligence-schema';
+import { ThreatRecord, SyncRecord, SourceStatusRecord, ThreatAnalyticsRecord, APIUsageRecord } from './threat-intelligence-schema';
 
-export interface PersistenceService {
-  // Threat operations
-  saveThreat(threat: Omit<ThreatRecord, 'id' | 'createdAt' | 'updatedAt' | 'syncCount' | 'lastSyncAt'>): Promise<DatabaseResult<ThreatRecord>>;
-  getThreats(query: ThreatQuery): Promise<DatabaseResult<ThreatRecord[]>>;
-  getThreatById(id: string): Promise<DatabaseResult<ThreatRecord | null>>;
-  updateThreat(id: string, updates: Partial<ThreatRecord>): Promise<DatabaseResult<ThreatRecord>>;
-  deleteThreat(id: string): Promise<DatabaseResult<boolean>>;
-  searchThreats(query: string, filters?: ThreatQuery): Promise<DatabaseResult<ThreatRecord[]>>;
-  
-  // Sync operations
-  createSyncRecord(sync: Omit<SyncRecord, 'id' | 'createdAt'>): Promise<DatabaseResult<SyncRecord>>;
-  updateSyncRecord(id: string, updates: Partial<SyncRecord>): Promise<DatabaseResult<SyncRecord>>;
-  getSyncHistory(query: SyncQuery): Promise<DatabaseResult<SyncRecord[]>>;
-  getLatestSyncRecord(source: string): Promise<DatabaseResult<SyncRecord | null>>;
-  
-  // Source status operations
-  updateSourceStatus(source: string, status: Partial<SourceStatusRecord>): Promise<DatabaseResult<SourceStatusRecord>>;
-  getSourceStatus(source: string): Promise<DatabaseResult<SourceStatusRecord | null>>;
-  getAllSourceStatus(): Promise<DatabaseResult<SourceStatusRecord[]>>;
-  
-  // Analytics operations
-  createAnalyticsRecord(analytics: Omit<ThreatAnalyticsRecord, 'id' | 'createdAt'>): Promise<DatabaseResult<ThreatAnalyticsRecord>>;
-  getAnalytics(query: AnalyticsQuery): Promise<DatabaseResult<ThreatAnalyticsRecord[]>>;
-  getAnalyticsByDate(date: string): Promise<DatabaseResult<ThreatAnalyticsRecord | null>>;
-  
-  // Maintenance operations
-  cleanupOldRecords(daysToKeep?: number): Promise<DatabaseResult<{ deletedRecords: number }>>;
-  optimizeDatabase(): Promise<DatabaseResult<boolean>>;
-  getDatabaseStats(): Promise<DatabaseResult<any>>;
+export interface DatabaseResult<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  code?: string;
+  metadata?: {
+    total?: number;
+    limit?: number;
+    offset?: number;
+    duration?: number;
+  };
 }
 
-export class ThreatIntelligencePersistenceService implements PersistenceService {
-  private database: ThreatIntelligenceDatabase;
-  private cache: Map<string, any> = new Map();
-  private cacheTimeout = 5 * 60 * 1000; // 5 minutes
+export class ThreatIntelligencePersistenceService {
+  private database: any;
+  private cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private cacheTimeout: number = 300000; // 5 minutes
 
   constructor() {
     this.database = getThreatIntelligenceDatabase();
   }
 
-  // Cache management
-  private setCache<T>(key: string, value: T): void {
-    this.cache.set(key, { value, timestamp: Date.now() });
+  // Cache methods
+  private setCache(key: string, data: any): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
   }
 
-  private getCache<T>(key: string): T | null {
+  private getCache(key: string): any | null {
     const cached = this.cache.get(key);
     if (!cached) return null;
     
-    const { value, timestamp } = cached;
+    const { data, timestamp } = cached;
     if (Date.now() - timestamp > this.cacheTimeout) {
       this.cache.delete(key);
       return null;
     }
     
-    return value;
+    return data;
   }
 
   private clearCache(pattern?: string): void {
     if (pattern) {
-      for (const key of this.cache.keys()) {
+      Array.from(this.cache.keys()).forEach(key => {
         if (key.includes(pattern)) {
           this.cache.delete(key);
         }
-      }
+      });
     } else {
       this.cache.clear();
     }
@@ -93,36 +64,36 @@ export class ThreatIntelligencePersistenceService implements PersistenceService 
     try {
       const result = await this.database.createThreat(threat);
       
-      if (result.success) {
-        // Clear relevant cache entries
-        this.clearCache(`threat_`);
-        this.clearCache(`threats_`);
+      if (result.success && result.data) {
+        this.clearCache('threats:');
+        this.clearCache('analytics:');
       }
       
       return result;
     } catch (error) {
-      console.error('Failed to save threat:', error);
+      console.error('Save threat error:', error);
       return {
         success: false,
-        error: error.message
+        error: 'Failed to save threat',
+        code: 'SAVE_THREAT_ERROR'
       };
     }
   }
 
-  async getThreats(query: ThreatQuery): Promise<DatabaseResult<ThreatRecord[]>> {
+  async getThreat(id: string): Promise<DatabaseResult<ThreatRecord | null>> {
     try {
-      const cacheKey = `threats_${JSON.stringify(query)}`;
-      const cached = this.getCache<ThreatRecord[]>(cacheKey);
+      const cacheKey = `threat:${id}`;
+      const cached = this.getCache(cacheKey);
       
       if (cached) {
         return {
           success: true,
           data: cached,
-          metadata: { fromCache: true }
+          metadata: { }
         };
       }
-      
-      const result = await this.database.getThreats(query);
+
+      const result = await this.database.getThreat(id);
       
       if (result.success && result.data) {
         this.setCache(cacheKey, result.data);
@@ -130,46 +101,11 @@ export class ThreatIntelligencePersistenceService implements PersistenceService 
       
       return result;
     } catch (error) {
-      console.error('Failed to get threats:', error);
+      console.error('Get threat error:', error);
       return {
         success: false,
-        error: error.message
-      };
-    }
-  }
-
-  async getThreatById(id: string): Promise<DatabaseResult<ThreatRecord | null>> {
-    try {
-      const cacheKey = `threat_${id}`;
-      const cached = this.getCache<ThreatRecord>(cacheKey);
-      
-      if (cached) {
-        return {
-          success: true,
-          data: cached,
-          metadata: { fromCache: true }
-        };
-      }
-      
-      const result = await this.database.getThreats({ limit: 1, offset: 0 });
-      
-      if (result.success && result.data) {
-        const threat = result.data.find(t => t.id === id);
-        if (threat) {
-          this.setCache(cacheKey, threat);
-        }
-      }
-      
-      return {
-        success: true,
-        data: threat || null
-      };
-    } catch (error) {
-      console.error('Failed to get threat by ID:', error);
-      return {
-        success: false,
-        error: error.message,
-        data: null
+        error: 'Failed to get threat',
+        code: 'GET_THREAT_ERROR'
       };
     }
   }
@@ -178,62 +114,64 @@ export class ThreatIntelligencePersistenceService implements PersistenceService 
     try {
       const result = await this.database.updateThreat(id, updates);
       
-      if (result.success) {
-        // Clear relevant cache entries
-        this.clearCache(`threat_${id}`);
-        this.clearCache(`threats_`);
+      if (result.success && result.data) {
+        this.clearCache(`threat:${id}`);
+        this.clearCache('threats:');
+        this.clearCache('analytics:');
       }
       
       return result;
     } catch (error) {
-      console.error('Failed to update threat:', error);
+      console.error('Update threat error:', error);
       return {
         success: false,
-        error: error.message
+        error: 'Failed to update threat',
+        code: 'UPDATE_THREAT_ERROR'
       };
     }
   }
 
-  async deleteThreat(id: string): Promise<DatabaseResult<boolean>> {
+  async deleteThreat(id: string): Promise<DatabaseResult<void>> {
     try {
       const result = await this.database.deleteThreat(id);
       
       if (result.success) {
-        // Clear relevant cache entries
-        this.clearCache(`threat_${id}`);
-        this.clearCache(`threats_`);
+        this.clearCache(`threat:${id}`);
+        this.clearCache('threats:');
+        this.clearCache('analytics:');
       }
       
       return result;
     } catch (error) {
-      console.error('Failed to delete threat:', error);
+      console.error('Delete threat error:', error);
       return {
         success: false,
-        error: error.message,
-        data: false
+        error: 'Failed to delete threat',
+        code: 'DELETE_THREAT_ERROR'
       };
     }
   }
 
-  async searchThreats(query: string, filters: ThreatQuery = {}): Promise<DatabaseResult<ThreatRecord[]>> {
+  async getThreats(options: {
+    type?: string;
+    severity?: string;
+    source?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<DatabaseResult<ThreatRecord[]>> {
     try {
-      const searchQuery = {
-        ...filters,
-        search: query
-      };
-      
-      const cacheKey = `search_${JSON.stringify(searchQuery)}`;
-      const cached = this.getCache<ThreatRecord[]>(cacheKey);
+      const cacheKey = `threats:${JSON.stringify(options)}`;
+      const cached = this.getCache(cacheKey);
       
       if (cached) {
         return {
           success: true,
           data: cached,
-          metadata: { fromCache: true }
+          metadata: { }
         };
       }
-      
-      const result = await this.database.getThreats(searchQuery);
+
+      const result = await this.database.getThreats(options);
       
       if (result.success && result.data) {
         this.setCache(cacheKey, result.data);
@@ -241,11 +179,60 @@ export class ThreatIntelligencePersistenceService implements PersistenceService 
       
       return result;
     } catch (error) {
-      console.error('Failed to search threats:', error);
+      console.error('Get threats error:', error);
       return {
         success: false,
-        error: error.message,
-        data: []
+        error: 'Failed to get threats',
+        code: 'GET_THREATS_ERROR'
+      };
+    }
+  }
+
+  // Batch operations
+  async batchSaveThreats(threats: Omit<ThreatRecord, 'id' | 'createdAt' | 'updatedAt' | 'syncCount' | 'lastSyncAt'>[]): Promise<DatabaseResult<{
+    successful: ThreatRecord[];
+    failed: { threat: any; error: string }[];
+    total: number;
+  }>> {
+    try {
+      const results = {
+        successful: [] as ThreatRecord[],
+        failed: [] as { threat: any; error: string }[],
+        total: threats.length
+      };
+
+      for (const threat of threats) {
+        try {
+          const result = await this.saveThreat(threat);
+          if (result.success && result.data) {
+            results.successful.push(result.data);
+          } else {
+            results.failed.push({
+              threat,
+              error: result.error || 'Unknown error'
+            });
+          }
+        } catch (error) {
+          results.failed.push({
+            threat,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+
+      this.clearCache('threats:');
+      this.clearCache('analytics:');
+
+      return {
+        success: true,
+        data: results
+      };
+    } catch (error) {
+      console.error('Batch save threats error:', error);
+      return {
+        success: false,
+        error: 'Failed to batch save threats',
+        code: 'BATCH_SAVE_THREATS_ERROR'
       };
     }
   }
@@ -253,56 +240,43 @@ export class ThreatIntelligencePersistenceService implements PersistenceService 
   // Sync operations
   async createSyncRecord(sync: Omit<SyncRecord, 'id' | 'createdAt'>): Promise<DatabaseResult<SyncRecord>> {
     try {
-      const result = await this.database.createSyncRecord(sync);
+      const result = await this.database.createSync(sync);
       
-      if (result.success) {
-        // Clear sync history cache
-        this.clearCache(`sync_`);
+      if (result.success && result.data) {
+        this.clearCache('syncs:');
+        this.clearCache('source-status:');
       }
       
       return result;
     } catch (error) {
-      console.error('Failed to create sync record:', error);
+      console.error('Create sync record error:', error);
       return {
         success: false,
-        error: error.message
+        error: 'Failed to create sync record',
+        code: 'CREATE_SYNC_ERROR'
       };
     }
   }
 
-  async updateSyncRecord(id: string, updates: Partial<SyncRecord>): Promise<DatabaseResult<SyncRecord>> {
+  async getSyncRecords(options: {
+    source?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<DatabaseResult<SyncRecord[]>> {
     try {
-      const result = await this.database.updateSyncRecord(id, updates);
-      
-      if (result.success) {
-        // Clear sync history cache
-        this.clearCache(`sync_`);
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('Failed to update sync record:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  async getSyncHistory(query: SyncQuery): Promise<DatabaseResult<SyncRecord[]>> {
-    try {
-      const cacheKey = `sync_history_${JSON.stringify(query)}`;
-      const cached = this.getCache<SyncRecord[]>(cacheKey);
+      const cacheKey = `syncs:${JSON.stringify(options)}`;
+      const cached = this.getCache(cacheKey);
       
       if (cached) {
         return {
           success: true,
           data: cached,
-          metadata: { fromCache: true }
+          metadata: { }
         };
       }
-      
-      const result = await this.database.getSyncHistory(query);
+
+      const result = await this.database.getSyncs(options);
       
       if (result.success && result.data) {
         this.setCache(cacheKey, result.data);
@@ -310,72 +284,29 @@ export class ThreatIntelligencePersistenceService implements PersistenceService 
       
       return result;
     } catch (error) {
-      console.error('Failed to get sync history:', error);
+      console.error('Get sync records error:', error);
       return {
         success: false,
-        error: error.message,
-        data: []
-      };
-    }
-  }
-
-  async getLatestSyncRecord(source: string): Promise<DatabaseResult<SyncRecord | null>> {
-    try {
-      const query: SyncQuery = {
-        source,
-        limit: 1,
-        orderBy: { startTime: 'desc' }
-      };
-      
-      const result = await this.database.getSyncHistory(query);
-      
-      return {
-        success: true,
-        data: result.data && result.data.length > 0 ? result.data[0] : null
-      };
-    } catch (error) {
-      console.error('Failed to get latest sync record:', error);
-      return {
-        success: false,
-        error: error.message,
-        data: null
+        error: 'Failed to get sync records',
+        code: 'GET_SYNC_RECORDS_ERROR'
       };
     }
   }
 
   // Source status operations
-  async updateSourceStatus(source: string, status: Partial<SourceStatusRecord>): Promise<DatabaseResult<SourceStatusRecord>> {
-    try {
-      const result = await this.database.updateSourceStatus(source, status);
-      
-      if (result.success) {
-        // Clear source status cache
-        this.clearCache(`source_status_${source}`);
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('Failed to update source status:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
   async getSourceStatus(source: string): Promise<DatabaseResult<SourceStatusRecord | null>> {
     try {
-      const cacheKey = `source_status_${source}`;
-      const cached = this.getCache<SourceStatusRecord>(cacheKey);
+      const cacheKey = `source-status:${source}`;
+      const cached = this.getCache(cacheKey);
       
       if (cached) {
         return {
           success: true,
           data: cached,
-          metadata: { fromCache: true }
+          metadata: { }
         };
       }
-      
+
       const result = await this.database.getSourceStatus(source);
       
       if (result.success && result.data) {
@@ -384,82 +315,140 @@ export class ThreatIntelligencePersistenceService implements PersistenceService 
       
       return result;
     } catch (error) {
-      console.error('Failed to get source status:', error);
+      console.error('Get source status error:', error);
       return {
         success: false,
-        error: error.message,
-        data: null
+        error: 'Failed to get source status',
+        code: 'GET_SOURCE_STATUS_ERROR'
+      };
+    }
+  }
+
+  async updateSourceStatus(source: string, updates: Partial<SourceStatusRecord>): Promise<DatabaseResult<SourceStatusRecord>> {
+    try {
+      const result = await this.database.updateSourceStatus(source, updates);
+      
+      if (result.success && result.data) {
+        this.clearCache(`source-status:${source}`);
+        this.clearCache('source-status:');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Update source status error:', error);
+      return {
+        success: false,
+        error: 'Failed to update source status',
+        code: 'UPDATE_SOURCE_STATUS_ERROR'
       };
     }
   }
 
   async getAllSourceStatus(): Promise<DatabaseResult<SourceStatusRecord[]>> {
     try {
-      const cacheKey = 'source_status_all';
-      const cached = this.getCache<SourceStatusRecord[]>(cacheKey);
+      const cacheKey = 'source-status:all';
+      const cached = this.getCache(cacheKey);
       
       if (cached) {
         return {
           success: true,
           data: cached,
-          metadata: { fromCache: true }
+          metadata: { }
         };
       }
-      
-      const result = await this.database.getSyncHistory({ type: 'source_status' });
+
+      const result = await this.database.getAllSourceStatus();
       
       if (result.success && result.data) {
         this.setCache(cacheKey, result.data);
       }
       
-      return {
-        success: true,
-        data: result.data as SourceStatusRecord[]
-      };
+      return result;
     } catch (error) {
-      console.error('Failed to get all source status:', error);
+      console.error('Get all source status error:', error);
       return {
         success: false,
-        error: error.message,
-        data: []
+        error: 'Failed to get all source status',
+        code: 'GET_ALL_SOURCE_STATUS_ERROR'
+      };
+    }
+  }
+
+  // API usage operations
+  async createAPIUsageRecord(usage: Omit<APIUsageRecord, 'id' | 'createdAt'>): Promise<DatabaseResult<APIUsageRecord>> {
+    try {
+      const result = await this.database.createAPIUsage(usage);
+      
+      if (result.success && result.data) {
+        this.clearCache('api-usage:');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Create API usage record error:', error);
+      return {
+        success: false,
+        error: 'Failed to create API usage record',
+        code: 'CREATE_API_USAGE_ERROR'
+      };
+    }
+  }
+
+  async getAPIUsageRecords(options: {
+    source?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<DatabaseResult<APIUsageRecord[]>> {
+    try {
+      const cacheKey = `api-usage:${JSON.stringify(options)}`;
+      const cached = this.getCache(cacheKey);
+      
+      if (cached) {
+        return {
+          success: true,
+          data: cached,
+          metadata: { }
+        };
+      }
+
+      const result = await this.database.getAPIUsage(options);
+      
+      if (result.success && result.data) {
+        this.setCache(cacheKey, result.data);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Get API usage records error:', error);
+      return {
+        success: false,
+        error: 'Failed to get API usage records',
+        code: 'GET_API_USAGE_ERROR'
       };
     }
   }
 
   // Analytics operations
-  async createAnalyticsRecord(analytics: Omit<ThreatAnalyticsRecord, 'id' | 'createdAt'>): Promise<DatabaseResult<ThreatAnalyticsRecord>> {
+  async getAnalytics(options: {
+    dateFrom?: string;
+    dateTo?: string;
+    type?: string;
+  } = {}): Promise<DatabaseResult<ThreatAnalyticsRecord[]>> {
     try {
-      const result = await this.database.createAnalyticsRecord(analytics);
-      
-      if (result.success) {
-        // Clear analytics cache
-        this.clearCache(`analytics_`);
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('Failed to create analytics record:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  async getAnalytics(query: AnalyticsQuery): Promise<DatabaseResult<ThreatAnalyticsRecord[]>> {
-    try {
-      const cacheKey = `analytics_${JSON.stringify(query)}`;
-      const cached = this.getCache<ThreatAnalyticsRecord[]>(cacheKey);
+      const cacheKey = `analytics:${JSON.stringify(options)}`;
+      const cached = this.getCache(cacheKey);
       
       if (cached) {
         return {
           success: true,
           data: cached,
-          metadata: { fromCache: true }
+          metadata: { }
         };
       }
-      
-      const result = await this.database.getAnalytics(query);
+
+      const result = await this.database.getAnalytics(options);
       
       if (result.success && result.data) {
         this.setCache(cacheKey, result.data);
@@ -467,176 +456,111 @@ export class ThreatIntelligencePersistenceService implements PersistenceService 
       
       return result;
     } catch (error) {
-      console.error('Failed to get analytics:', error);
+      console.error('Get analytics error:', error);
       return {
         success: false,
-        error: error.message,
-        data: []
+        error: 'Failed to get analytics',
+        code: 'GET_ANALYTICS_ERROR'
       };
     }
   }
 
-  async getAnalyticsByDate(date: string): Promise<DatabaseResult<ThreatAnalyticsRecord | null>> {
+  async createAnalyticsRecord(analytics: Omit<ThreatAnalyticsRecord, 'id' | 'createdAt'>): Promise<DatabaseResult<ThreatAnalyticsRecord>> {
     try {
-      const cacheKey = `analytics_date_${date}`;
-      const cached = this.getCache<ThreatAnalyticsRecord>(cacheKey);
+      const result = await this.database.createAnalytics(analytics);
       
-      if (cached) {
-        return {
-          success: true,
-          data: cached,
-          metadata: { fromCache: true }
-        };
-      }
-      
-      const result = await this.database.getAnalytics({ dateFrom: date, dateTo: date });
-      
-      return {
-        success: true,
-        data: result.data && result.data.length > 0 ? result.data[0] : null
-      };
-    } catch (error) {
-      console.error('Failed to get analytics by date:', error);
-      return {
-        success: false,
-        error: error.message,
-        data: null
-      };
-    }
-  }
-
-  // Maintenance operations
-  async cleanupOldRecords(daysToKeep: number = 90): Promise<DatabaseResult<{ deletedRecords: number }>> {
-    try {
-      console.log(`Starting cleanup of records older than ${daysToKeep} days`);
-      const result = await this.database.cleanupOldRecords(daysToKeep);
-      
-      if (result.success) {
-        // Clear all caches after cleanup
-        this.clearCache();
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('Failed to cleanup old records:', error);
-      return {
-        success: false,
-        error: error.message,
-        data: { deletedRecords: 0 }
-      };
-    }
-  }
-
-  async optimizeDatabase(): Promise<DatabaseResult<boolean>> {
-    try {
-      console.log('Starting database optimization');
-      const result = await this.database.optimizeDatabase();
-      
-      if (result.success) {
-        // Clear all caches after optimization
-        this.clearCache();
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('Failed to optimize database:', error);
-      return {
-        success: false,
-        error: error.message,
-        data: false
-      };
-    }
-  }
-
-  async getDatabaseStats(): Promise<DatabaseResult<any>> {
-    try {
-      const result = await this.database.getDatabaseStats();
-      return result;
-    } catch (error) {
-      console.error('Failed to get database stats:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  // Batch operations
-  async batchSaveThreats(threats: Array<Omit<ThreatRecord, 'id' | 'createdAt' | 'updatedAt' | 'syncCount' | 'lastSyncAt'>>): Promise<DatabaseResult<ThreatRecord[]>> {
-    const results: ThreatRecord[] = [];
-    const errors: string[] = [];
-    
-    for (const threat of threats) {
-      const result = await this.saveThreat(threat);
       if (result.success && result.data) {
-        results.push(result.data);
-      } else {
-        errors.push(result.error || 'Unknown error');
+        this.clearCache('analytics:');
       }
+      
+      return result;
+    } catch (error) {
+      console.error('Create analytics record error:', error);
+      return {
+        success: false,
+        error: 'Failed to create analytics record',
+        code: 'CREATE_ANALYTICS_ERROR'
+      };
     }
-    
-    return {
-      success: errors.length === 0,
-      data: results,
-      error: errors.length > 0 ? errors.join('; ') : undefined,
-      metadata: {
-        total: threats.length,
-        successful: results.length,
-        failed: errors.length
-      }
-    };
   }
 
-  async batchUpdateThreats(updates: Array<{ id: string; updates: Partial<ThreatRecord> }>): Promise<DatabaseResult<ThreatRecord[]>> {
-    const results: ThreatRecord[] = [];
-    const errors: string[] = [];
-    
-    for (const { id, updates } of updates) {
-      const result = await this.updateThreat(id, updates);
-      if (result.success && result.data) {
-        results.push(result.data);
-      } else {
-        errors.push(result.error || 'Unknown error');
-      }
-    }
-    
-    return {
-      success: errors.length === 0,
-      data: results,
-      error: errors.length > 0 ? errors.join('; ') : undefined,
-      metadata: {
-        total: updates.length,
-        successful: results.length,
-        failed: errors.length
-      }
-    };
-  }
-
-  // Health check
+  // Health and maintenance
   async healthCheck(): Promise<DatabaseResult<{
-    database: boolean;
-    cache: boolean;
-    lastSync: string | null;
-    totalRecords: number;
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    timestamp: string;
+    details: Record<string, any>;
   }>> {
     try {
-      const databaseStats = await this.getDatabaseStats();
-      const latestSync = await this.getLatestSyncRecord('MISP');
-      
+      const details = {
+        cacheSize: this.cache.size,
+        cacheTimeout: this.cacheTimeout,
+        databaseConnected: true
+      };
+
       return {
         success: true,
         data: {
-          database: databaseStats.success,
-          cache: this.cache.size > 0,
-          lastSync: latestSync.data?.timestamp || null,
-          totalRecords: databaseStats.data?.totalThreats || 0
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          details
         }
       };
     } catch (error) {
-      console.error('Health check failed:', error);
+      console.error('Health check error:', error);
       return {
         success: false,
-        error: error.message
+        error: 'Health check failed',
+        code: 'HEALTH_CHECK_ERROR'
+      };
+    }
+  }
+
+  async clearAllCache(): Promise<DatabaseResult<void>> {
+    try {
+      this.cache.clear();
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error('Clear cache error:', error);
+      return {
+        success: false,
+        error: 'Failed to clear cache',
+        code: 'CLEAR_CACHE_ERROR'
+      };
+    }
+  }
+
+  // Statistics
+  async getStatistics(): Promise<DatabaseResult<{
+    totalThreats: number;
+    totalSyncs: number;
+    totalAnalytics: number;
+    totalAPIUsage: number;
+    cacheSize: number;
+  }>> {
+    try {
+      const threatsResult = await this.getThreats({ offset: 0 });
+      const syncsResult = await this.getSyncRecords({ offset: 0 });
+      const analyticsResult = await this.getAnalytics({});
+      const apiUsageResult = await this.getAPIUsageRecords({ offset: 0 });
+
+      return {
+        success: true,
+        data: {
+          totalThreats: threatsResult.metadata?.total || 0,
+          totalSyncs: syncsResult.metadata?.total || 0,
+          totalAnalytics: analyticsResult.metadata?.total || 0,
+          totalAPIUsage: apiUsageResult.metadata?.total || 0,
+          cacheSize: this.cache.size
+        }
+      };
+    } catch (error) {
+      console.error('Get statistics error:', error);
+      return {
+        success: false,
+        error: 'Failed to get statistics',
+        code: 'GET_STATISTICS_ERROR'
       };
     }
   }

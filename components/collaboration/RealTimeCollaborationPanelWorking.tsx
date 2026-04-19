@@ -1,6 +1,27 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+
+interface CollaborationSession {
+  id: string;
+  name: string;
+  description: string;
+  participants: string[];
+  createdAt: string;
+  status: string;
+  sharedFindings: Array<{
+    id: string;
+    type: string;
+    title: string;
+    description: string;
+    severity: string;
+    discoveredBy: string;
+    timestamp: string;
+    verified: boolean;
+    iocs: string[];
+  }>;
+  isRealTime: boolean;
+}
 import { 
   Users, 
   MessageSquare, 
@@ -24,7 +45,7 @@ import {
 import { Card, Button, Badge, Container, Section, Skeleton } from '@/components/ui/DesignSystem';
 
 export default function RealTimeCollaborationPanel() {
-  const [activeSession, setActiveSession] = useState(null);
+  const [activeSession, setActiveSession] = useState<CollaborationSession | null>(null);
   const [isRealTimeMode, setIsRealTimeMode] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -52,66 +73,12 @@ export default function RealTimeCollaborationPanel() {
           id: '1',
           type: 'threat',
           title: 'New Phishing Pattern Detected',
-          description: 'Identified sophisticated phishing attempts targeting Web3 developers',
+          description: 'Sophisticated phishing campaign targeting financial institutions',
           severity: 'high',
-          evidence: ['Fake company websites', 'Urgent payment requests'],
-          recommendations: ['Verify domain ownership', 'Check SSL certificates'],
-          createdBy: '1',
-          createdAt: '2024-01-15T14:30:00Z',
-          upvotes: 12,
-          resolved: true
-        }
-      ],
-      messages: [
-        {
-          id: '1',
-          userId: '1',
-          content: 'Starting analysis of Q2 threat patterns',
-          timestamp: '2024-01-15T10:00:00Z'
-        }
-      ],
-      isRealTime: false
-    },
-    {
-      id: '2',
-      name: 'Live Threat Monitoring',
-      description: 'Real-time collaborative threat analysis and response',
-      participants: ['1', '2', '3'],
-      createdAt: '2024-03-10T09:00:00Z',
-      status: 'active',
-      sharedFindings: [
-        {
-          id: '2',
-          type: 'vulnerability',
-          title: 'Zero-day in Popular npm Package',
-          description: 'Critical vulnerability discovered in widely-used package',
-          severity: 'critical',
-          evidence: ['Remote code execution', 'Package version 1.2.3'],
-          recommendations: ['Immediate update required', 'Use alternative packages'],
-          createdBy: '2',
-          createdAt: '2024-03-10T09:15:00Z',
-          upvotes: 8,
-          resolved: false
-        }
-      ],
-      messages: [
-        {
-          id: '1',
-          userId: '1',
-          content: 'New zero-day vulnerability detected in express package',
-          timestamp: '2024-03-10T09:15:00Z'
-        },
-        {
-          id: '2',
-          userId: '2',
-          content: 'Analyzing impact and developing patches',
-          timestamp: '2024-03-10T09:20:00Z'
-        },
-        {
-          id: '3',
-          userId: '1',
-          content: 'Team mobilized to address critical issue',
-          timestamp: '2024-03-10T09:25:00Z'
+          discoveredBy: '1',
+          timestamp: '2024-01-15T10:30:00Z',
+          verified: true,
+          iocs: ['suspicious-domain.com', 'malicious-ip-address']
         }
       ],
       isRealTime: true
@@ -158,140 +125,169 @@ export default function RealTimeCollaborationPanel() {
           <h1 className="text-4xl font-mono font-bold text-white mb-4">
             Real-Time Security Collaboration
           </h1>
-          <p className="text-lg font-mono text-white/60 max-w-3xl">
-            Collaborate with your team in real-time to analyze and respond to security threats.
-            Share findings, discuss patterns, and coordinate responses instantly.
+          <p className="text-gray-400 text-lg">
+            Collaborate with your security team in real-time to analyze threats and share findings
           </p>
         </div>
 
-        {/* Controls */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          {/* Real-time Toggle */}
-          <Card className="p-6">
-            <h3 className="text-lg font-mono font-semibold text-white mb-4 flex items-center gap-2">
-              <Zap className="w-5 h-5" />
-              Real-time Mode
-            </h3>
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-mono text-white/60">
-                Enable real-time collaboration for instant team coordination
-              </p>
+        {/* Session Controls */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
               <Button
-                onClick={() => setIsRealTimeMode(!isRealTimeMode)}
-                variant={isRealTimeMode ? 'default' : 'secondary'}
+                variant="primary"
+                onClick={() => console.log('Create new session')}
               >
-                {isRealTimeMode ? (
-                  <>
-                    <Eye className="w-4 h-4" />
-                    <span>Real-time On</span>
-                  </>
-                ) : (
-                  <>
-                    <EyeOff className="w-4 h-4" />
-                    <span>Real-time Off</span>
-                  </>
-                )}
+                <UserPlus size={16} className="mr-2" />
+                New Session
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsRealTimeMode(!isRealTimeMode)}
+              >
+                {isRealTimeMode ? <Eye size={16} className="mr-2" /> : <EyeOff size={16} className="mr-2" />}
+                {isRealTimeMode ? 'Real-time' : 'Archived'}
               </Button>
             </div>
-          </Card>
+            <div className="flex items-center gap-2">
+              <Badge variant={isRealTimeMode ? 'success' : 'default'}>
+                {isRealTimeMode ? 'Live' : 'Offline'}
+              </Badge>
+            </div>
+          </div>
 
-          {/* Session Management */}
-          <Card className="p-6">
-            <h3 className="text-lg font-mono font-semibold text-white mb-4 flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              Active Session
-            </h3>
-            <div className="space-y-4">
-              <Button
-                onClick={() => setActiveSession(mockSessions[0])}
-                className="w-full"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Start Q2 Review Session
-              </Button>
-              
-              {activeSession && (
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h4 className="font-mono font-semibold text-white">
-                        {activeSession.name}
-                      </h4>
-                      <p className="text-sm font-mono text-white/60">
-                        {activeSession.description}
-                      </p>
+          {/* Session List */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {mockSessions.map((session) => (
+              <Card key={session.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white">{session.name}</h3>
+                    <Badge variant={session.status === 'completed' ? 'success' : 'warning'}>
+                      {session.status}
+                    </Badge>
+                  </div>
+                  <p className="text-gray-400 text-sm mb-4">{session.description}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users size={16} className="text-gray-400" />
+                      <span className="text-sm text-gray-400">{session.participants.length} participants</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => joinSession(session.id)}
+                    >
+                      Join
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Active Session */}
+        {activeSession && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Chat Area */}
+            <div className="lg:col-span-2">
+              <Card className="h-[600px]">
+                <div className="p-6 border-b border-gray-800">
+                  <h2 className="text-xl font-semibold text-white mb-2">{activeSession.name}</h2>
+                  <p className="text-gray-400 text-sm">{activeSession.description}</p>
+                </div>
+                
+                <div className="p-6 h-[400px] overflow-y-auto">
+                  <div className="space-y-4">
+                    {/* Mock messages */}
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm">
+                        A
+                      </div>
+                      <div className="flex-1">
+                        <div className="bg-gray-800 rounded-lg p-3">
+                          <p className="text-white">Welcome to the session!</p>
+                        </div>
+                        <p className="text-gray-400 text-xs mt-1">Alex Chen · 2 min ago</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </Card>
-        </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Sessions List */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-mono font-semibold text-white mb-4 flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  Collaboration Sessions
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedFilter('all')}
-                >
-                  <Filter className="w-4 h-4 mr-2" />
-                  Clear Filter
-                </Button>
-              </div>
-              
-              {/* Sessions List */}
-              <div className="space-y-4">
-                {mockSessions.map((session) => (
-                  <Card
-                    key={session.id}
-                    onClick={() => joinSession(session.id)}
-                    className={`p-6 cursor-pointer transition-all duration-200 ${
-                      activeSession?.id === session.id
-                        ? 'border-purple-500/50 bg-purple-500/10 scale-105'
-                        : 'border-white/10 bg-white/5 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-4">
+                <div className="p-6 border-t border-gray-800">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type your message..."
+                      className="flex-1 bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                    />
+                    <Button onClick={sendMessage} disabled={!newMessage.trim()}>
+                      <MessageSquare size={16} />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Participants */}
+              <Card>
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Participants</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm">
+                        A
+                      </div>
                       <div>
-                        <h4 className="font-mono font-semibold text-white mb-2">
-                          {session.name}
-                        </h4>
-                        <p className="text-sm font-mono text-white/60 mb-3">
-                          {session.description}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={session.isRealTime ? 'success' : 'default'}>
-                            {session.isRealTime ? 'Live' : 'Archived'}
-                          </Badge>
-                          <span className="text-xs font-mono text-white/40">
-                            {session.participants?.length || 0} participants
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            {session.sharedFindings?.length || 0} findings
-                          </Badge>
-                          <span className="text-xs font-mono text-white/40">
-                            {new Date(session.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
+                        <p className="text-white text-sm">Alex Chen</p>
+                        <p className="text-green-400 text-xs">Online</p>
                       </div>
                     </div>
-                  </Card>
-                ))}
-              </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Shared Findings */}
+              <Card>
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Shared Findings</h3>
+                  <div className="space-y-3">
+                    {activeSession.sharedFindings?.map((finding: any) => (
+                      <div key={finding.id} className="border-l-2 border-red-500 pl-3">
+                        <p className="text-white text-sm font-medium">{finding.title}</p>
+                        <p className="text-gray-400 text-xs">{finding.description}</p>
+                        <Badge variant="warning" className="mt-1">
+                          {finding.severity}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Empty State */}
+        {!activeSession && (
+          <Card className="text-center py-12">
+            <Users size={48} className="mx-auto text-gray-400 mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">No Active Session</h3>
+            <p className="text-gray-400 mb-6">
+              Select a session from the list above or create a new one to start collaborating
+            </p>
+            <Button variant="primary" onClick={() => console.log('Create new session')}>
+              <UserPlus size={16} className="mr-2" />
+              Create New Session
+            </Button>
+          </Card>
+        )}
       </Container>
     </div>
   );

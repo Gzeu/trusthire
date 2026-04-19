@@ -194,7 +194,7 @@ export default function ThreatIntelligencePanel() {
                 {['all', 'malware', 'phishing', 'vulnerability', 'apt', 'ransomware'].map((filter) => (
                   <Button
                     key={filter}
-                    variant={selectedFilter === filter ? 'default' : 'ghost'}
+                    variant={selectedFilter === filter ? 'primary' : 'ghost'}
                     size="sm"
                     onClick={() => setSelectedFilter(filter)}
                   >
@@ -286,7 +286,7 @@ export default function ThreatIntelligencePanel() {
                       United States
                     </span>
                   </div>
-                  <Badge variant="high" className="text-xs">
+                  <Badge variant="warning" className="text-xs">
                     High
                   </Badge>
                 </div>
@@ -363,7 +363,7 @@ export default function ThreatIntelligencePanel() {
                           <Badge variant={feed.severity === 'critical' ? 'error' : feed.severity === 'high' ? 'warning' : feed.severity === 'medium' ? 'default' : 'success'}>
                             {feed.severity}
                           </Badge>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="default" className="text-xs">
                             {feed.confidence}% confidence
                           </Badge>
                           {feed.isActive && (
@@ -379,7 +379,7 @@ export default function ThreatIntelligencePanel() {
                         </div>
                         <div className="flex flex-wrap gap-2 mb-3">
                           {feed.tags.map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-xs">
+                            <Badge key={tag} variant="default" className="text-xs">
                               #{tag}
                             </Badge>
                           ))}

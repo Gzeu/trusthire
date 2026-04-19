@@ -739,6 +739,13 @@ export class ThreatIntelligenceDatabase {
         successfulSyncs: 0,
         failedSyncs: 0,
         averageSyncDuration: 0,
+        rateLimitInfo: {
+          requestsPerMinute: 100,
+          requestsPerHour: 6000,
+          requestsPerDay: 144000,
+          currentUsage: 0,
+          resetTime: new Date(Date.now() + 60000).toISOString()
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }

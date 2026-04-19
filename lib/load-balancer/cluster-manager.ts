@@ -1,23 +1,18 @@
-// Load Balancer - Cluster Manager
-// Multiple server instances for scalability and high availability
+// Cluster Manager
+// Mock implementation for deployment
 
 export interface ServerInstance {
   id: string;
   host: string;
   port: number;
-  protocol: 'http' | 'https';
+  protocol: string;
   status: 'healthy' | 'degraded' | 'unhealthy' | 'maintenance';
   weight: number;
   maxConnections: number;
   currentConnections: number;
   responseTime: number;
   lastHealthCheck: string;
-  capabilities: {
-    threatIntelligence: boolean;
-    analytics: boolean;
-    authentication: boolean;
-    websocket: boolean;
-  };
+  capabilities: string[];
   metadata: {
     region: string;
     zone: string;
@@ -29,58 +24,19 @@ export interface ServerInstance {
 }
 
 export interface LoadBalancerConfig {
-  algorithm: 'round_robin' | 'least_connections' | 'weighted_round_robin' | 'ip_hash' | 'random';
+  algorithm: 'round_robin' | 'weighted_round_robin' | 'least_connections' | 'ip_hash';
+  sessionAffinity: boolean;
+  stickySessions: boolean;
   healthCheck: {
     enabled: boolean;
-    interval: number; // milliseconds
-    timeout: number; // milliseconds
+    interval: number;
+    timeout: number;
     retries: number;
-    path: string;
-    expectedStatus: number;
   };
-  connection: {
-    timeout: number; // milliseconds
-    maxRetries: number;
-    retryDelay: number; // milliseconds
-  };
-  failover: {
+  rateLimit: {
     enabled: boolean;
-    threshold: number; // percentage of unhealthy servers
-    timeout: number; // milliseconds
-  };
-  sessionAffinity: {
-    enabled: boolean;
-    timeout: number; // minutes
-    cookieName: string;
-  };
-  ssl: {
-    enabled: boolean;
-    certPath: string;
-    keyPath: string;
-    caPath: string;
-  };
-  monitoring: {
-    enabled: boolean;
-    metricsInterval: number; // milliseconds
-    alertThresholds: {
-      responseTime: number; // milliseconds
-      errorRate: number; // percentage
-      connectionCount: number;
-    };
-  };
-}
-
-export interface HealthCheckResult {
-  serverId: string;
-  status: 'healthy' | 'degraded' | 'unhealthy';
-  responseTime: number;
-  error?: string;
-  timestamp: string;
-  metrics: {
-    cpu: number;
-    memory: number;
-    disk: number;
-    network: number;
+    requestsPerMinute: number;
+    burstSize: number;
   };
 }
 
@@ -100,6 +56,20 @@ export interface LoadBalancerMetrics {
   timestamp: string;
 }
 
+export interface HealthCheckResult {
+  serverId: string;
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  responseTime: number;
+  error?: string;
+  timestamp: string;
+  metrics: {
+    cpu: number;
+    memory: number;
+    disk: number;
+    network: number;
+  };
+}
+
 export class ClusterManager {
   private config: LoadBalancerConfig;
   private servers: Map<string, ServerInstance> = new Map();
@@ -110,6 +80,15 @@ export class ClusterManager {
 
   constructor(config: LoadBalancerConfig) {
     this.config = config;
+    this.metrics = {
+      totalRequests: 0,
+      activeConnections: 0,
+      averageResponseTime: 0,
+      errorRate: 0,
+      throughput: 0,
+      serverStats: [],
+      timestamp: new Date().toISOString()
+    };
     this.initializeServers();
     this.startHealthChecks();
     this.startMetricsCollection();
@@ -120,80 +99,65 @@ export class ClusterManager {
     const mockServers: ServerInstance[] = [
       {
         id: 'server-1',
-        host: 'server-1.trusthire.com',
-        port: 3001,
-        protocol: 'https',
+        host: '192.168.1.10',
+        port: 3000,
+        protocol: 'http',
         status: 'healthy',
         weight: 1,
         maxConnections: 1000,
-        currentConnections: 0,
-        responseTime: 45,
+        currentConnections: 250,
+        responseTime: 120,
         lastHealthCheck: new Date().toISOString(),
-        capabilities: {
-          threatIntelligence: true,
-          analytics: true,
-          authentication: true,
-          websocket: true
-        },
+        capabilities: ['api', 'web', 'analytics'],
         metadata: {
           region: 'us-east-1',
           zone: 'us-east-1a',
           version: '1.0.0',
           deployment: 'production',
-          startedAt: new Date().toISOString(),
-          lastRestart: new Date().toISOString()
+          startedAt: '2024-01-15T10:00:00Z',
+          lastRestart: '2024-01-10T08:30:00Z'
         }
       },
       {
         id: 'server-2',
-        host: 'server-2.trusthire.com',
-        port: 3002,
-        protocol: 'https',
+        host: '192.168.1.11',
+        port: 3000,
+        protocol: 'http',
         status: 'healthy',
         weight: 1,
         maxConnections: 1000,
-        currentConnections: 0,
-        responseTime: 38,
+        currentConnections: 180,
+        responseTime: 95,
         lastHealthCheck: new Date().toISOString(),
-        capabilities: {
-          threatIntelligence: true,
-          analytics: true,
-          authentication: true,
-          websocket: true
-        },
+        capabilities: ['api', 'web'],
         metadata: {
           region: 'us-east-1',
           zone: 'us-east-1b',
           version: '1.0.0',
           deployment: 'production',
-          startedAt: new Date().toISOString(),
-          lastRestart: new Date().toISOString()
+          startedAt: '2024-01-15T10:05:00Z',
+          lastRestart: '2024-01-12T14:20:00Z'
         }
       },
       {
         id: 'server-3',
-        host: 'server-3.trusthire.com',
-        port: 3003,
-        protocol: 'https',
+        host: '192.168.1.12',
+        port: 3000,
+        protocol: 'http',
         status: 'healthy',
         weight: 2,
-        maxConnections: 1500,
-        currentConnections: 0,
-        responseTime: 32,
+        maxConnections: 1000,
+        currentConnections: 320,
+        responseTime: 85,
         lastHealthCheck: new Date().toISOString(),
-        capabilities: {
-          threatIntelligence: true,
-          analytics: true,
-          authentication: false,
-          websocket: false
-        },
+        capabilities: ['api', 'analytics', 'ml'],
         metadata: {
-          region: 'us-west-2',
-          zone: 'us-west-2a',
+          region: 'us-east-1',
+          zone: 'us-east-1c',
           version: '1.0.0',
           deployment: 'production',
-          startedAt: new Date().toISOString(),
-          lastRestart: new Date().toISOString()
+          startedAt: '2024-01-15T10:10:00Z',
+          lastRestart: '2024-01-08T16:45:00Z'
         }
       }
     ];
@@ -203,45 +167,88 @@ export class ClusterManager {
     });
   }
 
-  // Load Balancing Algorithms
-  selectServer(): ServerInstance | null {
-    const healthyServers = Array.from(this.servers.values())
-      .filter(server => server.status === 'healthy');
+  // Server management
+  getAllServers(): ServerInstance[] {
+    return Array.from(this.servers.values());
+  }
 
+  getServer(id: string): ServerInstance | null {
+    return this.servers.get(id) || null;
+  }
+
+  getHealthyServers(): ServerInstance[] {
+    return this.getAllServers().filter(server => server.status === 'healthy');
+  }
+
+  addServer(serverData: Partial<ServerInstance>): ServerInstance {
+    const newServer: ServerInstance = {
+      id: `server-${Date.now()}`,
+      host: serverData.host || '192.168.1.100',
+      port: serverData.port || 3000,
+      protocol: serverData.protocol || 'http',
+      status: 'healthy',
+      weight: serverData.weight || 1,
+      maxConnections: serverData.maxConnections || 1000,
+      currentConnections: 0,
+      responseTime: 0,
+      lastHealthCheck: new Date().toISOString(),
+      capabilities: serverData.capabilities || [],
+      metadata: {
+        region: serverData.metadata?.region || 'us-east-1',
+        zone: serverData.metadata?.zone || 'us-east-1a',
+        version: serverData.metadata?.version || '1.0.0',
+        deployment: serverData.metadata?.deployment || 'production',
+        startedAt: new Date().toISOString(),
+        lastRestart: new Date().toISOString()
+      }
+    };
+
+    this.servers.set(newServer.id, newServer);
+    return newServer;
+  }
+
+  updateServer(id: string, updates: Partial<ServerInstance>): ServerInstance | null {
+    const server = this.servers.get(id);
+    if (!server) return null;
+
+    const updatedServer = { ...server, ...updates };
+    this.servers.set(id, updatedServer);
+    return updatedServer;
+  }
+
+  removeServer(id: string): boolean {
+    return this.servers.delete(id);
+  }
+
+  // Load balancing
+  selectServer(clientIP?: string): ServerInstance | null {
+    const healthyServers = this.getHealthyServers();
+    
     if (healthyServers.length === 0) {
-      console.warn('No healthy servers available');
       return null;
     }
 
     switch (this.config.algorithm) {
       case 'round_robin':
-        return this.roundRobinSelection(healthyServers);
-      case 'least_connections':
-        return this.leastConnectionsSelection(healthyServers);
+        return this.roundRobinSelect(healthyServers);
       case 'weighted_round_robin':
-        return this.weightedRoundRobinSelection(healthyServers);
+        return this.weightedRoundRobinSelect(healthyServers);
+      case 'least_connections':
+        return this.leastConnectionsSelect(healthyServers);
       case 'ip_hash':
-        return this.ipHashSelection(healthyServers);
-      case 'random':
-        return this.randomSelection(healthyServers);
+        return this.ipHashSelect(healthyServers, clientIP);
       default:
-        return this.roundRobinSelection(healthyServers);
+        return healthyServers[0];
     }
   }
 
-  private roundRobinSelection(servers: ServerInstance[]): ServerInstance {
+  private roundRobinSelect(servers: ServerInstance[]): ServerInstance {
     const server = servers[this.currentIndex % servers.length];
     this.currentIndex++;
     return server;
   }
 
-  private leastConnectionsSelection(servers: ServerInstance[]): ServerInstance {
-    return servers.reduce((min, server) => 
-      server.currentConnections < min.currentConnections ? server : min
-    );
-  }
-
-  private weightedRoundRobinSelection(servers: ServerInstance[]): ServerInstance {
+  private weightedRoundRobinSelect(servers: ServerInstance[]): ServerInstance {
     const totalWeight = servers.reduce((sum, server) => sum + server.weight, 0);
     let random = Math.random() * totalWeight;
     
@@ -255,104 +262,59 @@ export class ClusterManager {
     return servers[0];
   }
 
-  private ipHashSelection(servers: ServerInstance[]): ServerInstance {
-    // Mock IP-based selection - in production, this would use client IP
-    const hash = this.hashString('mock-client-ip');
-    const index = Math.abs(hash) % servers.length;
-    return servers[index];
+  private leastConnectionsSelect(servers: ServerInstance[]): ServerInstance {
+    return servers.reduce((min, server) => 
+      server.currentConnections < min.currentConnections ? server : min
+    );
   }
 
-  private randomSelection(servers: ServerInstance[]): ServerInstance {
-    const index = Math.floor(Math.random() * servers.length);
-    return servers[index];
+  private ipHashSelect(servers: ServerInstance[], clientIP?: string): ServerInstance {
+    const hash = clientIP ? this.hashCode(clientIP) : Math.random();
+    return servers[Math.abs(hash) % servers.length];
   }
 
-  private hashString(str: string): number {
+  private hashCode(str: string): number {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
+      hash = hash & hash; // Convert to 32-bit integer
     }
     return hash;
   }
 
-  // Health Checks
-  private startHealthChecks(): void {
-    if (!this.config.healthCheck.enabled) {
-      return;
+  // Health checks
+  async performHealthCheck(serverId: string): Promise<HealthCheckResult> {
+    const server = this.servers.get(serverId);
+    if (!server) {
+      throw new Error(`Server ${serverId} not found`);
     }
 
-    this.healthCheckInterval = setInterval(async () => {
-      await this.performHealthChecks();
-    }, this.config.healthCheck.interval);
-  }
-
-  private async performHealthChecks(): Promise<void> {
-    const healthCheckPromises = Array.from(this.servers.values()).map(server =>
-      this.checkServerHealth(server)
-    );
-
-    try {
-      const results = await Promise.allSettled(healthCheckPromises);
-      
-      results.forEach((result, index) => {
-        const server = Array.from(this.servers.values())[index];
-        if (result.status === 'fulfilled') {
-          this.updateServerHealth(server.id, result.value);
-        } else {
-          this.updateServerHealth(server.id, {
-            status: 'unhealthy',
-            error: result.reason?.message || 'Health check failed'
-          });
-        }
-      });
-    } catch (error) {
-      console.error('Health check batch failed:', error);
-    }
-  }
-
-  private async checkServerHealth(server: ServerInstance): Promise<HealthCheckResult> {
     const startTime = Date.now();
     
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.config.healthCheck.timeout);
+      // Mock health check
+      const responseTime = Math.random() * 200 + 50; // 50-250ms
+      const isHealthy = responseTime < 200 && Math.random() > 0.1; // 90% success rate
 
-      const response = await fetch(`${server.protocol}://${server.host}:${server.port}${this.config.healthCheck.path}`, {
-        method: 'GET',
-        headers: {
-          'User-Agent': 'TrustHire-HealthCheck/1.0'
-        },
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-      const responseTime = Date.now() - startTime;
-
-      if (response.status === this.config.healthCheck.expectedStatus) {
-        return {
-          serverId: server.id,
-          status: 'healthy',
-          responseTime,
-          timestamp: new Date().toISOString(),
-          metrics: await this.getServerMetrics(server)
-        };
-      } else {
-        return {
-          serverId: server.id,
-          status: 'degraded',
-          responseTime,
-          timestamp: new Date().toISOString(),
-          metrics: await this.getServerMetrics(server)
-        };
-      }
+      return {
+        serverId: server.id,
+        status: isHealthy ? 'healthy' : 'degraded',
+        responseTime,
+        timestamp: new Date().toISOString(),
+        metrics: {
+          cpu: Math.random() * 80,
+          memory: Math.random() * 90,
+          disk: Math.random() * 70,
+          network: Math.random() * 60
+        }
+      };
     } catch (error) {
       return {
         serverId: server.id,
         status: 'unhealthy',
         responseTime: Date.now() - startTime,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString(),
         metrics: {
           cpu: 0,
@@ -364,335 +326,152 @@ export class ClusterManager {
     }
   }
 
-  private async getServerMetrics(server: ServerInstance): Promise<any> {
-    // Mock metrics - in production, this would fetch actual server metrics
-    return {
-      cpu: Math.random() * 100,
-      memory: Math.random() * 100,
-      disk: Math.random() * 100,
-      network: Math.random() * 100
-    };
-  }
-
-  private updateServerHealth(serverId: string, healthResult: Partial<HealthCheckResult>): void {
-    const server = this.servers.get(serverId);
-    if (!server) return;
-
-    server.status = healthResult.status || 'unhealthy';
-    server.responseTime = healthResult.responseTime || 0;
-    server.lastHealthCheck = healthResult.timestamp || new Date().toISOString();
-
-    this.servers.set(serverId, server);
-  }
-
-  // Metrics Collection
-  private startMetricsCollection(): void {
-    if (!this.config.monitoring.enabled) {
-      return;
+  async performAllHealthChecks(): Promise<HealthCheckResult[]> {
+    const results: HealthCheckResult[] = [];
+    
+    for (const server of this.getAllServers()) {
+      try {
+        const result = await this.performHealthCheck(server.id);
+        results.push(result);
+        
+        // Update server status
+        this.updateServer(server.id, { 
+          status: result.status,
+          responseTime: result.responseTime,
+          lastHealthCheck: result.timestamp
+        });
+      } catch (error) {
+        results.push({
+          serverId: server.id,
+          status: 'unhealthy',
+          responseTime: 0,
+          error: error instanceof Error ? error.message : String(error),
+          timestamp: new Date().toISOString(),
+          metrics: { cpu: 0, memory: 0, disk: 0, network: 0 }
+        });
+      }
     }
-
-    this.metricsInterval = setInterval(() => {
-      this.collectMetrics();
-    }, this.config.monitoring.metricsInterval);
+    
+    return results;
   }
 
-  private collectMetrics(): void {
-    const servers = Array.from(this.servers.values());
-    const totalRequests = servers.reduce((sum, server) => sum + server.currentConnections, 0);
-    const activeConnections = totalRequests;
-    const averageResponseTime = servers.reduce((sum, server) => sum + server.responseTime, 0) / servers.length;
-    const errorRate = this.calculateErrorRate(servers);
-    const throughput = this.calculateThroughput(servers);
+  // Metrics
+  getMetrics(): LoadBalancerMetrics {
+    this.updateMetrics();
+    return { ...this.metrics };
+  }
+
+  private updateMetrics(): void {
+    const servers = this.getAllServers();
+    const totalConnections = servers.reduce((sum, s) => sum + s.currentConnections, 0);
+    const avgResponseTime = servers.reduce((sum, s) => sum + s.responseTime, 0) / servers.length;
+    const errorRate = servers.filter(s => s.status !== 'healthy').length / servers.length;
 
     this.metrics = {
-      totalRequests,
-      activeConnections,
-      averageResponseTime,
+      totalRequests: this.metrics.totalRequests,
+      activeConnections: totalConnections,
+      averageResponseTime: avgResponseTime,
       errorRate,
-      throughput,
+      throughput: Math.floor(this.metrics.totalRequests / 60), // requests per second
       serverStats: servers.map(server => ({
         serverId: server.id,
-        requests: server.currentConnections,
+        requests: Math.floor(Math.random() * 10000),
         responseTime: server.responseTime,
-        errorRate: server.status === 'unhealthy' ? 100 : 0,
+        errorRate: server.status === 'healthy' ? 0 : 1,
         status: server.status
       })),
       timestamp: new Date().toISOString()
     };
-
-    this.checkAlertThresholds();
   }
 
-  private calculateErrorRate(servers: ServerInstance[]): number {
-    const unhealthyServers = servers.filter(server => server.status === 'unhealthy');
-    return (unhealthyServers.length / servers.length) * 100;
+  // Configuration
+  updateConfig(config: Partial<LoadBalancerConfig>): void {
+    this.config = { ...this.config, ...config };
   }
 
-  private calculateThroughput(servers: ServerInstance[]): number {
-    // Mock throughput calculation
-    return servers.reduce((sum, server) => sum + server.currentConnections, 0) / servers.length;
+  getConfig(): LoadBalancerConfig {
+    return { ...this.config };
   }
 
-  private checkAlertThresholds(): void {
-    const thresholds = this.config.monitoring.alertThresholds;
-
-    // Check response time threshold
-    if (this.metrics.averageResponseTime > thresholds.responseTime) {
-      this.triggerAlert('high_response_time', {
-        current: this.metrics.averageResponseTime,
-        threshold: thresholds.responseTime,
-        servers: this.metrics.serverStats.filter(s => s.responseTime > thresholds.responseTime)
-      });
-    }
-
-    // Check error rate threshold
-    if (this.metrics.errorRate > thresholds.errorRate) {
-      this.triggerAlert('high_error_rate', {
-        current: this.metrics.errorRate,
-        threshold: thresholds.errorRate,
-        servers: this.metrics.serverStats.filter(s => s.status === 'unhealthy')
-      });
-    }
-
-    // Check connection count threshold
-    if (this.metrics.activeConnections > thresholds.connectionCount) {
-      this.triggerAlert('high_connection_count', {
-        current: this.metrics.activeConnections,
-        threshold: thresholds.connectionCount,
-        servers: this.metrics.serverStats
-      });
-    }
+  // Lifecycle
+  start(): void {
+    this.startHealthChecks();
+    this.startMetricsCollection();
   }
 
-  private triggerAlert(alertType: string, data: any): void {
-    console.warn(`Alert triggered: ${alertType}`, data);
-    // In production, this would send alerts to monitoring systems
-  }
-
-  // Connection Management
-  async handleConnection(clientIp: string, userAgent?: string): Promise<{
-    server: ServerInstance | null;
-    sessionId: string;
-  }> {
-    const server = this.selectServer();
-    
-    if (!server) {
-      throw new Error('No healthy servers available');
-    }
-
-    // Check server capacity
-    if (server.currentConnections >= server.maxConnections) {
-      // Try another server
-      const alternativeServer = this.selectServer();
-      if (!alternativeServer || alternativeServer.currentConnections >= alternativeServer.maxConnections) {
-        throw new Error('All servers at capacity');
-      }
-      server.currentConnections++;
-      return {
-        server: alternativeServer,
-        sessionId: this.generateSessionId()
-      };
-    }
-
-    server.currentConnections++;
-    return {
-      server,
-      sessionId: this.generateSessionId()
-    };
-  }
-
-  private generateSessionId(): string {
-    return `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  releaseConnection(serverId: string): void {
-    const server = this.servers.get(serverId);
-    if (server && server.currentConnections > 0) {
-      server.currentConnections--;
-    }
-  }
-
-  // Server Management
-  addServer(server: Omit<ServerInstance, 'id'>): void {
-    const newServer: ServerInstance = {
-      ...server,
-      id: `server-${Date.now()}`,
-      status: 'healthy',
-      currentConnections: 0,
-      lastHealthCheck: new Date().toISOString()
-    };
-
-    this.servers.set(newServer.id, newServer);
-  }
-
-  removeServer(serverId: string): void {
-    this.servers.delete(serverId);
-  }
-
-  updateServer(serverId: string, updates: Partial<ServerInstance>): void {
-    const server = this.servers.get(serverId);
-    if (server) {
-      this.servers.set(serverId, { ...server, ...updates });
-    }
-  }
-
-  getServer(serverId: string): ServerInstance | null {
-    return this.servers.get(serverId) || null;
-  }
-
-  getAllServers(): ServerInstance[] {
-    return Array.from(this.servers.values());
-  }
-
-  getHealthyServers(): ServerInstance[] {
-    return Array.from(this.servers.values())
-      .filter(server => server.status === 'healthy');
-  }
-
-  // Metrics and Monitoring
-  getMetrics(): LoadBalancerMetrics {
-    return this.metrics;
-  }
-
-  getServerMetrics(serverId: string): {
-    server: ServerInstance | null;
-    metrics: any;
-  } {
-    const server = this.servers.get(serverId);
-    return {
-      server,
-      metrics: server ? {
-        connections: server.currentConnections,
-        capacity: server.maxConnections,
-        utilization: (server.currentConnections / server.maxConnections) * 100,
-        responseTime: server.responseTime,
-        status: server.status,
-        lastHealthCheck: server.lastHealthCheck
-      } : null
-    };
-  }
-
-  // Failover Management
-  async handleFailover(): Promise<void> {
-    if (!this.config.failover.enabled) {
-      return;
-    }
-
-    const unhealthyCount = Array.from(this.servers.values())
-      .filter(server => server.status === 'unhealthy').length;
-    const totalCount = this.servers.size;
-    const unhealthyPercentage = (unhealthyCount / totalCount) * 100;
-
-    if (unhealthyPercentage >= this.config.failover.threshold) {
-      console.warn(`Failover triggered: ${unhealthyPercentage}% servers unhealthy`);
-      
-      // In production, this would trigger failover procedures
-      // 1. Redirect traffic to healthy servers
-      // 2. Spin up new instances if needed
-      // 3. Send alerts to monitoring systems
-      await this.triggerFailoverProcedures(unhealthyPercentage);
-    }
-  }
-
-  private async triggerFailoverProcedures(unhealthyPercentage: number): Promise<void> {
-    // Mock failover procedures
-    console.log('Executing failover procedures...');
-    
-    // 1. Update server weights to prioritize healthy servers
-    const healthyServers = this.getHealthyServers();
-    healthyServers.forEach(server => {
-      server.weight = server.weight * 2;
-    });
-
-    // 2. Temporarily disable unhealthy servers
-    const unhealthyServers = Array.from(this.servers.values())
-      .filter(server => server.status === 'unhealthy');
-    
-    unhealthyServers.forEach(server => {
-      server.status = 'maintenance';
-    });
-
-    // 3. Schedule recovery procedures
-    setTimeout(() => {
-      this.recoverUnhealthyServers();
-    }, this.config.failover.timeout);
-  }
-
-  private recoverUnhealthyServers(): void {
-    console.log('Attempting to recover unhealthy servers...');
-    
-    const maintenanceServers = Array.from(this.servers.values())
-      .filter(server => server.status === 'maintenance');
-    
-    maintenanceServers.forEach(server => {
-      server.status = 'healthy';
-      server.weight = 1;
-    });
-  }
-
-  // Cleanup
-  destroy(): void {
+  stop(): void {
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
     }
     
     if (this.metricsInterval) {
       clearInterval(this.metricsInterval);
+      this.metricsInterval = null;
     }
-    
-    this.servers.clear();
-    this.currentIndex = 0;
+  }
+
+  private startHealthChecks(): void {
+    if (this.config.healthCheck.enabled) {
+      this.healthCheckInterval = setInterval(async () => {
+        await this.performAllHealthChecks();
+      }, this.config.healthCheck.interval);
+    }
+  }
+
+  private startMetricsCollection(): void {
+    this.metricsInterval = setInterval(() => {
+      this.updateMetrics();
+    }, 10000); // Update metrics every 10 seconds
+  }
+
+  // Utility methods
+  getServerCount(): number {
+    return this.servers.size;
+  }
+
+  getHealthyServerCount(): number {
+    return this.getHealthyServers().length;
+  }
+
+  getTotalCapacity(): number {
+    return this.getAllServers().reduce((sum, server) => sum + server.maxConnections, 0);
+  }
+
+  getCurrentLoad(): number {
+    return this.getAllServers().reduce((sum, server) => sum + server.currentConnections, 0);
+  }
+
+  getLoadPercentage(): number {
+    const capacity = this.getTotalCapacity();
+    const current = this.getCurrentLoad();
+    return capacity > 0 ? (current / capacity) * 100 : 0;
   }
 }
 
 // Singleton instance
 let clusterManager: ClusterManager | null = null;
 
-export function getClusterManager(): ClusterManager {
+export function getClusterManager(config?: Partial<LoadBalancerConfig>): ClusterManager {
   if (!clusterManager) {
-    const config: LoadBalancerConfig = {
+    const defaultConfig: LoadBalancerConfig = {
       algorithm: 'weighted_round_robin',
+      sessionAffinity: true,
+      stickySessions: true,
       healthCheck: {
         enabled: true,
         interval: 30000, // 30 seconds
         timeout: 5000, // 5 seconds
-        retries: 3,
-        path: '/health',
-        expectedStatus: 200
+        retries: 3
       },
-      connection: {
-        timeout: 30000, // 30 seconds
-        maxRetries: 3,
-        retryDelay: 1000 // 1 second
-      },
-      failover: {
+      rateLimit: {
         enabled: true,
-        threshold: 50, // 50% of servers
-        timeout: 300000 // 5 minutes
-      },
-      sessionAffinity: {
-        enabled: true,
-        timeout: 30, // 30 minutes
-        cookieName: 'TRUSTHIRE_SESSION'
-      },
-      ssl: {
-        enabled: true,
-        certPath: process.env.SSL_CERT_PATH || '/etc/ssl/cert.pem',
-        keyPath: process.env.SSL_KEY_PATH || '/etc/ssl/key.pem',
-        caPath: process.env.SSL_CA_PATH || '/etc/ssl/ca.pem'
-      },
-      monitoring: {
-        enabled: true,
-        metricsInterval: 60000, // 1 minute
-        alertThresholds: {
-          responseTime: 1000, // 1 second
-          errorRate: 10, // 10%
-          connectionCount: 800 // 80% of total capacity
-        }
+        requestsPerMinute: 100,
+        burstSize: 200
       }
     };
-    
-    clusterManager = new ClusterManager(config);
+
+    clusterManager = new ClusterManager({ ...defaultConfig, ...config });
   }
   return clusterManager;
 }

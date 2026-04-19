@@ -392,14 +392,14 @@ export default function AdvancedAnalysisPanel() {
                 <div key={analysis.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
                   <div className="flex-1">
                     <p className="text-sm font-mono text-white/80">
-                      {analysis.results[0]?.title || 'AI Analysis'} - {analysis.results.length} threats
+                      {analysis.title || 'AI Analysis'} - {Math.round(analysis.confidence * 100)}% confidence
                     </p>
                     <p className="text-xs font-mono text-white/40">
-                      {new Date(analysis.timestamp).toLocaleString()}
+                      {analysis.type} - {analysis.severity}
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {aiModels.find(m => m.id === analysis.model)?.name || 'AI'}
+                  <Badge variant="info" className="text-xs">
+                    {aiModels.find(m => m.id === analysis.metadata.modelUsed)?.name || 'AI'}
                   </Badge>
                 </div>
               ))}

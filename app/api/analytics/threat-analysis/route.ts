@@ -2,11 +2,11 @@
 // Advanced analytics and threat pattern analysis endpoints
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getThreatPatternAnalyzer } from '@/lib/analytics/threat-pattern-analyzer';
 
+// Threat Analysis
 export async function POST(request: NextRequest) {
   try {
-    const { threatData } = await request.json();
+    const { threatData, action = 'analyze' } = await request.json();
 
     if (!threatData) {
       return NextResponse.json({
@@ -16,13 +16,61 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const analyzer = getThreatPatternAnalyzer();
-    const analysis = await analyzer.analyzeThreat(threatData);
+    // Mock threat analysis - in production, this would use the actual analyzer
+    let result;
+    
+    switch (action) {
+      case 'analyze':
+        result = {
+          threatId: `threat-${Date.now()}`,
+          classification: 'malware',
+          confidence: 0.87,
+          severity: 'high',
+          riskScore: 8.5,
+          indicators: {
+            suspiciousDomains: ['suspicious-domain.com'],
+            maliciousIPs: ['192.168.1.100'],
+            fileHashes: ['a1b2c3d4e5f6'],
+            patterns: ['obfuscation', 'encryption']
+          },
+          recommendations: [
+            'Block malicious domains',
+            'Isolate affected systems',
+            'Update security signatures'
+          ],
+          timestamp: new Date().toISOString()
+        };
+        break;
+        
+      case 'recognize-patterns':
+        result = {
+          patterns: [
+            {
+              id: 'pattern-1',
+              name: 'Phishing with Urgency',
+              description: 'Emails creating false urgency to bypass rational thinking',
+              frequency: 0.73,
+              confidence: 0.91,
+              indicators: ['urgent language', 'threat language', 'time pressure']
+            }
+          ],
+          totalPatterns: 1,
+          timestamp: new Date().toISOString()
+        };
+        break;
+        
+      default:
+        return NextResponse.json({
+          success: false,
+          error: 'Invalid action',
+          code: 'INVALID_ACTION'
+        }, { status: 400 });
+    }
 
     return NextResponse.json({
       success: true,
-      data: analysis,
-      message: 'Threat analysis completed successfully'
+      data: result,
+      message: `${action} completed successfully`
     });
   } catch (error) {
     console.error('Threat analysis error:', error);
@@ -34,70 +82,74 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+// Get Patterns
+export async function GET(request: NextRequest) {
   try {
-    const { threatData } = await request.json();
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category') || undefined;
+    const severity = searchParams.get('severity') || undefined;
+    const active = searchParams.get('active') === 'true';
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
 
-    if (!threatData || !Array.isArray(threatData)) {
-      return NextResponse.json({
-        success: false,
-        error: 'Threat data array is required',
-        code: 'MISSING_THREAT_DATA'
-      }, { status: 400 });
-    }
+    // Mock patterns data
+    const patterns = [
+      {
+        id: 'pattern-1',
+        name: 'Spear Phishing Campaign',
+        description: 'Targeted phishing attacks against specific individuals',
+        category: 'phishing',
+        severity: 'high',
+        confidence: 0.92,
+        frequency: 0.85,
+        indicators: ['personalization', 'social engineering', 'domain spoofing'],
+        createdAt: '2024-01-15T10:00:00Z',
+        updatedAt: '2024-01-20T15:30:00Z',
+        active: true
+      },
+      {
+        id: 'pattern-2',
+        name: 'Ransomware Delivery',
+        description: 'Malware distribution through malicious attachments',
+        category: 'malware',
+        severity: 'critical',
+        confidence: 0.88,
+        frequency: 0.67,
+        indicators: ['encrypted attachments', 'macro documents', 'exploit kits'],
+        createdAt: '2024-01-10T08:15:00Z',
+        updatedAt: '2024-01-18T12:45:00Z',
+        active: true
+      }
+    ];
 
-    const analyzer = getThreatPatternAnalyzer();
-    const patterns = await analyzer.recognizePatterns(threatData);
-
-    return NextResponse.json({
-      success: true,
-      data: patterns,
-      message: 'Pattern recognition completed successfully'
-    });
-  } catch (error) {
-    console.error('Pattern recognition error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error',
-      code: 'INTERNAL_SERVER_ERROR'
-    }, { status: 500 });
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const { patternData } = await request.json();
-
-    if (!patternData) {
-      return NextResponse.json({
-        success: false,
-        error: 'Pattern data is required',
-        code: 'MISSING_PATTERN_DATA'
-      }, { status: 400 });
-    }
-
-    // Validate pattern data
-    const requiredFields = ['name', 'description', 'category', 'severity'];
-    const missingFields = requiredFields.filter(field => !patternData[field]);
+    // Apply filters
+    let filteredPatterns = patterns;
     
-    if (missingFields.length > 0) {
-      return NextResponse.json({
-        success: false,
-        error: `Missing required fields: ${missingFields.join(', ')}`,
-        code: 'MISSING_REQUIRED_FIELDS'
-      }, { status: 400 });
+    if (category) {
+      filteredPatterns = filteredPatterns.filter(p => p.category === category);
     }
-
-    const analyzer = getThreatPatternAnalyzer();
-    const pattern = await analyzer.createPattern(patternData);
+    
+    if (severity) {
+      filteredPatterns = filteredPatterns.filter(p => p.severity === severity);
+    }
+    
+    if (active !== undefined) {
+      filteredPatterns = filteredPatterns.filter(p => p.active === active);
+    }
+    
+    if (limit) {
+      filteredPatterns = filteredPatterns.slice(0, limit);
+    }
 
     return NextResponse.json({
       success: true,
-      data: pattern,
-      message: 'Pattern created successfully'
+      data: filteredPatterns,
+      metadata: {
+        total: filteredPatterns.length,
+        filters: { category, severity, active, limit }
+      }
     });
   } catch (error) {
-    console.error('Pattern creation error:', error);
+    console.error('Get patterns error:', error);
     return NextResponse.json({
       success: false,
       error: 'Internal server error',
@@ -106,6 +158,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Update Pattern
 export async function PUT(request: NextRequest) {
   try {
     const { id, updates } = await request.json();
@@ -126,12 +179,16 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const analyzer = getThreatPatternAnalyzer();
-    const pattern = await analyzer.updatePattern(id, updates);
+    // Mock pattern update
+    const updatedPattern = {
+      id,
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
 
     return NextResponse.json({
       success: true,
-      data: pattern,
+      data: updatedPattern,
       message: 'Pattern updated successfully'
     });
   } catch (error) {
@@ -144,6 +201,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+// Delete Pattern
 export async function DELETE(request: NextRequest) {
   try {
     const { id } = await request.json();
@@ -156,319 +214,14 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const analyzer = getThreatPatternAnalyzer();
-    const deleted = await analyzer.deletePattern(id);
-
-    if (deleted) {
-      return NextResponse.json({
-        success: true,
-        data: { deleted: true },
-        message: 'Pattern deleted successfully'
-      });
-    } else {
-      return NextResponse.json({
-        success: false,
-        error: 'Pattern not found',
-        code: 'PATTERN_NOT_FOUND'
-      }, { status: 404 });
-    }
+    // Mock pattern deletion
+    return NextResponse.json({
+      success: true,
+      data: { deleted: true, id },
+      message: 'Pattern deleted successfully'
+    });
   } catch (error) {
     console.error('Pattern deletion error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error',
-      code: 'INTERNAL_SERVER_ERROR'
-    }, { status: 500 });
-  }
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const options = {
-      category: searchParams.get('category'),
-      severity: searchParams.get('severity'),
-      active: searchParams.get('active') === 'true',
-      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
-    };
-
-    const analyzer = getThreatPatternAnalyzer();
-    const patterns = await analyzer.getPatterns(options);
-
-    return NextResponse.json({
-      success: true,
-      data: patterns,
-      metadata: {
-        total: patterns.length,
-        filters: options
-      }
-    });
-  } catch (error) {
-    console.error('Get patterns error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error',
-      code: 'INTERNAL_SERVER_ERROR'
-    }, { status: 500 });
-  }
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const options = {
-      type: searchParams.get('type'),
-      category: searchParams.get('category'),
-      status: searchParams.get('status'),
-      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
-    };
-
-    const analyzer = getThreatPatternAnalyzer();
-    const models = await analyzer.getModels(options);
-
-    return NextResponse.json({
-      success: true,
-      data: models,
-      metadata: {
-        total: models.length,
-        filters: options
-      }
-    });
-  } catch (error) {
-    console.error('Get models error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error',
-      code: 'INTERNAL_SERVER_ERROR'
-    }, { status: 500 });
-  }
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const options = {
-      threatId: searchParams.get('threatId'),
-      analysisType: searchParams.get('analysisType'),
-      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
-    };
-
-    const analyzer = getThreatPatternAnalyzer();
-    const analyses = await analyzer.getAnalyses(options);
-
-    return NextResponse.json({
-      success: true,
-      data: analyses,
-      metadata: {
-        total: analyses.length,
-        filters: options
-      }
-    });
-  } catch (error) {
-    console.error('Get analyses error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error',
-      code: 'INTERNAL_SERVER_ERROR'
-    }, { status: 500 });
-  }
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    const analyzer = getThreatPatternAnalyzer();
-    const analytics = await analyzer.getAnalytics();
-
-    return NextResponse.json({
-      success: true,
-      data: analytics,
-      message: 'Analytics retrieved successfully'
-    });
-  } catch (error) {
-    console.error('Get analytics error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error',
-      code: 'INTERNAL_SERVER_ERROR'
-    }, { status: 500 });
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const { 
-      modelType, 
-      category, 
-      trainingData, 
-      hyperparameters, 
-      validationSplit = 0.2 
-    } = await request.json();
-
-    if (!modelType || !category || !trainingData) {
-      return NextResponse.json({
-        success: false,
-        error: 'Model type, category, and training data are required',
-        code: 'MISSING_TRAINING_PARAMETERS'
-      }, { status: 400 });
-    }
-
-    // Mock model training - in production, this would trigger actual ML training
-    const trainingJob = {
-      id: `training-${Date.now()}`,
-      modelType,
-      category,
-      status: 'training',
-      progress: 0,
-      startedAt: new Date().toISOString(),
-      estimatedDuration: '2-4 hours',
-      trainingData: {
-        samples: trainingData.length,
-        features: Object.keys(trainingData[0] || {}).length,
-        classes: new Set(trainingData.map(d => d.label)).size
-      }
-    };
-
-    // In a real implementation, you would:
-    // 1. Validate training data
-    // 2. Preprocess features
-    // 3. Split into train/validation sets
-    // 4. Train the model
-    // 5. Evaluate performance
-    // 6. Deploy if meets thresholds
-
-    return NextResponse.json({
-      success: true,
-      data: trainingJob,
-      message: 'Model training started successfully'
-    });
-  } catch (error) {
-    console.error('Model training error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error',
-      code: 'INTERNAL_SERVER_ERROR'
-    }, { status: 500 });
-  }
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const jobId = searchParams.get('jobId');
-
-    if (!jobId) {
-      return NextResponse.json({
-        success: false,
-        error: 'Job ID is required',
-        code: 'MISSING_JOB_ID'
-      }, { status: 400 });
-    }
-
-    // Mock job status - in production, this would check actual training status
-    const jobStatus = {
-      id: jobId,
-      status: 'completed',
-      progress: 100,
-      startedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      completedAt: new Date().toISOString(),
-      duration: '2 hours 15 minutes',
-      model: {
-        id: `model-${Date.now()}`,
-        name: `Trained ${modelType} Model`,
-        type: 'classification',
-        category: 'threat',
-        version: '1.0.0',
-        accuracy: 0.94,
-        precision: 0.92,
-        recall: 0.89,
-        f1Score: 0.90,
-        status: 'active',
-        deployment: {
-          endpoint: '/api/analytics/predict',
-          version: '1.0.0',
-          deployedAt: new Date().toISOString(),
-          health: 'healthy'
-        }
-      },
-      metrics: {
-        trainingLoss: 0.12,
-        validationLoss: 0.15,
-        accuracy: 0.94,
-        precision: 0.92,
-        recall: 0.89,
-        f1Score: 0.90
-      }
-    };
-
-    return NextResponse.json({
-      success: true,
-      data: jobStatus,
-      message: 'Training job status retrieved successfully'
-    });
-  } catch (error) {
-    console.error('Get training status error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error',
-      code: 'INTERNAL_SERVER_ERROR'
-    }, { status: 500 });
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const { modelId, inputData } = await request.json();
-
-    if (!modelId || !inputData) {
-      return NextResponse.json({
-        success: false,
-        error: 'Model ID and input data are required',
-        code: 'MISSING_PREDICTION_PARAMETERS'
-      }, { status: 400 });
-    }
-
-    // Mock prediction - in production, this would use actual ML model
-    const prediction = {
-      id: `prediction-${Date.now()}`,
-      modelId,
-      prediction: 'malware',
-      confidence: 0.87,
-      probability: {
-        malware: 0.87,
-        phishing: 0.05,
-        apt: 0.03,
-        ransomware: 0.02,
-        vulnerability: 0.03
-      },
-      features: {
-        content_length: inputData.description?.length || 0,
-        keyword_density: 0.15,
-        urgency_score: 0.8,
-        domain_age: 45,
-        ip_reputation: 0.3,
-        hash_complexity: 0.75
-      },
-      riskScore: 0.82,
-      recommendations: [
-        'Scan with updated antivirus',
-        'Isolate potentially infected systems',
-        'Review recent file downloads'
-      ],
-      metadata: {
-        model: 'Threat Classification Model',
-        version: '1.0.0',
-        processingTime: '125ms',
-        timestamp: new Date().toISOString()
-      }
-    };
-
-    return NextResponse.json({
-      success: true,
-      data: prediction,
-      message: 'Prediction completed successfully'
-    });
-  } catch (error) {
-    console.error('Prediction error:', error);
     return NextResponse.json({
       success: false,
       error: 'Internal server error',

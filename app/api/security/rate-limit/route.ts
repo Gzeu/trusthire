@@ -2,7 +2,7 @@
 // Rate limiting and connection validation endpoints
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getRateLimiter } from '@/lib/security/rate-limiter';
+import { createRateLimiter } from '@/lib/security/rate-limiter';
 
 // Check rate limit status
 export async function GET(request: NextRequest) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const rateLimiter = getRateLimiter();
+    const rateLimiter = createRateLimiter();
     const result = rateLimiter.checkLimit(key || ip || 'default');
 
     return NextResponse.json({
@@ -27,12 +27,8 @@ export async function GET(request: NextRequest) {
       data: {
         key,
         allowed: result.allowed,
-        limit: result.limit,
         remaining: result.remaining,
-        resetTime: result.resetTime,
-        retryAfter: result.retryAfter,
-        penalty: result.penalty,
-        metadata: result.metadata
+        resetTime: result.resetTime
       }
     });
   } catch (error) {
@@ -66,7 +62,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const rateLimiter = getRateLimiter();
+    const rateLimiter = createRateLimiter();
     const result = rateLimiter.checkLimit(key);
 
     return NextResponse.json({
@@ -74,12 +70,8 @@ export async function POST(request: NextRequest) {
       data: {
         key,
         allowed: result.allowed,
-        limit: result.limit,
         remaining: result.remaining,
         resetTime: result.resetTime,
-        retryAfter: result.retryAfter,
-        penalty: result.penalty,
-        metadata: result.metadata,
         config: {
           algorithm: config.algorithm || 'fixed_window',
           windowSize: config.windowSize || 60000,

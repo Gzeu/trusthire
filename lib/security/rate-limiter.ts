@@ -1,466 +1,214 @@
-// Rate Limiter and Connection Validation
+// Rate Limiting and Security System
 // Advanced rate limiting with multiple algorithms and connection validation
 
 export interface RateLimitConfig {
-  algorithm: 'fixed_window' | 'sliding_window' | 'token_bucket' | 'distributed' | 'adaptive';
-  windowSize: number; // milliseconds
+  algorithm: 'fixed_window' | 'sliding_window' | 'token_bucket';
+  windowSize: number; // in milliseconds
   maxRequests: number;
-  burstLimit: number;
-  penaltyMultiplier: number;
-  skipSuccessfulRequests: boolean;
+  burstLimit?: number;
   keyGenerator: 'ip' | 'user_id' | 'session_id' | 'api_key' | 'composite';
-  headers: string[];
-  ipWhitelist: string[];
-  skipPaths: string[];
-  skipMethods: string[];
-}
-
-export interface RateLimitResult {
-  allowed: boolean;
-  limit: number;
-  remaining: number;
-  resetTime?: string;
-  retryAfter?: number;
-  penalty?: number;
-  key?: string;
-  message?: string;
-  metadata: {
-    algorithm: string;
-    windowStart: string;
-    windowEnd: string;
-    totalRequests: number;
-    usedTokens: number;
-    currentUsage: number;
-  };
+  ipWhitelist?: string[];
+  skipPaths?: string[];
 }
 
 export interface ConnectionValidationConfig {
   enabled: boolean;
   maxConnections: number;
-  timeout: number; // milliseconds
-  retryAttempts: number;
-  retryDelay: number; // milliseconds
   ipValidation: {
+    enabled: boolean;
+    blacklist: string[];
+    whitelist: string[];
+    geoLocation: {
       enabled: boolean;
-      blacklist: string[];
-      whitelist: string[];
-      geoLocation: {
-        enabled: boolean;
-        allowedCountries: string[];
-        blockedCountries: string[];
-        allowedRegions: string[];
-      };
+      allowedCountries: string[];
+      blockedCountries: string[];
     };
+  };
   userValidation: {
-      enabled: boolean;
-      requireAuthentication: boolean;
-      allowedRoles: string[];
-      blockedUsers: string[];
-      sessionValidation: {
-        enabled: boolean;
-        maxSessions: number;
-        sessionTimeout: number; // minutes
-      };
-    };
+    enabled: boolean;
+    allowedRoles: string[];
+    blockedUsers: string[];
+  };
   requestValidation: {
-      enabled: boolean;
-      maxRequestSize: number;
+    enabled: boolean;
+    maxRequestSize: number;
     allowedMethods: string[];
-    blockedHeaders: string[];
     allowedContentTypes: string[];
-    maxUrlLength: number;
-    suspiciousPatterns: string[];
   };
   sslValidation: {
-      enabled: boolean;
-      minVersion: string;
-    allowedCiphers: string[];
-    certificateValidation: boolean;
-    ocspStapling: boolean;
-    hstsEnabled: boolean;
+    enabled: boolean;
+    minVersion: string;
+    requireStrictTransport: boolean;
   };
 }
 
 export interface SecurityMetrics {
   totalRequests: number;
   blockedRequests: number;
-  rateLimitedRequests: number;
-  suspiciousRequests: number;
-  connectionErrors: number;
-  sslErrors: number;
-  topBlockedIPs: Array<{
-    ip: string;
-    count: number;
-    lastSeen: string;
-    country: string;
-  reason: string;
-  }>;
-  topBlockedUsers: Array<{
-    userId: string;
-    count: number;
-    lastSeen: string;
-    reason: string;
-  }>;
-  topSuspiciousPatterns: Array<{
-    pattern: string;
-    count: number;
-    lastSeen: string;
-    examples: string[];
-  }>;
-  timestamp: string;
+  rateLimitHits: number;
+  topBlockedIPs: Array<{ ip: string; count: number; reason: string }>;
+  topBlockedUsers: Array<{ userId: string; count: number; reason: string }>;
+  topSuspiciousPatterns: Array<{ pattern: string; count: number }>;
+  connectionStats: {
+    activeConnections: number;
+    totalConnections: number;
+    peakConnections: number;
+  };
+  sslViolations: number;
+  geoBlocked: number;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+  metadata: {
+    clientIp: string;
+    country?: string;
+    userAgent: string;
+    sslVersion?: string;
+    requestSize: number;
+    suspiciousPatterns: string[];
+  };
 }
 
 export class RateLimiter {
   private config: RateLimitConfig;
-  private validationConfig: ConnectionValidationConfig;
-  private storage: Map<string, any> = new Map();
+  private connectionConfig: ConnectionValidationConfig;
   private metrics: SecurityMetrics;
-  private cleanupInterval: NodeJS.Timeout | null = null;
+  private requestCounts: Map<string, { count: number; resetTime: number; burstCount: number }>;
+  private connections: Map<string, { count: number; lastSeen: number }>;
+  private blockedIPs: Map<string, { reason: string; count: number; blockedAt: number }>;
+  private blockedUsers: Map<string, { reason: string; count: number; blockedAt: number }>;
+  private suspiciousPatterns: Map<string, number>;
 
-  constructor(config: RateLimitConfig, validationConfig: ConnectionValidationConfig) {
+  constructor(config: RateLimitConfig, connectionConfig: ConnectionValidationConfig) {
     this.config = config;
-    this.validationConfig = validationConfig;
+    this.connectionConfig = connectionConfig;
+    this.requestCounts = new Map();
+    this.connections = new Map();
+    this.blockedIPs = new Map();
+    this.blockedUsers = new Map();
+    this.suspiciousPatterns = new Map();
+    
     this.metrics = {
       totalRequests: 0,
       blockedRequests: 0,
-      rateLimitedRequests: 0,
-      suspiciousRequests: 0,
-      connectionErrors: 0,
-      sslErrors: 0,
+      rateLimitHits: 0,
       topBlockedIPs: [],
       topBlockedUsers: [],
       topSuspiciousPatterns: [],
-      timestamp: new Date().toISOString()
+      connectionStats: {
+        activeConnections: 0,
+        totalConnections: 0,
+        peakConnections: 0
+      },
+      sslViolations: 0,
+      geoBlocked: 0
     };
-    
-    this.initializeStorage();
-    this.startCleanup();
   }
 
-  private initializeStorage(): void {
-    // In production, this would use Redis or similar
-    // For now, using in-memory storage
-    console.log('Rate limiter initialized with in-memory storage');
-  }
-
-  private startCleanup(): void {
-    if (this.config.windowSize > 0) {
-      this.cleanupInterval = setInterval(() => {
-        this.cleanupExpiredEntries();
-      }, this.config.windowSize);
-    }
-  }
-
-  private cleanupExpiredEntries(): void {
+  checkLimit(key: string): { allowed: boolean; remaining: number; resetTime: number } {
     const now = Date.now();
-    const expiredKeys: string[] = [];
+    const windowStart = now - this.config.windowSize;
     
-    for (const [key, entry] of this.storage.entries()) {
-      if (entry.resetTime && now > entry.resetTime) {
-        expiredKeys.push(key);
-      }
-    }
+    let data = this.requestCounts.get(key);
     
-    expiredKeys.forEach(key => this.storage.delete(key));
-  }
-
-  // Main rate limiting function
-  checkLimit(key: string, identifier?: string): RateLimitResult {
-    const now = Date.now();
-    const windowMs = this.config.windowSize;
-    const maxRequests = this.config.maxRequests;
-    const burstLimit = this.config.burstLimit;
-    
-    // Get or create entry for this key
-    let entry = this.storage.get(key);
-    
-    if (!entry) {
-      entry = {
+    if (!data || data.resetTime <= now) {
+      data = {
         count: 0,
-        resetTime: now,
-        tokens: this.config.keyGenerator === 'token_bucket' ? [] : [this.generateToken()],
-        usedTokens: 0
+        resetTime: now + this.config.windowSize,
+        burstCount: 0
       };
-      this.storage.set(key, entry);
+      this.requestCounts.set(key, data);
     }
-
-    // Check if we're in a new window
-    if (entry.resetTime && now > entry.resetTime + windowMs) {
-      entry.count = 0;
-      entry.usedTokens = 0;
-      entry.resetTime = now;
-    }
-
-    // Check burst limit
-    if (burstLimit > 0 && entry.count >= burstLimit) {
-      return {
-        allowed: false,
-        limit: 0,
-        remaining: 0,
-        resetTime: new Date(entry.resetTime + windowMs).toISOString(),
-        retryAfter: this.config.penaltyMultiplier * 1000,
-        penalty: this.config.penaltyMultiplier,
-        message: 'Burst limit exceeded',
-        metadata: {
-          algorithm: this.config.algorithm,
-          windowStart: new Date(entry.resetTime).toISOString(),
-          windowEnd: new Date(entry.resetTime + windowMs).toISOString(),
-          totalRequests: entry.count,
-          usedTokens: entry.usedTokens,
-          currentUsage: entry.count
-        }
-      };
-    }
-
-    // Check regular limit
-    if (entry.count >= maxRequests) {
-      const resetTime = new Date(entry.resetTime + windowMs).toISOString();
-      
-      return {
-        allowed: false,
-        limit: 0,
-        remaining: 0,
-        resetTime,
-        retryAfter: this.config.penaltyMultiplier * 1000,
-        penalty: this.config.penaltyMultiplier,
-        message: 'Rate limit exceeded',
-        metadata: {
-          algorithm: this.config.algorithm,
-          windowStart: new Date(entry.resetTime).toISOString(),
-          windowEnd: resetTime,
-          totalRequests: entry.count,
-          usedTokens: entry.usedTokens,
-          currentUsage: entry.count
-        }
-      };
-    }
-
-    // Update usage
-    entry.count++;
-    entry.currentUsage = entry.count;
     
-    // Handle token bucket algorithm
-    if (this.config.algorithm === 'token_bucket' && this.config.keyGenerator === 'token_bucket') {
-      if (entry.tokens.length > 0) {
-        const token = entry.tokens.shift();
-        entry.usedTokens++;
-        
-        if (entry.usedTokens >= entry.tokens.length) {
-          // All tokens used, wait for reset
-          const resetTime = new Date(entry.resetTime + windowMs).toISOString();
-          entry.tokens = [this.generateToken()];
-          entry.usedTokens = 0;
-        }
-      }
+    data.count++;
+    
+    // Check burst limit if configured
+    if (this.config.burstLimit && data.count > this.config.burstLimit) {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetTime: data.resetTime
+      };
     }
-
-    this.storage.set(key, entry);
-
+    
+    const allowed = data.count <= this.config.maxRequests;
+    const remaining = Math.max(0, this.config.maxRequests - data.count);
+    
+    if (!allowed) {
+      this.metrics.rateLimitHits++;
+    }
+    
     return {
-      allowed: true,
-      limit: maxRequests - entry.count,
-      remaining: maxRequests - entry.count,
-      resetTime: entry.resetTime,
-      retryAfter: 0,
-      penalty: 0,
-      key: entry.tokens?.[0] || key,
-      metadata: {
-        algorithm: this.config.algorithm,
-        windowStart: new Date(entry.resetTime).toISOString(),
-        windowEnd: new Date(entry.resetTime + windowMs).toISOString(),
-        totalRequests: entry.count,
-        usedTokens: entry.usedTokens,
-        currentUsage: entry.count
-      }
+      allowed,
+      remaining,
+      resetTime: data.resetTime
     };
   }
 
-  // Key generation
-  private generateToken(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    
-    for (let i = 0; i < 32; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    
-    return result;
-  }
-
-  // Connection validation
-  validateConnection(req: any): {
-    isValid: true,
-    errors: string[];
-    warnings: string[];
-    metadata: {
-      clientIp: string;
-      country?: string;
-      userAgent: string;
-      sslVersion?: string;
-      requestSize: number;
-      suspiciousPatterns: string[];
-    };
-  } {
+  validateConnection(req: any): ValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
-
-    // Check if connection validation is enabled
-    if (!this.validationConfig.enabled) {
-      return {
-        isValid: true,
-        errors,
-        warnings
-      };
-    }
-
+    const suspiciousPatterns: string[] = [];
+    
     const clientIp = this.getClientIp(req);
     const userAgent = req.headers['user-agent'] || '';
-
-    // IP validation
-    if (this.validationConfig.ipValidation.enabled) {
-      if (this.validationConfig.ipValidation.blacklist.includes(clientIp)) {
+    const requestSize = this.getContentLength(req);
+    
+    // Check IP blacklist
+    if (this.connectionConfig.ipValidation.enabled) {
+      if (this.connectionConfig.ipValidation.blacklist.includes(clientIp)) {
         errors.push('IP address is blacklisted');
-        this.metrics.blockedRequests++;
-        this.updateTopBlockedIPs(clientIp, 'Blacklisted');
-        return {
-          isValid: false,
-          errors,
-          warnings
-        };
+        this.updateTopBlockedIPs(clientIp, 'Blacklisted IP');
       }
-
-      if (this.validationConfig.ipValidation.whitelist.length > 0 && 
-          !this.validationConfig.ipValidation.whitelist.includes(clientIp)) {
-        errors.push('IP address not whitelisted');
-        this.metrics.blockedRequests++;
-        this.updateTopBlockedIPs(clientIp, 'Not Whitelisted');
-        return {
-          isValid: false,
-          errors,
-          warnings
-        };
-      }
-    }
-
-    // Geographic validation
-    if (this.validationConfig.geoLocation.enabled) {
-      const country = this.getCountryFromIP(clientIp);
       
-      if (this.validationConfig.geoLocation.blockedCountries.includes(country)) {
-        errors.push(`Access from country ${country} is blocked`);
-        this.metrics.blockedRequests++;
-        this.updateTopBlockedIPs(clientIp, 'Geographic Restriction');
-        return {
-          isValid: false,
-          errors,
-          warnings
-        };
+      // Check geographic restrictions
+      if (this.connectionConfig.ipValidation.geoLocation.enabled) {
+        const country = this.getCountryFromIP(clientIp);
+        if (this.connectionConfig.ipValidation.geoLocation.blockedCountries.includes(country)) {
+          errors.push('Geographic location is blocked');
+          this.metrics.geoBlocked++;
+        }
       }
     }
-
-    // User validation
-    if (this.validationConfig.userValidation.enabled) {
-      const userId = this.getUserId(req);
-      
-      if (this.validationConfig.userValidation.blockedUsers.includes(userId)) {
-        errors.push('User is blocked');
-        this.metrics.blockedRequests++;
-        this.updateTopBlockedUsers(userId, 'Blocked');
-        return {
-          isValid: false,
-          errors,
-          warnings
-        };
+    
+    // Check request size
+    if (this.connectionConfig.requestValidation.enabled) {
+      if (requestSize > this.connectionConfig.requestValidation.maxRequestSize) {
+        errors.push('Request size exceeds limit');
       }
     }
-
-    // Request validation
-    if (this.validationConfig.requestValidation.enabled) {
-      const method = req.method;
-      
-      if (!this.validationConfig.requestValidation.allowedMethods.includes(method)) {
-        errors.push(`Method ${method} is not allowed`);
-        this.metrics.blockedRequests++;
-        return {
-          isValid: false,
-          errors,
-          warnings
-        };
-      }
-
-      const contentLength = this.getContentLength(req);
-      if (contentLength > this.validationConfig.requestValidation.maxUrlLength) {
-        errors.push(`Request size ${contentLength} exceeds maximum allowed`);
-        this.metrics.suspiciousRequests++;
-        return {
-          isValid: false,
-          errors,
-          warnings
-        };
-      }
-
-      const suspiciousPatterns = this.checkSuspiciousPatterns(req);
-      if (suspiciousPatterns.length > 0) {
-        errors.push('Suspicious patterns detected');
-        this.metrics.suspiciousRequests++;
-        this.updateTopSuspiciousPatterns(suspiciousPatterns);
-        return {
-          isValid: false,
-          errors,
-          warnings
-        };
-      }
-
-    // SSL validation
-    if (this.validationConfig.sslValidation.enabled) {
-      const sslVersion = req.headers['x-forwarded-proto'] || '';
-      
-      if (this.validationConfig.sslValidation.minVersion && 
-          this.isSSLVersionOutdated(sslVersion)) {
-        errors.push('SSL version is outdated');
-        this.metrics.sslErrors++;
-        return {
-          isValid: false,
-          errors,
-          warnings
-        };
+    
+    // Check for suspicious patterns
+    const patterns = this.checkSuspiciousPatterns(req);
+    suspiciousPatterns.push(...patterns);
+    
+    // Check SSL validation
+    if (this.connectionConfig.sslValidation.enabled && req.secure) {
+      const sslVersion = this.getSSLVersion(req);
+      if (this.isSSLVersionOutdated(sslVersion)) {
+        warnings.push('SSL version is outdated');
+        this.metrics.sslViolations++;
       }
     }
-
-    // Request size validation
-    const requestSize = this.getRequestSize(req);
-    if (requestSize > this.validationConfig.requestValidation.maxRequestSize) {
-      errors.push(`Request size ${requestSize} exceeds maximum allowed`);
-      this.metrics.suspiciousRequests++;
-      return {
-        isValid: false,
-        errors,
-        warnings
-      };
+    
+    const isValid = errors.length === 0;
+    
+    if (!isValid) {
+      this.metrics.blockedRequests++;
     }
-
-    // Connection limit validation
-    const currentConnections = this.getCurrentConnections(clientIp);
-    if (this.validationConfig.maxConnections > 0 && 
-        currentConnections >= this.validationConfig.maxConnections) {
-      errors.push('Connection limit exceeded');
-      this.metrics.connectionErrors++;
-      return {
-        isValid: false,
-        errors,
-        warnings
-      };
-    }
-
+    
     return {
-      isValid: true,
+      isValid,
       errors,
       warnings,
       metadata: {
         clientIp,
-        country,
+        country: this.getCountryFromIP(clientIp),
         userAgent,
-        sslVersion,
+        sslVersion: this.getSSLVersion(req),
         requestSize,
         suspiciousPatterns
       }
@@ -486,242 +234,173 @@ export class RateLimiter {
   }
 
   private getCurrentConnections(clientIp: string): number {
-    // In production, this would track active connections per IP
-    return 1; // Mock implementation
+    const data = this.connections.get(clientIp);
+    return data ? data.count : 0;
   }
 
   private getCountryFromIP(ip: string): string {
     // Mock implementation - in production, use GeoIP database
-    const ipParts = ip.split('.');
-    if (ipParts.length === 4) {
-      return 'US'; // Mock
-    }
-    return 'Unknown';
+    const mockCountries: { [key: string]: string } = {
+      '127.0.0.1': 'US',
+      '192.168.1.1': 'US',
+      '10.0.0.1': 'US'
+    };
+    return mockCountries[ip] || 'Unknown';
+  }
+
+  private getSSLVersion(req: any): string {
+    // Mock implementation - in production, extract from TLS handshake
+    return 'TLSv1.3';
   }
 
   private isSSLVersionOutdated(version: string): boolean {
-    // Mock implementation - in production, use SSL version checking
-    const outdatedVersions = ['SSLv2', 'SSLv3'];
-    return outdatedVersions.some(v => version.startsWith(v));
+    const outdatedVersions = ['SSLv2', 'SSLv3', 'TLSv1.0', 'TLSv1.1'];
+    return outdatedVersions.includes(version);
   }
 
   private checkSuspiciousPatterns(req: any): string[] {
-    const patterns = this.validationConfig.requestValidation.suspiciousPatterns;
-    const url = req.url || '';
+    const patterns: string[] = [];
     const userAgent = req.headers['user-agent'] || '';
-    const body = req.body || '';
+    const url = req.url || '';
     
-    const detectedPatterns: string[] = [];
+    // Check for common attack patterns
+    const suspiciousPatterns = [
+      /<script/i,
+      /javascript:/i,
+      /union.*select/i,
+      /drop.*table/i,
+      /exec/i,
+      /eval/i
+    ];
     
-    for (const pattern of patterns) {
-      if (url.toLowerCase().includes(pattern.toLowerCase()) ||
-          userAgent.toLowerCase().includes(pattern.toLowerCase()) ||
-          (body && body.toString().toLowerCase().includes(pattern.toLowerCase()))) {
-        detectedPatterns.push(pattern);
+    for (const pattern of suspiciousPatterns) {
+      if (pattern.test(url) || pattern.test(userAgent)) {
+        patterns.push(pattern.source);
+        this.updateTopSuspiciousPatterns(pattern.source);
       }
     }
     
-    return detectedPatterns;
+    return patterns;
   }
 
-  // Metrics and monitoring
-  private updateTopBlockedIPs(ip: string, reason: string): void {
-    const existing = this.metrics.topBlockedIPs.find(item => item.ip === ip);
+  private updateTopBlockedIPs(ip: string, reason: string) {
+    const existing = this.blockedIPs.get(ip);
+    const count = existing ? existing.count + 1 : 1;
     
-    if (existing) {
-      existing.count++;
-      existing.lastSeen = new Date().toISOString();
-    } else {
-      this.metrics.topBlockedIPs.push({
-        ip,
-        count: 1,
-        lastSeen: new Date().toISOString(),
-        country: this.getCountryFromIP(ip),
-        reason
-      });
-    }
+    this.blockedIPs.set(ip, {
+      reason,
+      count,
+      blockedAt: Date.now()
+    });
   }
 
-  private updateTopBlockedUsers(userId: string, reason: string): void {
-    const existing = this.metrics.topBlockedUsers.find(item => item.userId === userId);
+  private updateTopBlockedUsers(userId: string, reason: string) {
+    const existing = this.blockedUsers.get(userId);
+    const count = existing ? existing.count + 1 : 1;
     
-    if (existing) {
-      existing.count++;
-      existing.lastSeen = new Date().toISOString();
-    } else {
-      this.metrics.topBlockedUsers.push({
-        userId,
-        count: 1,
-        lastSeen: new Date().toISOString(),
-        reason
-      });
-    }
+    this.blockedUsers.set(userId, {
+      reason,
+      count,
+      blockedAt: Date.now()
+    });
   }
 
-  private updateTopSuspiciousPatterns(patterns: string[]): void {
-    patterns.forEach(pattern => {
-      const existing = this.metrics.topSuspiciousPatterns.find(item => item.pattern === pattern);
-      
-      if (existing) {
-        existing.count++;
-        existing.lastSeen = new Date().toISOString();
-      } else {
-        this.metrics.topSuspiciousPatterns.push({
-          pattern,
-          count: 1,
-          lastSeen: new Date().toISOString(),
-          examples: []
-        });
-      }
-    }
+  private updateTopSuspiciousPatterns(pattern: string) {
+    const existing = this.suspiciousPatterns.get(pattern);
+    this.suspiciousPatterns.set(pattern, existing ? existing + 1 : 1);
   }
 
-  // Public API methods
   getMetrics(): SecurityMetrics {
-    return this.metrics;
+    // Update top lists
+    this.metrics.topBlockedIPs = Array.from(this.blockedIPs.entries())
+      .map(([ip, data]) => ({ ip, count: data.count, reason: data.reason }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    
+    this.metrics.topBlockedUsers = Array.from(this.blockedUsers.entries())
+      .map(([userId, data]) => ({ userId, count: data.count, reason: data.reason }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    
+    this.metrics.topSuspiciousPatterns = Array.from(this.suspiciousPatterns.entries())
+      .map(([pattern, count]) => ({ pattern, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    
+    return { ...this.metrics };
   }
 
   resetMetrics(): void {
     this.metrics = {
       totalRequests: 0,
       blockedRequests: 0,
-      rateLimitedRequests: 0,
-      suspiciousRequests: 0,
-      connectionErrors: 0,
-      sslErrors: 0,
+      rateLimitHits: 0,
       topBlockedIPs: [],
       topBlockedUsers: [],
       topSuspiciousPatterns: [],
-      timestamp: new Date().toISOString()
+      connectionStats: {
+        activeConnections: 0,
+        totalConnections: 0,
+        peakConnections: 0
+      },
+      sslViolations: 0,
+      geoBlocked: 0
     };
   }
 
-  // Cleanup
   destroy(): void {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-    }
-    
-    this.storage.clear();
-    this.metrics = {
-      totalRequests: 0,
-      blockedRequests: 0,
-      rateLimitedRequests: 0,
-      suspiciousRequests: 0,
-      connectionErrors: 0,
-      sslErrors: 0,
-      topBlockedIPs: [],
-      topBlockedUsers: [],
-      topSuspiciousPatterns: [],
-      timestamp: new Date().toISOString()
-    };
+    this.requestCounts.clear();
+    this.connections.clear();
+    this.blockedIPs.clear();
+    this.blockedUsers.clear();
+    this.suspiciousPatterns.clear();
   }
 }
 
-// Factory function
-export function createRateLimiter(
-  rateLimitConfig: RateLimitConfig = {
-    algorithm: 'fixed_window',
+export function createRateLimiter(config: Partial<RateLimitConfig> = {}, connectionConfig: Partial<ConnectionValidationConfig> = {}): RateLimiter {
+  const defaultConfig: RateLimitConfig = {
+    algorithm: 'sliding_window',
     windowSize: 60000, // 1 minute
     maxRequests: 100,
     burstLimit: 200,
-    penaltyMultiplier: 2,
-    skipSuccessfulRequests: true,
     keyGenerator: 'ip',
-    headers: ['x-forwarded-for', 'x-real-ip'],
-    ipWhitelist: [],
-    skipPaths: ['/health', '/metrics', '/status'],
-    skipMethods: ['OPTIONS', 'HEAD'],
-    tokenBucket: {
-      refillRate: 10,
-      tokenSize: 10,
-      tokensPerToken: 1
-    }
-  },
-  connectionValidationConfig: ConnectionValidationConfig = {
+    ipWhitelist: ['127.0.0.1', '::1'],
+    skipPaths: ['/health', '/metrics', '/status']
+  };
+
+  const defaultConnectionConfig: ConnectionValidationConfig = {
     enabled: true,
     maxConnections: 1000,
-    timeout: 30000,
-    retryAttempts: 3,
-    retryDelay: 1000,
     ipValidation: {
       enabled: true,
-      blacklist: [
-        '192.168.1.100',
-        '10.0.0.1',
-        '172.16.254.1'
-      ],
-      whitelist: [
-        '127.0.0.1',
-        '10.0.0.2',
-        '192.168.1.101'
-      ],
+      blacklist: [],
+      whitelist: ['127.0.0.1', '::1'],
       geoLocation: {
-        enabled: true,
-        allowedCountries: ['US', 'CA', 'GB', 'DE', 'FR', 'JP', 'AU'],
-        blockedCountries: ['CN', 'RU', 'KP', 'IR', 'MM'],
-        allowedRegions: ['us-east-1', 'us-west-2', 'eu-west-1', 'eu-west-2'],
-        blockedRegions: ['cn-north-1', 'cn-northwest']
+        enabled: false,
+        allowedCountries: ['US', 'CA', 'GB', 'DE', 'FR'],
+        blockedCountries: ['CN', 'RU', 'KP', 'IR']
       }
     },
     userValidation: {
-      enabled: true,
-      requireAuthentication: true,
-      allowedRoles: ['admin', 'analyst', 'viewer'],
-      blockedUsers: [],
-      sessionValidation: {
-        enabled: true,
-        maxSessions: 10,
-        sessionTimeout: 30
-      }
+      enabled: false,
+      allowedRoles: [],
+      blockedUsers: []
     },
     requestValidation: {
       enabled: true,
-      maxRequestSize: 1048576, // 10MB
+      maxRequestSize: 10 * 1024 * 1024, // 10MB
       allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-      blockedHeaders: [
-        'x-forwarded-for',
-        'x-forwarded-proto',
-        'x-forwarded-host'
-      ],
-      allowedContentTypes: ['application/json', 'text/plain', 'multipart/form-data'],
-      maxUrlLength: 2048,
-      suspiciousPatterns: [
-        '<script',
-        'javascript:',
-        'eval(',
-        'document.cookie',
-        'document.write',
-        'window.location',
-        'document.referrer'
-      ]
+      allowedContentTypes: ['application/json', 'application/x-www-form-urlencoded', 'multipart/form-data']
     },
     sslValidation: {
       enabled: true,
       minVersion: 'TLSv1.2',
-      allowedCiphers: [
-        'TLS_AES_128_GCM_SHA256',
-        'TLS_AES_256_GCM_SHA384',
-        'TLS_AES_128_CBC_SHA256',
-        'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA',
-        'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA'
-      ],
-      certificateValidation: true,
-      ocspStapling: true,
-      hstsEnabled: true
+      requireStrictTransport: true
     }
-  }
-): RateLimiter {
-  const limiter = new RateLimiter(rateLimitConfig, connectionValidationConfig);
-  return limiter;
-}
+  };
 
-// Singleton instance
-let rateLimiter: RateLimiter | null = null;
-
-export function getRateLimiter(): RateLimiter {
-  if (!rateLimiter) {
-    rateLimiter = createRateLimiter();
-  }
-  return rateLimiter;
+  return new RateLimiter(
+    { ...defaultConfig, ...config },
+    { ...defaultConnectionConfig, ...connectionConfig }
+  );
 }
