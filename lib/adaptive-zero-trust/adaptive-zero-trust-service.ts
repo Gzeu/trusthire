@@ -1066,7 +1066,7 @@ export class AdaptiveZeroTrustService extends EventEmitter {
       policies: {
         total: policies.length,
         active: policies.filter(p => p.status === 'active').length,
-        avgEffectiveness: this.calculateAverage(policies, 'metrics.effectiveness'),
+        avgEffectiveness: this.calculateNestedAverage(policies, 'metrics.effectiveness'),
         adaptationCount: policies.reduce((sum, p) => sum + p.metrics.adaptationCount, 0)
       },
       assessments: {
@@ -1692,6 +1692,27 @@ export class AdaptiveZeroTrustService extends EventEmitter {
     }, 0);
     
     return sum / items.length;
+  }
+
+  /**
+   * Calculate average of nested numeric property
+   */
+  private calculateNestedAverage<T>(items: T[], property: string): number {
+    if (items.length === 0) return 0;
+    
+    const sum = items.reduce((total, item) => {
+      const value = this.getNestedValue(item, property);
+      return total + (isNaN(value) ? 0 : value);
+    }, 0);
+    
+    return sum / items.length;
+  }
+
+  /**
+   * Get nested value from object
+   */
+  private getNestedValue(obj: any, path: string): number {
+    return path.split('.').reduce((current, key) => current?.[key], obj) || 0;
   }
 
   /**
