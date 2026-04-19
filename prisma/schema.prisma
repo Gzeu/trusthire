@@ -158,3 +158,257 @@ model CacheEntry {
   @@index([expiresAt])
   @@index([key])
 }
+
+// Enhanced Authentication and User Management Models
+model User {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  email           String   @unique
+  username        String?  @unique
+  firstName       String?
+  lastName        String?
+  passwordHash    String
+  salt            String
+  role            UserRole @default(USER)
+  status          UserStatus @default(ACTIVE)
+  emailVerified   Boolean  @default(false)
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  loginCount      Int      @default(0)
+  mfaEnabled      Boolean  @default(false)
+  mfaSecret       String?  // TOTP secret
+  backupCodes     String?  // JSON array of backup codes
+  avatar          String?  // Profile picture URL
+  timezone        String?  // User timezone
+  language        String   @default("en")
+  preferences     String?  // JSON with user preferences
+  metadata        String?  // JSON with additional metadata
+  
+  // Relations
+  sessions        UserSession[]
+  apiKeys         ApiKey[]
+  oauthAccounts   OAuthAccount[]
+  auditLogs       AuditLog[]
+  
+  @@index([email])
+  @@index([username])
+  @@index([role])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model UserSession {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  userId          String
+  sessionId       String   @unique
+  refreshToken    String   @unique
+  accessToken     String?  // Current access token
+  ipAddress       String?
+  userAgent       String?
+  isActive        Boolean  @default(true)
+  expiresAt       DateTime
+  lastActivityAt  DateTime @default(now())
+  deviceInfo      String?  // JSON with device information
+  location        String?  // JSON with location data
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([sessionId])
+  @@index([refreshToken])
+  @@index([expiresAt])
+  @@index([isActive])
+}
+
+model ApiKey {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  userId          String
+  name            String
+  key             String   @unique
+  keyPrefix       String   // First 8 characters for display
+  permissions     String[] // Array of permissions
+  isActive         Boolean  @default(true)
+  lastUsedAt      DateTime?
+  expiresAt        DateTime?
+  usageCount      Int      @default(0)
+  rateLimit        Int?     // Requests per hour
+  metadata        String?  // JSON with additional metadata
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKeyUsage     ApiKeyUsage[]
+  
+  @@index([userId])
+  @@index([key])
+  @@index([keyPrefix])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+model ApiKeyUsage {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  apiKeyId        String
+  endpoint        String
+  method          String
+  ipAddress       String?
+  userAgent       String?
+  responseTime    Int?     // Response time in milliseconds
+  statusCode      Int
+  success         Boolean
+  metadata        String?  // JSON with additional metadata
+  
+  // Relations
+  apiKey          ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  
+  @@index([apiKeyId])
+  @@index([createdAt])
+  @@index([endpoint])
+  @@index([success])
+}
+
+model OAuthAccount {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  userId          String
+  provider        OAuthProvider
+  providerId      String   // Provider's user ID
+  providerEmail   String?
+  accessToken     String?  // Encrypted
+  refreshToken   String?  // Encrypted
+  expiresAt       DateTime?
+  scopes          String[] // Array of granted scopes
+  metadata        String?  // JSON with provider-specific data
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerId])
+  @@index([userId])
+  @@index([provider])
+}
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  userId          String?
+  sessionId       String?
+  action          AuditAction
+  resource        String?  // Resource that was acted upon
+  resourceId      String?  // ID of the resource
+  ipAddress       String?
+  userAgent       String?
+  success         Boolean
+  errorMessage    String?
+  metadata        String?  // JSON with additional context
+  
+  // Relations
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([sessionId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([success])
+}
+
+model Permission {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String   @unique
+  description     String
+  resource        String   // Resource type (e.g., 'scans', 'users', 'analytics')
+  action          String   // Action type (e.g., 'read', 'write', 'delete')
+  isActive        Boolean  @default(true)
+  
+  // Relations
+  rolePermissions RolePermission[]
+  
+  @@index([resource])
+  @@index([action])
+  @@index([isActive])
+}
+
+model Role {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String   @unique
+  displayName     String
+  description     String
+  isActive        Boolean  @default(true)
+  isSystem        Boolean  @default(false) // System roles cannot be deleted
+  
+  // Relations
+  rolePermissions RolePermission[]
+  
+  @@index([name])
+  @@index([isActive])
+}
+
+model RolePermission {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  roleId          String
+  permissionId    String
+  
+  // Relations
+  role            Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission      Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+// Enums
+enum UserRole {
+  USER
+  ANALYST
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+  DELETED
+}
+
+enum OAuthProvider {
+  GITHUB
+  GOOGLE
+  MICROSOFT
+  LINKEDIN
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  REGISTER
+  PASSWORD_CHANGE
+  MFA_ENABLED
+  MFA_DISABLED
+  API_KEY_CREATED
+  API_KEY_DELETED
+  USER_CREATED
+  USER_UPDATED
+  USER_DELETED
+  ROLE_CHANGED
+  PERMISSION_GRANTED
+  PERMISSION_REVOKED
+  SCAN_STARTED
+  SCAN_COMPLETED
+  DATA_EXPORTED
+  SETTINGS_UPDATED
+}
