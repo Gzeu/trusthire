@@ -63,3 +63,98 @@ model Blacklist {
 
   @@index([type, value])
 }
+
+// Scan History and Analytics Models
+model ScanHistory {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  userId          String?  // Optional user ID when authentication is implemented
+  sessionId       String   // Session identifier for anonymous users
+  scanType        String   // github, url, linkedin, forms
+  target          String   // Repository URL, website URL, etc.
+  status          String   @default("pending") // pending, running, completed, failed
+  overallScore    Int?     // Overall risk/trust score
+  scanDuration   Int?     // Scan duration in milliseconds
+  resultData      String   // JSON with all scan results
+  errorData       String?  // JSON with error information
+  metadata        String?  // JSON with additional metadata
+  ipAddress       String?  // User IP for analytics
+  userAgent       String?  // User agent for analytics
+  
+  @@index([userId])
+  @@index([sessionId])
+  @@index([scanType])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model UserAnalytics {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  userId          String?  // Optional user ID when authentication is implemented
+  sessionId       String   // Session identifier for anonymous users
+  eventDate       DateTime @default(now())
+  eventType       String   // scan_started, scan_completed, page_view, etc.
+  eventData       String   // JSON with event details
+  metadata        String?  // JSON with additional metadata
+  ipAddress       String?
+  userAgent       String?
+  referrer        String?
+  
+  @@index([userId])
+  @@index([sessionId])
+  @@index([eventType])
+  @@index([eventDate])
+}
+
+model ScanMetrics {
+  id              String   @id @default(cuid())
+  date            DateTime @default(now())
+  scanType        String   // github, url, linkedin, forms
+  totalScans      Int      @default(0)
+  completedScans  Int      @default(0)
+  failedScans     Int      @default(0)
+  avgScanDuration Int?     // Average scan duration in ms
+  uniqueUsers     Int      @default(0) // Based on sessions or user IDs
+  
+  @@unique([date, scanType])
+  @@index([date])
+  @@index([scanType])
+}
+
+model ThreatDatabase {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  threatType      String   // malware, phishing, vulnerability, etc.
+  source          String   // virustotal, github, manual, etc.
+  sourceId        String   // ID from the source system
+  threatData      String   // JSON with threat details
+  severity        String   // low, medium, high, critical
+  confidence      Int      @default(0) // 0-100 confidence score
+  isActive        Boolean  @default(true)
+  firstSeen       DateTime @default(now())
+  lastSeen        DateTime @default(now())
+  metadata        String?  // JSON with additional metadata
+  
+  @@index([threatType])
+  @@index([source])
+  @@index([severity])
+  @@index([isActive])
+  @@index([firstSeen])
+}
+
+model CacheEntry {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   // JSON data
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  metadata    String?  // JSON with cache metadata
+  
+  @@index([expiresAt])
+  @@index([key])
+}
