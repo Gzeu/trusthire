@@ -9,6 +9,9 @@ import { generateIncidentReport } from '@/lib/reportGenerator';
 import { generateRiskAssessmentWithGroq, generateReportSummaryWithGroq, analyzeProfileWithGroq, analyzeCodeWithGroq } from '@/lib/groq-analysis';
 import { normalizeAiAnalysis } from '@/lib/normalizeAiAnalysis';
 import { langChainService } from '@/lib/langchain-integration';
+import { withErrorHandling, RateLimitError, ExternalServiceError } from '@/lib/error-handler';
+import { validateInput, AssessmentInputSchema, transformAssessmentInput } from '@/lib/validation';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import type { AssessmentInput, RepoScanResult } from '@/types';
 
 const EMPTY_REPO_SCAN: RepoScanResult = {
@@ -20,53 +23,33 @@ const EMPTY_REPO_SCAN: RepoScanResult = {
   error: 'Scan failed',
 };
 
-const rateLimit = new Map<string, { count: number; reset: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimit.get(ip);
-  if (!entry || entry.reset < now) {
-    rateLimit.set(ip, { count: 1, reset: now + 60_000 });
-    return true;
+const handler = async (req: NextRequest) => {
+  const ip = getClientIp(req);
+  if (!checkRateLimit(ip, 10, 60_000)) {
+    throw new RateLimitError('Assessment creation rate limit exceeded. Please wait a minute.');
   }
-  if (entry.count >= 10) return false;
-  entry.count++;
-  return true;
-}
 
-export async function POST(req: NextRequest) {
-  try {
-    const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
-    if (!checkRateLimit(ip)) {
-      return NextResponse.json({ error: 'Rate limit exceeded. Please wait a minute.' }, { status: 429 });
-    }
-
-    let body: AssessmentInput;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-    }
-
-    if (!body.recruiter?.name || !body.recruiter?.claimedCompany) {
-      return NextResponse.json({ error: 'Name and company are required' }, { status: 400 });
-    }
+  // Validate and parse input
+  const body = await req.json();
+  const validatedInput = validateInput(AssessmentInputSchema, body);
+  const assessmentInput = transformAssessmentInput(validatedInput);
 
     // Run repo scans safely — never let a single failure crash the whole request
+    const artifacts = assessmentInput.artifacts;
     const repoScanResults = await Promise.allSettled(
-      (body.artifacts ?? []).filter((a) => a.type === 'github').map((a) => scanGithubRepo(a.url))
+      artifacts.filter((a) => a.type === 'github').map((a) => scanGithubRepo(a.url))
     );
     const repoScans: RepoScanResult[] = repoScanResults.map((r) =>
       r.status === 'fulfilled' ? r.value : { ...EMPTY_REPO_SCAN }
     );
 
     // Run domain checks safely
-    const domainTargets = (body.artifacts ?? [])
+    const domainTargets = artifacts
       .filter((a) => a.type !== 'github')
       .map((a) => a.url)
       .concat(
-        body.recruiter.emailReceived
-          ? [body.recruiter.emailReceived.split('@')[1] ?? '']
+        assessmentInput.recruiter.emailReceived
+          ? [assessmentInput.recruiter.emailReceived.split('@')[1] ?? '']
           : []
       );
 
@@ -91,30 +74,32 @@ export async function POST(req: NextRequest) {
     let companyVerification = null;
     try {
       companyVerification = await verifyCompany(
-        body.recruiter.claimedCompany,
+        assessmentInput.recruiter.claimedCompany,
         domainChecks.length > 0 ? domainChecks[0].domain : undefined
       );
     } catch (error) {
       console.error('Company verification failed:', error);
+      throw new ExternalServiceError('CompanyVerifier', 'Failed to verify company', error);
     }
 
     // Email validation for recruiter
     let emailValidation = null;
-    if (body.recruiter.emailReceived) {
+    if (assessmentInput.recruiter.emailReceived) {
       try {
-        emailValidation = await validateEmailWithAPI(body.recruiter.emailReceived);
+        emailValidation = await validateEmailWithAPI(assessmentInput.recruiter.emailReceived);
       } catch (error) {
         console.error('Email validation failed:', error);
+        throw new ExternalServiceError('EmailValidator', 'Failed to validate email', error);
       }
     }
 
     // Calculate scores and generate full assessment
-    const scores = await calculateScores(body, repoScans, domainChecks);
+    const scores = await calculateScores(assessmentInput, repoScans, domainChecks);
     const finalScore = scores.identityConfidence + scores.employerLegitimacy + scores.processLegitimacy + scores.technicalSafety;
     const verdict = getVerdict(finalScore);
-    const redFlags = generateRedFlags(body, repoScans, domainChecks);
-    const greenSignals = generateGreenSignals(body, repoScans, domainChecks);
-    const missingEvidence = generateMissingEvidence(body);
+    const redFlags = generateRedFlags(assessmentInput, repoScans, domainChecks);
+    const greenSignals = generateGreenSignals(assessmentInput, repoScans, domainChecks);
+    const missingEvidence = generateMissingEvidence(assessmentInput);
     const workflowAdvice = generateWorkflowAdvice(verdict, redFlags);
 
     // Enhanced AI Analysis with LangChain and Groq
@@ -123,10 +108,10 @@ export async function POST(req: NextRequest) {
     
     // First, try LangChain analysis for recruiter messages
     let messageAnalysis = null;
-    if (body.recruiter.recruiterMessages && Array.isArray(body.recruiter.recruiterMessages) && body.recruiter.recruiterMessages.length > 0) {
+    if (assessmentInput.recruiter.recruiterMessages && assessmentInput.recruiter.recruiterMessages.length > 0) {
       try {
         messageAnalysis = await langChainService.runChain('security', {
-          input: body.recruiter.recruiterMessages.join('\n'),
+          input: assessmentInput.recruiter.recruiterMessages,
           context: {
             type: 'recruiter_messages',
             platform: 'assessment'
@@ -134,6 +119,7 @@ export async function POST(req: NextRequest) {
         });
       } catch (error) {
         console.error('LangChain message analysis failed:', error);
+        throw new ExternalServiceError('LangChain', 'Message analysis failed', error);
       }
     }
     
@@ -142,12 +128,12 @@ export async function POST(req: NextRequest) {
     if (groqApiKey) {
       try {
         profileAnalysis = await analyzeProfileWithGroq({
-          name: body.recruiter.name,
-          company: body.recruiter.claimedCompany,
-          jobTitle: body.recruiter.jobTitle,
-          email: body.recruiter.emailReceived,
-          messages: body.recruiter.recruiterMessages ? [body.recruiter.recruiterMessages] : [],
-          jobDescription: body.job.jobDescription
+          name: assessmentInput.recruiter.name,
+          company: assessmentInput.recruiter.claimedCompany,
+          jobTitle: assessmentInput.recruiter.jobTitle,
+          email: assessmentInput.recruiter.emailReceived,
+          messages: assessmentInput.recruiter.recruiterMessages ? [assessmentInput.recruiter.recruiterMessages] : [],
+          jobDescription: assessmentInput.job.jobDescription
         });
 
         const codeAnalyses = await Promise.allSettled(
@@ -163,8 +149,8 @@ export async function POST(req: NextRequest) {
         );
 
         aiAnalysis = await generateRiskAssessmentWithGroq({
-          profile: body.recruiter,
-          job: body.job,
+          profile: assessmentInput.recruiter,
+          job: assessmentInput.job,
           code: repoScans,
           domains: domainChecks,
           existingFlags: redFlags
@@ -215,14 +201,15 @@ export async function POST(req: NextRequest) {
         }
       } catch (error) {
         console.error('Groq AI analysis failed:', error);
+        throw new ExternalServiceError('Groq', 'AI analysis failed', error);
       }
     }
 
     const assessmentResult = {
       id: 'temp',
       createdAt: new Date().toISOString(),
-      recruiterName: body.recruiter.name,
-      company: body.recruiter.claimedCompany,
+      recruiterName: assessmentInput.recruiter.name,
+      company: assessmentInput.recruiter.claimedCompany,
       finalScore,
       verdict,
       scores,
@@ -292,8 +279,8 @@ ${aiAnalysis.summary?.nextSteps?.map((step: string) => `  1. ${step}`).join('\n'
       const saved = await prisma.assessment.create({
         data: {
           sessionId: `session_${Date.now()}`,
-          recruiterName: body.recruiter.name,
-          company: body.recruiter.claimedCompany,
+          recruiterName: assessmentInput.recruiter.name,
+          company: assessmentInput.recruiter.claimedCompany,
           finalScore: finalScore,
           verdict: verdict,
           inputData: body as object,
@@ -314,8 +301,8 @@ ${aiAnalysis.summary?.nextSteps?.map((step: string) => `  1. ${step}`).join('\n'
       id: savedId,
       shareToken,
       createdAt: new Date().toISOString(),
-      recruiterName: body.recruiter.name,
-      company: body.recruiter.claimedCompany,
+      recruiterName: assessmentInput.recruiter.name,
+      company: assessmentInput.recruiter.claimedCompany,
       scores,
       finalScore,
       verdict,
@@ -328,13 +315,6 @@ ${aiAnalysis.summary?.nextSteps?.map((step: string) => `  1. ${step}`).join('\n'
       incidentReport,
       aiAnalysis,
     });
+};
 
-  } catch (error) {
-    // Top-level safety net — always return valid JSON, never an empty 500
-    console.error('Assessment create fatal error:', error);
-    return NextResponse.json(
-      { error: 'Assessment failed. Please try again.', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
-  }
-}
+export const POST = withErrorHandling(handler);
