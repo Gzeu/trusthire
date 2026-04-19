@@ -3153,7 +3153,7 @@ export class AdvanceduebaService extends EventEmitter {
         end: new Date(),
         duration: 7 * 24 * 60, // 7 days in minutes
         frequency: 15,
-        periodicity: 'daily'
+        periodicity: 'recurring'
       },
       patterns: [
         {
