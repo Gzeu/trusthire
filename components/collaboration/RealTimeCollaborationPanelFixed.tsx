@@ -55,32 +55,31 @@ interface SharedFinding {
   recommendations: string[];
   createdBy: string;
   createdAt: string;
-  upvotes: number;
   resolved: boolean;
 }
 
 const mockTeamMembers: TeamMember[] = [
   {
     id: '1',
-    name: 'Alex Chen',
-    email: 'alex@trusthire.com',
+    name: 'John Doe',
+    email: 'john@trusthire.com',
     role: 'admin',
-    avatar: '/avatars/alex.jpg',
+    avatar: '/avatars/john.jpg',
     status: 'online',
     lastActive: '2 minutes ago'
   },
   {
     id: '2',
-    name: 'Sarah Johnson',
-    email: 'sarah@trusthire.com',
+    name: 'Jane Smith',
+    email: 'jane@trusthire.com',
     role: 'analyst',
-    avatar: '/avatars/sarah.jpg',
+    avatar: '/avatars/jane.jpg',
     status: 'online',
     lastActive: '5 minutes ago'
   },
   {
     id: '3',
-    name: 'Mike Wilson',
+    name: 'Mike Johnson',
     email: 'mike@trusthire.com',
     role: 'viewer',
     avatar: '/avatars/mike.jpg',
@@ -94,7 +93,26 @@ const mockSessions: CollaborationSession[] = [
     id: '1',
     name: 'Q2 2024 Security Review',
     description: 'Quarterly security assessment and threat analysis',
-    participants: ['1', '2'],
+    participants: [
+      {
+        id: '1',
+        name: 'John Doe',
+        email: 'john@trusthire.com',
+        role: 'admin',
+        avatar: '/avatars/john.jpg',
+        status: 'online',
+        lastActive: '2024-01-20T10:00:00Z'
+      },
+      {
+        id: '2',
+        name: 'Jane Smith',
+        email: 'jane@trusthire.com',
+        role: 'analyst',
+        avatar: '/avatars/jane.jpg',
+        status: 'online',
+        lastActive: '2024-01-20T09:30:00Z'
+      }
+    ],
     createdAt: '2024-01-15T10:00:00Z',
     status: 'completed',
     sharedFindings: [
@@ -107,46 +125,7 @@ const mockSessions: CollaborationSession[] = [
         evidence: ['Fake company websites', 'Urgent payment requests'],
         recommendations: ['Verify domain ownership', 'Check SSL certificates'],
         createdBy: '1',
-        createdAt: '2024-01-15T14:30:00Z',
-        upvotes: 12,
-        resolved: true
-      }
-    ],
-    messages: [
-      {
-        id: '1',
-        userId: '1',
-        content: 'Starting analysis of Q2 threat patterns',
-        timestamp: '2024-01-15T10:00:00Z'
-      },
-      {
-        id: '2',
-        userId: '2',
-        content: 'Found 3 new phishing domains targeting crypto companies',
-        timestamp: '2024-01-15T10:15:00Z'
-      }
-    ],
-    isRealTime: false
-  },
-  {
-    id: '2',
-    name: 'Live Threat Monitoring',
-    description: 'Real-time collaborative threat analysis and response',
-    participants: ['1', '2', '3'],
-    createdAt: '2024-03-10T09:00:00Z',
-    status: 'active',
-    sharedFindings: [
-      {
-        id: '2',
-        type: 'vulnerability',
-        title: 'Zero-day in Popular npm Package',
-        description: 'Critical vulnerability discovered in widely-used package',
-        severity: 'critical',
-        evidence: ['Remote code execution', 'Package version 1.2.3'],
-        recommendations: ['Immediate update required', 'Use alternative packages'],
-        createdBy: '2',
-        createdAt: '2024-03-10T09:15:00Z',
-        upvotes: 8,
+        createdAt: '2024-01-15T10:00:00Z',
         resolved: false
       }
     ],
@@ -154,101 +133,92 @@ const mockSessions: CollaborationSession[] = [
       {
         id: '1',
         userId: '1',
-        content: 'New zero-day vulnerability detected in express package',
-        timestamp: '2024-03-10T09:15:00Z'
-      },
-      {
-        id: '2',
-        userId: '2',
-        content: 'Analyzing impact and developing patches',
-        timestamp: '2024-03-10T09:20:00Z'
-      },
-      {
-        id: '3',
-        userId: '1',
-        content: 'Team mobilized to address critical issue',
-        timestamp: '2024-03-10T09:25:00Z'
+        userName: 'John Doe',
+        content: 'Starting the security review process',
+        timestamp: '2024-01-15T10:00:00Z'
       }
     ],
+    isRealTime: true
+  },
+  {
+    id: '2',
+    name: 'Threat Analysis Workshop',
+    description: 'Collaborative analysis of emerging threat patterns',
+    participants: [mockTeamMembers[0], mockTeamMembers[2]],
+    createdAt: '2024-01-18T14:00:00Z',
+    status: 'active',
+    sharedFindings: [],
+    messages: [],
     isRealTime: true
   }
 ];
 
-export default function RealTimeCollaborationPanelFixed() {
-  const [activeSession, setActiveSession] = useState<string | null>(null);
-  const [isRealTimeMode, setIsRealTimeMode] = useState(false);
-  const [newMessage, setNewMessage] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'threats' | 'vulnerabilities' | 'patterns' | 'resolved'>('all');
-  const [showNotifications, setShowNotifications] = useState(true);
-
-  const currentUser = {
+const mockFindings: SharedFinding[] = [
+  {
     id: '1',
-    name: 'Alex Chen',
-    email: 'alex@trusthire.com',
-    role: 'admin',
-    avatar: '/avatars/alex.jpg',
-    status: 'online',
-    lastActive: '2 minutes ago'
+    type: 'threat',
+    title: 'Suspicious Email Campaign',
+    description: 'Mass email campaign targeting financial institutions',
+    severity: 'high',
+    evidence: ['Generic greetings', 'Urgent action required', 'Suspicious links'],
+    recommendations: ['Block sender domains', 'Educate users', 'Update email filters'],
+    createdBy: '1',
+    createdAt: '2024-01-20T09:00:00Z',
+    resolved: false
+  },
+  {
+    id: '2',
+    type: 'vulnerability',
+    title: 'Outdated Software Dependencies',
+    description: 'Critical vulnerabilities in third-party libraries',
+    severity: 'critical',
+    evidence: ['CVE-2024-1234', 'CVE-2024-5678'],
+    recommendations: ['Update dependencies', 'Apply security patches', 'Review security policies'],
+    createdBy: '2',
+    createdAt: '2024-01-20T08:30:00Z',
+    resolved: false
+  }
+];
+
+export default function RealTimeCollaborationPanelFixed() {
+  const [isRealTime, setIsRealTime] = useState(true);
+  const [activeSession, setActiveSession] = useState<CollaborationSession | null>(null);
+  const [sessions, setSessions] = useState<CollaborationSession[]>(mockSessions);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(mockTeamMembers);
+  const [findings, setFindings] = useState<SharedFinding[]>(mockFindings);
+  const [filter, setFilter] = useState<'all' | 'threats' | 'vulnerabilities' | 'patterns' | 'resolved'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const filteredFindings = findings.filter(finding => {
+    const matchesFilter = filter === 'all' || 
+      (filter === 'threats' && finding.type === 'threat') ||
+      (filter === 'vulnerabilities' && finding.type === 'vulnerability') ||
+      (filter === 'patterns' && finding.type === 'pattern') ||
+      (filter === 'resolved' && finding.resolved);
+    
+    const matchesSearch = finding.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      finding.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesFilter && matchesSearch;
+  });
+
+  const handleJoinSession = (session: CollaborationSession) => {
+    setActiveSession(session);
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 1000);
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'text-red-400 bg-red-500/10 border-red-500/25';
-      case 'high': return 'text-orange-400 bg-orange-500/10 border-orange-500/25';
-      case 'medium': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/25';
-      case 'low': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25';
-      default: return 'text-blue-400 bg-blue-500/10 border-blue-500/25';
-    }
+  const handleLeaveSession = () => {
+    setActiveSession(null);
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'threat': return 'text-red-400 bg-red-500/10 border-red-500/25';
-      case 'vulnerability': return 'text-orange-400 bg-orange-500/10 border-orange-500/25';
-      case 'pattern': return 'text-purple-400 bg-purple-500/10 border-purple-500/25';
-      case 'recommendation': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25';
-      default: return 'text-blue-400 bg-blue-500/10 border-blue-500/25';
-    }
-  };
-
-  const filteredFindings = useCallback((session: CollaborationSession) => {
-    if (!session) return [];
-    
-    return session.sharedFindings.filter(finding => {
-      if (selectedFilter === 'all') return true;
-      return finding.type === selectedFilter;
-    });
-  }, [selectedFilter]);
-
-  const sendMessage = useCallback(async () => {
-    if (!newMessage.trim() || !activeSession) return;
-    
-    const messageData = {
-      sessionId: activeSession.id,
-      userId: currentUser.id,
-      content: newMessage,
-      timestamp: new Date().toISOString()
-    };
-
-    // Simulate real-time message sending
-    setNewMessage('');
-    
-    // In a real implementation, this would send via WebSocket or Server-Sent Events
-    console.log('Sending message:', messageData);
-    
-    // Show success feedback
-    setTimeout(() => {
-      // This would be a toast notification in real implementation
-      console.log('Message sent successfully');
-    }, 100);
-  }, [newMessage, activeSession]);
-
-  const createNewSession = useCallback(() => {
+  const handleCreateSession = () => {
     const newSession: CollaborationSession = {
-      id: `session-${Date.now()}`,
-      name: `New Session ${new Date().toLocaleString()}`,
-      description: 'Real-time collaborative analysis session',
-      participants: [currentUser],
+      id: Date.now().toString(),
+      name: 'New Collaboration Session',
+      description: 'Real-time security collaboration',
+      participants: [teamMembers[0]],
       createdAt: new Date().toISOString(),
       status: 'active',
       sharedFindings: [],
@@ -256,439 +226,274 @@ export default function RealTimeCollaborationPanelFixed() {
       isRealTime: true
     };
     
+    setSessions([newSession, ...sessions]);
     setActiveSession(newSession);
-    setIsRealTimeMode(true);
-  }, []);
+  };
 
-  const joinSession = useCallback((sessionId: string) => {
-    const session = mockSessions.find(s => s.id === sessionId);
-    if (session) {
-      setActiveSession(session);
-      setIsRealTimeMode(session.isRealTime);
+  const handleShareFinding = (finding: SharedFinding) => {
+    if (activeSession) {
+      const updatedSession = {
+        ...activeSession,
+        sharedFindings: [finding, ...activeSession.sharedFindings]
+      };
+      
+      setSessions(sessions.map(s => s.id === activeSession.id ? updatedSession : s));
+      setActiveSession(updatedSession);
     }
-  }, []);
+  };
 
-  const getSessionMessages = useCallback((sessionId: string) => {
-    const session = mockSessions.find(s => s.id === sessionId);
-    return session?.messages || [];
-  }, []);
-
-  const activeSessionFindings = activeSession ? filteredFindings(activeSession) : [];
+  const handleExportFindings = () => {
+    const dataToExport = activeSession ? activeSession.sharedFindings : filteredFindings;
+    const dataStr = JSON.stringify(dataToExport, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `findings-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-white">
-      <Container size="lg" className="py-10">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-6 h-6 text-purple-500" />
-            <Badge variant="info" className="animate-pulse">
-              REAL-TIME COLLABORATION
-            </Badge>
+    <Container className="p-6">
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold text-white">Real-time Collaboration</h1>
+          <div className="flex gap-2">
+            <Button
+              variant="primary"
+              onClick={handleCreateSession}
+            >
+              <UserPlus size={16} className="mr-2" />
+              New Session
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsRealTime(!isRealTime)}
+            >
+              {isRealTime ? <Eye size={16} className="mr-2" /> : <EyeOff size={16} className="mr-2" />}
+              {isRealTime ? 'Real-time' : 'Archived'}
+            </Button>
           </div>
-          <h1 className="text-4xl font-mono font-bold text-white mb-4">
-            Real-Time Security Collaboration
-          </h1>
-          <p className="text-lg font-mono text-white/60 max-w-3xl">
-            Collaborate with your team in real-time to analyze and respond to security threats.
-            Share findings, discuss patterns, and coordinate responses instantly.
-          </p>
         </div>
 
-        {/* Controls */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          {/* Real-time Toggle */}
-          <Card className="p-6">
-            <h3 className="text-lg font-mono font-semibold text-white mb-4 flex items-center gap-2">
-              <Zap className="w-5 h-5" />
-              Real-time Mode
-            </h3>
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-mono text-white/60">
-                Enable real-time collaboration for instant team coordination
-              </p>
-              <Button
-                onClick={() => setIsRealTimeMode(!isRealTimeMode)}
-                variant={isRealTimeMode ? 'default' : 'secondary'}
-                className="flex items-center gap-2"
-              >
-                {isRealTimeMode ? (
-                  <>
-                    <Eye className="w-4 h-4" />
-                    <span>Real-time On</span>
-                  </>
-                ) : (
-                  <>
-                    <EyeOff className="w-4 h-4" />
-                    <span>Real-time Off</span>
-                  </>
-                )}
-              </Button>
+        <div className="flex gap-4 mb-6">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                placeholder="Search findings..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-[#111113] border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              />
             </div>
-          </Card>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              variant={filter === 'all' ? 'primary' : 'outline'}
+              onClick={() => setFilter('all')}
+              size="sm"
+            >
+              All
+            </Button>
+            <Button
+              variant={filter === 'threats' ? 'primary' : 'outline'}
+              onClick={() => setFilter('threats')}
+              size="sm"
+            >
+              Threats
+            </Button>
+            <Button
+              variant={filter === 'vulnerabilities' ? 'primary' : 'outline'}
+              onClick={() => setFilter('vulnerabilities')}
+              size="sm"
+            >
+              Vulnerabilities
+            </Button>
+            <Button
+              variant={filter === 'resolved' ? 'primary' : 'outline'}
+              onClick={() => setFilter('resolved')}
+              size="sm"
+            >
+              Resolved
+            </Button>
+          </div>
+        </div>
+      </div>
 
-          {/* Session Management */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
           <Card className="p-6">
-            <h3 className="text-lg font-mono font-semibold text-white mb-4 flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              Active Session
-            </h3>
-            <div className="space-y-4">
-              <Button
-                onClick={createNewSession}
-                className="w-full"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Start New Session
-              </Button>
-              
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-white">
+                {activeSession ? activeSession.name : 'Available Sessions'}
+              </h2>
               {activeSession && (
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="flex items-center justify-between mb-3">
+                <Button
+                  variant="outline"
+                  onClick={handleLeaveSession}
+                  size="sm"
+                >
+                  Leave Session
+                </Button>
+              )}
+            </div>
+
+            {isLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-20" />
+                <Skeleton className="h-20" />
+                <Skeleton className="h-20" />
+              </div>
+            ) : activeSession ? (
+              <div className="space-y-4">
+                <div className="bg-[#111113] p-4 rounded-lg">
+                  <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h4 className="font-mono font-semibold text-white">
-                        {activeSession.name}
-                      </h4>
-                      <p className="text-sm font-mono text-white/60">
-                        {activeSession.description}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant={activeSession.isRealTime ? 'success' : 'default'}>
-                          {activeSession.isRealTime ? 'Live' : 'Archived'}
-                        </Badge>
-                        <span className="text-xs font-mono text-white/40">
-                          {activeSession.participants.length} participants
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {activeSession.role}
-                        </Badge>
-                      </div>
+                      <h3 className="font-medium text-white">{activeSession.name}</h3>
+                      <p className="text-sm text-gray-400">{activeSession.description}</p>
                     </div>
-                    
-                    {/* Session Messages */}
-                    <div className="space-y-3 max-h-40 overflow-y-auto">
-                      {getSessionMessages(activeSession.id).map((message) => (
-                        <div key={message.id} className="flex items-start gap-3 p-3 rounded-lg bg-white/5">
-                          <div className="flex-shrink-0">
-                            <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                              <span className="text-sm font-mono font-semibold text-purple-400">
-                                {message.userId === currentUser.id ? 'You' : 'Team'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex-1">
-                            <div>
-                              <p className="text-sm font-mono text-white/90">
-                                {message.content}
-                              </p>
-                              <p className="text-xs font-mono text-white/40">
-                                {new Date(message.timestamp).toLocaleString()}
-                              </p>
-                            </div>
-                          </div>
+                    <Badge variant={activeSession.status === 'active' ? 'success' : 'default'}>
+                      {activeSession.status}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Users size={14} />
+                    <span>{activeSession.participants.length} participants</span>
+                    <Clock size={14} />
+                    <span>{new Date(activeSession.createdAt).toLocaleDateString()}</span>
+                    {activeSession.isRealTime && (
+                      <Zap size={14} className="text-green-400" />
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-medium text-white">Shared Findings ({activeSession.sharedFindings.length})</h4>
+                  {activeSession.sharedFindings.map((finding) => (
+                    <Card key={finding.id} className="p-4 bg-[#111113]">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h5 className="font-medium text-white">{finding.title}</h5>
+                          <p className="text-sm text-gray-400 mt-1">{finding.description}</p>
                         </div>
+                        <Badge variant={finding.severity === 'critical' ? 'error' : finding.severity === 'high' ? 'warning' : 'info'}>
+                          {finding.severity}
+                        </Badge>
                       </div>
-                    </div>
+                      
+                      <div className="flex gap-2 mt-3">
+                        <Button variant="outline" size="sm">
+                          <Eye size={14} />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Share2 size={14} />
+                        </Button>
+                      </div>
+                    </Card>
                   ))}
                 </div>
               </div>
-            </div>
-          </Card>
-
-          {/* Team Members */}
-          <Card className="p-6">
-            <h3 className="text-lg font-mono font-semibold text-white mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Team Members
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {mockTeamMembers.map((member) => (
-                <div key={member.id} className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                      <span className="text-lg font-mono font-bold text-white">
-                        {member.name.charAt(0)}
-                      </span>
+            ) : (
+              <div className="space-y-3">
+                {sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className="p-4 bg-[#111113] cursor-pointer hover:bg-[#1a1a1c] transition-colors rounded-lg"
+                    onClick={() => handleJoinSession(session)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-white">{session.name}</h3>
+                        <p className="text-sm text-gray-400">{session.description}</p>
+                      </div>
+                      <Badge variant={session.status === 'active' ? 'success' : 'default'}>
+                        {session.status}
+                      </Badge>
                     </div>
+                    
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <Users size={14} />
+                      <span>{session.participants.length} participants</span>
+                      <Clock size={14} />
+                      <span>{new Date(session.createdAt).toLocaleDateString()}</span>
+                      {session.isRealTime && (
+                        <Zap size={14} className="text-green-400" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Team Members</h3>
+            <div className="space-y-3">
+              {teamMembers.map((member) => (
+                <div key={member.id} className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#111113] rounded-full flex items-center justify-center">
+                    <Users size={16} className="text-gray-400" />
                   </div>
                   <div className="flex-1">
-                    <div>
-                      <h4 className="font-mono font-semibold text-white">
-                        {member.name}
-                      </h4>
-                      <p className="text-sm font-mono text-white/60">
-                        {member.email}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant={member.status === 'online' ? 'success' : 'default'}>
-                          {member.status}
-                        </Badge>
-                        <span className="text-xs font-mono text-white/40">
-                          Last active: {member.lastActive}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {member.role}
-                        </Badge>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-white">{member.name}</p>
+                      <div className={`w-2 h-2 rounded-full ${
+                        member.status === 'online' ? 'bg-green-400' :
+                        member.status === 'busy' ? 'bg-yellow-400' : 'bg-gray-400'
+                      }`} />
                     </div>
+                    <p className="text-sm text-gray-400">{member.email}</p>
+                    <p className="text-xs text-gray-500">{member.lastActive}</p>
                   </div>
+                  <Badge variant="default" size="sm">
+                    {member.role}
+                  </Badge>
                 </div>
               ))}
             </div>
           </Card>
-        </div>
 
-        {/* Main Content Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Sessions List */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-mono font-semibold text-white mb-4 flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  Collaboration Sessions
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedFilter('all')}
-                >
-                  <Filter className="w-4 h-4 mr-2" />
-                  Clear Filter
-                </Button>
-              </div>
-              
-              {/* Filter Tabs */}
-              <div className="flex items-center gap-2 mb-4">
-                {['all', 'threats', 'vulnerabilities', 'patterns', 'resolved'].map((filter) => (
-                  <Button
-                    key={filter}
-                    variant={selectedFilter === filter ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setSelectedFilter(filter)}
-                  >
-                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                  </Button>
-                ))}
-              </div>
-
-              {/* Sessions List */}
-              <div className="space-y-4">
-                {mockSessions.map((session) => (
-                  <Card
-                    key={session.id}
-                    onClick={() => joinSession(session.id)}
-                    className={`p-6 cursor-pointer transition-all duration-200 ${
-                      activeSession?.id === session.id
-                        ? 'border-purple-500/50 bg-purple-500/10 scale-105'
-                        : 'border-white/10 bg-white/5 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="font-mono font-semibold text-white mb-2">
-                          {session.name}
-                        </h4>
-                        <p className="text-sm font-mono text-white/60 mb-3">
-                          {session.description}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={session.isRealTime ? 'success' : 'default'}>
-                            {session.isRealTime ? 'Live' : 'Archived'}
-                          </Badge>
-                          <span className="text-xs font-mono text-white/40">
-                            {session.participants.length} participants
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            {session.sharedFindings.length} findings
-                          </Badge>
-                          <span className="text-xs font-mono text-white/40">
-                            {new Date(session.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Preview of Findings */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      {session.sharedFindings.slice(0, 4).map((finding) => (
-                        <div key={finding.id} className="p-3 rounded-lg bg-white/5 border border-white/10">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className={`w-2 h-2 rounded-full ${getTypeColor(finding.type)}`}>
-                              <span className="text-xs font-mono font-bold text-white">
-                                {finding.type.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="flex-1">
-                              <div>
-                                <h5 className="font-mono font-semibold text-white mb-1">
-                                  {finding.title}
-                                </h5>
-                                <p className="text-sm font-mono text-white/80">
-                                  {finding.description}
-                                </p>
-                              </div>
-                              <div className="flex items-center justify-between text-xs font-mono text-white/40">
-                                <span>By {finding.createdBy}</span>
-                                <span>•</span>
-                                <span>{new Date(finding.createdAt).toLocaleDateString()}</span>
-                                <span>•</span>
-                                <Badge variant={finding.resolved ? 'success' : 'warning'}>
-                                  {finding.resolved ? 'Resolved' : 'Open'}
-                                </Badge>
-                                <div className="flex items-center gap-2">
-                                  <span>{finding.upvotes} votes</span>
-                                  <Button variant="ghost" size="sm">
-                                    <TrendingUp className="w-3 h-3" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm">
-                                    <Download className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
+            <div className="space-y-2">
+              <Button
+                onClick={handleExportFindings}
+                className="w-full justify-start"
+              >
+                <Download size={16} className="mr-2" />
+                Export Findings
+              </Button>
+              <Button
+                className="w-full justify-start"
+              >
+                <Filter size={16} className="mr-2" />
+                Advanced Filters
+              </Button>
+              <Button
+                className="w-full justify-start"
+              >
+                <Bell size={16} className="mr-2" />
+                Notification Settings
+              </Button>
+              <Button
+                className="w-full justify-start"
+              >
+                <Settings size={16} className="mr-2" />
+                Session Settings
+              </Button>
             </div>
-          </div>
-
-          {/* Active Session Details */}
-          <div className="lg:col-span-1">
-            {activeSession && (
-              <Card className="p-6">
-                <h3 className="text-lg font-mono font-semibold text-white mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  Active Session: {activeSession.name}
-                </h3>
-                
-                {/* Real-time Message Input */}
-                {activeSession.isRealTime && (
-                  <div className="mb-6">
-                    <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10">
-                      <textarea
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type your message here... (supports @mentions for team members)"
-                        className="w-full h-24 p-4 bg-[#111113] border border-white/10 rounded-xl text-white font-mono text-sm placeholder-white/40 focus:outline-none focus:border-purple-500/50 resize-none"
-                        rows={3}
-                      />
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="text-xs font-mono text-white/40">
-                          {newMessage.length}/500 characters
-                        </div>
-                        <Button
-                          onClick={sendMessage}
-                          disabled={!newMessage.trim() || !activeSession}
-                          loading={false}
-                          className="flex items-center gap-2"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                          Send Message
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Session Findings */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-mono font-semibold text-white mb-4 flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5" />
-                      Shared Findings ({activeSessionFindings.length})
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedFilter('all')}
-                      >
-                        <Filter className="w-4 h-4 mr-2" />
-                        Clear Filter
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          // Export findings functionality
-                          const findingsData = activeSessionFindings.map((f) => ({
-                            ...f,
-                            exportedAt: new Date().toISOString()
-                          }));
-                          
-                          const blob = new Blob([JSON.stringify(findingsData, null, 2)], { type: 'application/json' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `${activeSession.name}_findings_${Date.now()}.json`;
-                          document.body.appendChild(a);
-                          a.click();
-                        }}
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Export Findings
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Findings List */}
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {filteredFindings(activeSession).map((finding) => (
-                      <div key={finding.id} className="p-4 rounded-lg bg-white/5 border border-white/10">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className={`w-2 h-2 rounded-full ${getTypeColor(finding.type)}`}>
-                            <span className="text-xs font-mono font-bold text-white">
-                              {finding.type.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <div>
-                              <h5 className="font-mono font-semibold text-white mb-1">
-                                {finding.title}
-                              </h5>
-                              <p className="text-sm font-mono text-white/80">
-                                {finding.description}
-                              </p>
-                            </div>
-                            <div className="flex items-center justify-between text-xs font-mono text-white/40">
-                              <span>By {finding.createdBy}</span>
-                              <span>•</span>
-                              <span>{new Date(finding.createdAt).toLocaleDateString()}</span>
-                              <span>•</span>
-                              <Badge variant={finding.resolved ? 'success' : 'warning'}>
-                                {finding.resolved ? 'Resolved' : 'Open'}
-                              </Badge>
-                              <div className="flex items-center gap-2">
-                                <span>{finding.upvotes} votes</span>
-                                <Button variant="ghost" size="sm">
-                                  <TrendingUp className="w-3 h-3" />
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                  <Download className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
-          )}
+          </Card>
         </div>
-      </Container>
-    </div>
+      </div>
+    </Container>
   );
 }

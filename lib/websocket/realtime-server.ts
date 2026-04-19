@@ -49,7 +49,6 @@ export class RealTimeWebSocketServer {
     setInterval(() => {
       this.cleanupDisconnectedClients();
     }, 30000); // Check every 30 seconds
-    });
 
     // Broadcast threat updates periodically
     setInterval(() => {
@@ -72,9 +71,9 @@ export class RealTimeWebSocketServer {
     const client: ClientConnection = {
       id: clientId,
       ws,
-      userId,
-      userName,
-      sessionId,
+      userId: userId || undefined,
+      userName: userName || undefined,
+      sessionId: sessionId || undefined,
       lastPing: Date.now(),
       subscriptions: new Set()
     };
@@ -245,9 +244,10 @@ export class RealTimeWebSocketServer {
 
   private handleAlertCreated(clientId: string, message: ServerMessage): void {
     // Store new alert rule
+    const client = this.clients.get(clientId);
     this.alertRules.push({
       ...message.data,
-      createdBy: client.userId,
+      createdBy: client?.userId,
       createdAt: new Date().toISOString()
     });
 
@@ -428,10 +428,7 @@ export class RealTimeWebSocketServer {
   }
 
   start(): void {
-    console.log(`Starting WebSocket server on port ${this.port}`);
-    this.wss.listen(this.port, () => {
-      console.log(`WebSocket server listening on port ${this.port}`);
-    });
+    console.log(`WebSocket server already running on port ${this.port}`);
   }
 
   stop(): void {

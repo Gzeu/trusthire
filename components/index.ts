@@ -56,52 +56,55 @@ export { default as SimpleChart } from './SimpleChart';
 
 // Advanced components
 export { CrossBrowserTester } from './CrossBrowserTester';
-export { DebugTools } from './DebugTools';
-export { EnhancedActionButtons } from './EnhancedActionButtons';
-export { EnhancedErrorState } from './EnhancedErrorState';
-export { EnhancedHeroSection } from './EnhancedHeroSection';
+export { default as DebugTools } from './DebugTools';
+export { default as EnhancedActionButtons } from './EnhancedActionButtons';
+export { default as EnhancedErrorState } from './EnhancedErrorState';
+export { default as EnhancedHeroSection } from './EnhancedHeroSection';
 export { IncidentReportGenerator } from './IncidentReportGenerator';
-export { SocialProofSection } from './SocialProofSection';
+export { default as SocialProofSection } from './SocialProofSection';
 export { WorkflowAdvisor } from './WorkflowAdvisor';
 
 // ML and AI components
-export { langChainPanel } from './langchain/LangChainPanel';
-export { ModelTrainingPanel } from './ml/ModelTrainingPanel';
-export { AnalysisPanel } from './ai/AnalysisPanel';
+// export { langChainPanel } from './langchain/LangChainPanel';
+// export { ModelTrainingPanel } from './ml/ModelTrainingPanel';
+export { default as RealTimeCollaborationPanel } from './collaboration/RealTimeCollaborationPanelWorking';
+export { default as ThreatIntelligencePanel } from './intelligence/ThreatIntelligencePanelWorking';
+export { default as AdvancedAnalysisPanel } from './ai/AdvancedAnalysisPanel';
+// export { AnalysisPanel } from './ai/AnalysisPanel';
 
 // Theme provider
 export { ThemeProvider } from './theme-provider';
 
 // Re-export commonly used component combinations
-export const Components = {
-  // Unified components (recommended for new development)
-  ScoreGauge: UnifiedScoreGauge,
-  QuickScan: UnifiedQuickScan,
-  Navbar: UnifiedNavbar,
-  LoadingStates: UnifiedLoadingStates,
-  
-  // Enhanced components (for advanced features)
-  EnhancedScoreGauge: EnhancedScoreGauge,
-  EnhancedQuickScanCards: EnhancedQuickScanCards,
-  EnhancedNavbar: EnhancedNavbar,
-  EnhancedLoadingStates: EnhancedLoadingStates,
-  
-  // Legacy components (for backward compatibility)
-  LegacyScoreGauge: ScoreGauge,
-  LegacyQuickScanCards: QuickScanCards,
-  LegacyNavbar: Navbar,
-  
-  // Feature-specific components
-  RealTimeScanner: RealTimeScanner,
-  ExportManager: ExportManager,
-  SecurityHardening: SecurityHardening,
-  UserAnalytics: UserAnalytics,
-  UIPolish: UIPolish,
-  
-  // UI components
-  ScoreCard,
-  MobileBottomNav: MobileBottomNav
-};
+// export const Components = {
+//   // Unified components (recommended for new development)
+//   ScoreGauge: UnifiedScoreGauge,
+//   QuickScan: UnifiedQuickScan,
+//   Navbar: UnifiedNavbar,
+//   LoadingStates: UnifiedLoadingStates,
+//   
+//   // Enhanced components (for advanced features)
+//   EnhancedScoreGauge: EnhancedScoreGauge,
+//   EnhancedQuickScanCards: EnhancedQuickScanCards,
+//   EnhancedNavbar: EnhancedNavbar,
+//   EnhancedLoadingStates: EnhancedLoadingStates,
+//   
+//   // Legacy components (for backward compatibility)
+//   LegacyScoreGauge: ScoreGauge,
+//   LegacyQuickScanCards: QuickScanCards,
+//   LegacyNavbar: Navbar,
+//   
+//   // Feature-specific components
+//   RealTimeScanner: RealTimeScanner,
+//   ExportManager: ExportManager,
+//   SecurityHardening: SecurityHardening,
+//   UserAnalytics: UserAnalytics,
+//   UIPolish: UIPolish,
+//   
+//   // UI components
+//   ScoreCard,
+//   MobileBottomNav: MobileBottomNav
+// };
 
 // Migration helper - provides guidance on which components to use
 export const MigrationGuide = {

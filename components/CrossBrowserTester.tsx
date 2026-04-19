@@ -438,3 +438,6 @@ function CrossBrowserTester() {
     </div>
   );
 }
+
+export { CrossBrowserTester };
+export default CrossBrowserTester;
