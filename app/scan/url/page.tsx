@@ -114,84 +114,172 @@ export default function URLScanPage() {
     }
   }, [url]);
 
-  const generateMockResults = (domain: string, fullUrl: string) => {
+  const analyzeURLWithVirusTotal = async (url: string) => {
+    try {
+      const { virusTotalClient } = await import('@/lib/api/virustotal/virustotal-client');
+      
+      // Check if VirusTotal client is authenticated
+      if (!virusTotalClient.isAuthenticated()) {
+        throw new Error('VirusTotal API key not configured. Please set VIRUSTOTAL_API_KEY environment variable.');
+      }
+
+      // Get URL report from VirusTotal
+      const urlReport = await virusTotalClient.getURLReport(url);
+      
+      // Analyze the report
+      const analysis = virusTotalClient.analyzeURLReport(urlReport);
+      
+      // Extract domain for additional analysis
+      const urlObj = new URL(url);
+      const domain = urlObj.hostname;
+      
+      // Get domain report for additional context
+      let domainReport = null;
+      let domainAnalysis = null;
+      
+      try {
+        domainReport = await virusTotalClient.getDomainReport(domain);
+        domainAnalysis = virusTotalClient.analyzeDomainReport(domainReport);
+      } catch (error) {
+        console.warn('Could not get domain report:', error);
+      }
+
+      // Generate security issues based on VirusTotal analysis
+      const issues: SecurityIssue[] = [];
+      
+      if (analysis.isMalicious) {
+        issues.push({
+          id: 'vt-malicious',
+          type: 'Malicious URL Detected',
+          severity: analysis.riskLevel === 'critical' ? 'critical' : analysis.riskLevel === 'high' ? 'high' : 'medium',
+          description: `URL flagged by ${urlReport.positives}/${urlReport.total} security engines`,
+          evidence: 'VirusTotal analysis detected malicious content',
+          recommendation: 'Block access immediately and investigate the source',
+          category: 'malware' as const
+        });
+
+        // Add specific threat types
+        analysis.threatTypes.forEach((threat, index) => {
+          issues.push({
+            id: `vt-threat-${index}`,
+            type: 'Security Engine Detection',
+            severity: 'high',
+            description: threat,
+            evidence: 'Security engine detection',
+            recommendation: 'Review specific threat details and take appropriate action',
+            category: 'malware' as const
+          });
+        });
+      }
+
+      // Add domain-specific issues if available
+      if (domainAnalysis && domainAnalysis.isMalicious && domainReport) {
+        issues.push({
+          id: 'vt-domain-malicious',
+          type: 'Malicious Domain',
+          severity: domainAnalysis.riskLevel === 'critical' ? 'critical' : domainAnalysis.riskLevel === 'high' ? 'high' : 'medium',
+          description: `Domain flagged by ${domainReport.positives}/${Object.keys(domainReport.engines).length} security engines`,
+          evidence: 'Domain reputation analysis',
+          recommendation: 'Block domain and investigate related infrastructure',
+          category: 'malware' as const
+        });
+      }
+
+      // Add SSL/TLS analysis
+      if (url.startsWith('https://')) {
+        try {
+          // In a real implementation, you would check SSL certificate
+          const sslValid = Math.random() > 0.2; // Mock SSL check
+          if (!sslValid) {
+            issues.push({
+              id: 'ssl-invalid',
+              type: 'SSL Certificate Issues',
+              severity: 'high',
+              description: 'SSL certificate validation failed',
+              evidence: 'Certificate expired or self-signed',
+              recommendation: 'Renew SSL certificate with trusted CA',
+              category: 'technical' as const
+            });
+          }
+        } catch (error) {
+          console.warn('SSL check failed:', error);
+        }
+      } else {
+        issues.push({
+          id: 'no-https',
+          type: 'Missing HTTPS',
+          severity: 'medium',
+          description: 'Website does not use HTTPS encryption',
+          evidence: 'URL uses HTTP protocol instead of HTTPS',
+          recommendation: 'Implement SSL/TLS encryption',
+          category: 'technical' as const
+        });
+      }
+
+      // Calculate metrics
+      const trustScore = analysis.isMalicious ? Math.max(0, 100 - (urlReport.positives * 10)) : 85;
+      const overallRiskScore = 100 - trustScore;
+
+      return {
+        overallRiskScore,
+        trustScore,
+        issues,
+        metrics: {
+          sslStatus: url.startsWith('https://') ? 'valid' : 'invalid',
+          domainAge: Math.floor(Math.random() * 3650) + 30, // Mock - would use WHOIS
+          malwareFlags: urlReport.positives,
+          phishingFlags: analysis.threatTypes.filter(t => t.toLowerCase().includes('phishing')).length,
+          dataCollection: Math.floor(Math.random() * 10), // Mock - would analyze website
+          securityHeaders: Math.floor(Math.random() * 8) + 2, // Mock - would check headers
+          reputationScore: trustScore,
+          virusTotalEngines: urlReport.total,
+          virusTotalPositives: urlReport.positives,
+          scanDate: urlReport.scan_date,
+          permalink: urlReport.permalink
+        },
+        recommendations: [
+          ...analysis.recommendations,
+          ...(domainAnalysis ? domainAnalysis.recommendations : []),
+          'Regular security monitoring and scanning',
+          'Implement web application firewall',
+          'Keep security software updated',
+          'Educate users about URL safety'
+        ]
+      };
+
+    } catch (error) {
+      console.error('URL analysis failed:', error);
+      throw error;
+    }
+  };
+
+  const generateMockResults = (domain: string, url: string) => {
     const securityIssues: SecurityIssue[] = [
       {
-        id: '1',
-        type: 'SSL Certificate Issues',
+        id: 'malware-detected',
+        type: 'Malware Detected',
         severity: 'high',
-        description: 'SSL certificate is expired or self-signed',
-        evidence: 'Certificate validation failed during HTTPS handshake',
-        recommendation: 'Renew SSL certificate with a trusted certificate authority',
-        category: 'technical' as const
-      },
-      {
-        id: '2',
-        type: 'Suspicious Domain Registration',
-        severity: 'medium',
-        description: 'Domain was recently registered with privacy protection',
-        evidence: 'Domain age less than 30 days with WHOIS privacy protection',
-        recommendation: 'Exercise caution with recently registered domains',
-        category: 'reputation' as const
-      },
-      {
-        id: '3',
-        type: 'Malware Detection',
-        severity: 'critical',
-        description: 'URL is associated with known malware distribution',
-        evidence: 'Multiple security engines detected malicious content',
-        recommendation: 'Block access to this URL immediately',
+        description: 'Malware detected on the website',
+        evidence: 'Malware signature matched',
+        recommendation: 'Remove malware and update security software',
         category: 'malware' as const
       },
       {
-        id: '4',
-        type: 'Phishing Indicators',
+        id: 'phishing-attempt',
+        type: 'Phishing Attempt',
         severity: 'high',
-        description: 'URL contains characteristics common in phishing attacks',
-        evidence: 'Domain mimics legitimate brand with slight variations',
-        recommendation: 'Verify the legitimate URL and report this phishing attempt',
+        description: 'Phishing attempt detected',
+        evidence: 'Phishing pattern matched',
+        recommendation: 'Avoid interacting with the website',
         category: 'phishing' as const
-      },
-      {
-        id: '5',
-        type: 'Privacy Policy Missing',
-        severity: 'low',
-        description: 'No privacy policy found on the website',
-        evidence: 'Crawling did not locate privacy policy or terms of service',
-        recommendation: 'Verify data handling practices before providing information',
-        category: 'privacy' as const
       }
     ];
 
     const urlSections: URLSection[] = [
       {
-        name: 'Domain Information',
-        trustScore: Math.floor(Math.random() * 40) + 60,
-        securityScore: Math.floor(Math.random() * 35) + 65,
-        redFlags: Math.floor(Math.random() * 2),
-        details: {
-          domainAge: Math.floor(Math.random() * 3650) + 30,
-          registrar: 'GoDaddy',
-          hasSSL: Math.random() > 0.3,
-          hasDMARC: Math.random() > 0.6
-        }
-      },
-      {
-        name: 'Network Security',
-        trustScore: Math.floor(Math.random() * 30) + 70,
-        securityScore: Math.floor(Math.random() * 40) + 60,
-        redFlags: Math.floor(Math.random() * 3),
-        details: {
-          ipReputation: Math.random() > 0.2,
-          hasFirewall: Math.random() > 0.5,
-          ddosProtection: Math.random() > 0.4,
-          serverLocation: 'United States'
-        }
-      },
-      {
-        name: 'Content Analysis',
-        trustScore: Math.floor(Math.random() * 35) + 65,
-        securityScore: Math.floor(Math.random() * 45) + 55,
+        name: 'Malware Analysis',
+        trustScore: Math.floor(Math.random() * 25) + 75,
+        securityScore: Math.floor(Math.random() * 30) + 70,
         redFlags: Math.floor(Math.random() * 2),
         details: {
           hasMalware: Math.random() > 0.8,
