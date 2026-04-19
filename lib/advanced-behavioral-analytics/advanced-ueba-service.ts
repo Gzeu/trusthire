@@ -1718,7 +1718,34 @@ export class AdvanceduebaService extends EventEmitter {
           results.push(result);
           
           // Update model performance
-          model.performance = result.performance;
+          if (result.performance.accuracy !== undefined) {
+            model.performance = {
+              accuracy: result.performance.accuracy,
+              precision: result.performance.precision || 0,
+              recall: result.performance.recall || 0,
+              f1Score: result.performance.f1Score || 0,
+              auc: result.performance.auc || 0,
+              confusionMatrix: result.performance.confusionMatrix || {
+                truePositives: 0,
+                trueNegatives: 0,
+                falsePositives: 0,
+                falseNegatives: 0,
+                truePositiveRate: 0,
+                falsePositiveRate: 0,
+                precision: 0,
+                recall: 0,
+                f1Score: 0
+              },
+              trainingHistory: result.performance.trainingHistory || [],
+              inferenceMetrics: result.performance.inferenceMetrics || {
+                averageInferenceTime: 0,
+                throughput: 0,
+                memoryUsage: 0,
+                cpuUsage: 0,
+                errorRate: 0
+              }
+            };
+          }
           model.status = 'active';
         }
       }
