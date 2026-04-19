@@ -233,8 +233,9 @@ export default function EnhancedDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-white">
-      <Container size="lg" className="py-10">
+    <Container>
+      <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#111827] p-6 text-white">
+        <Container size="lg" className="py-10">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
           <div>
@@ -412,6 +413,7 @@ export default function EnhancedDashboardPage() {
           </Card>
         </div>
       </Container>
-    </div>
+      </div>
+    </Container>
   );
 }
