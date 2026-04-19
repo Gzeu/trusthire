@@ -20,6 +20,7 @@
  */
 
 import { EventEmitter } from 'events';
+import type { ComplianceMLModel } from '../intelligent-compliance/compliance-intelligence-service';
 
 // ============================================================================
 // INTERFACES
