@@ -249,7 +249,7 @@ export class GitHubClient {
       per_page: perPage.toString()
     });
     
-    return this.makeRequest<Array<{id: number; title: string; body: string | null; state: string; created_at: string; updated_at: string; merged_at: string | null; user: {login: string; id: number; avatar_url: string;}; head: {ref: string; sha: string;}; base: {ref: string; sha: string;}>>(`${url}?${params}`);
+    return this.makeRequest<Array<{id: number; title: string; body: string | null; state: string; created_at: string; updated_at: string; merged_at: string | null; user: {login: string; id: number; avatar_url: string;}; head: {ref: string; sha: string;}; base: {ref: string; sha: string;}}>>(`${url}?${params}`);
   }
 
   async getRepositoryReleases(owner: string, repo: string, perPage = 10): Promise<Array<{
