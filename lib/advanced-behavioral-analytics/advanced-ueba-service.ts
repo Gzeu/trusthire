@@ -1919,7 +1919,7 @@ export class AdvanceduebaService extends EventEmitter {
       },
       performance: {
         avgInferenceTime: this.calculateAverage(models, 'performance.inferenceMetrics.averageInferenceTime' as keyof DeepLearningModel),
-        avgTrainingTime: this.calculateAverage(profiles, 'metadata.lastModified'), // Mock
+        avgTrainingTime: this.calculateAverage(profiles, 'metadata.lastModified' as keyof AdvancedBehavioralProfile), // Mock
         modelAccuracy: this.calculateAverage(models, 'performance.accuracy' as keyof DeepLearningModel),
         anomalyDetectionRate: this.calculateAnomalyDetectionRate(anomalies),
         falsePositiveRate: this.calculateFalsePositiveRate(anomalies)
