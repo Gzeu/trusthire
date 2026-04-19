@@ -91,7 +91,11 @@ export default function LinkedInScanPage() {
       
       setAnalysis(prev => prev ? {
         ...prev,
-        ...mockResults.profile,
+        profileName: profileId,
+        headline: 'Security Professional | Cybersecurity Expert',
+        location: 'San Francisco, CA',
+        connections: Math.floor(Math.random() * 2000) + 500,
+        followers: Math.floor(Math.random() * 500) + 100,
         riskScore: mockResults.overallRiskScore,
         authenticityScore: mockResults.overallAuthenticityScore,
         results: mockResults,
