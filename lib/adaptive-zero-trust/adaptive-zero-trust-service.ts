@@ -1555,7 +1555,8 @@ export class AdaptiveZeroTrustService extends EventEmitter {
     const { threshold, adjustment } = parameters;
     
     if (threshold && adjustment) {
-      policy.riskThresholds.authorization[threshold] += adjustment;
+      const thresholdKey = threshold as keyof typeof policy.riskThresholds.authorization;
+      policy.riskThresholds.authorization[thresholdKey] += adjustment;
       return true;
     }
     
