@@ -1630,7 +1630,7 @@ export class AdvanceduebaService extends EventEmitter {
       result.patterns = await this.detectBehavioralPatterns(profile, behavioralData);
       
       // Predict anomalies before they occur
-      result.anomalies = await this.predictAnomalies(profile, behavioralData);
+      result.anomalies = await this.predictAnomaliesInternal(profile, behavioralData);
       
       // Generate predictions
       result.predictions = await this.generateBehavioralPredictions(profile, behavioralData);
@@ -2875,9 +2875,9 @@ export class AdvanceduebaService extends EventEmitter {
   }
 
   /**
-   * Predict anomalies before they occur
+   * Predict anomalies before they occur (internal implementation)
    */
-  private async predictAnomalies(
+  private async predictAnomaliesInternal(
     profile: AdvancedBehavioralProfile,
     data: any[]
   ): Promise<PredictedAnomaly[]> {
