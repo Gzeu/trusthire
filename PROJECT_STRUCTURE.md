@@ -8,11 +8,19 @@ trusthire/
 │   ├── api/                     # API routes
 │   │   ├── admin/              # Admin endpoints
 │   │   ├── assessment/         # Assessment management
+│   │   ├── collaboration/       # Collaboration features
+│   │   │   ├── reviews/         # Review management
+│   │   │   ├── comments/        # Comment system
+│   │   │   ├── team/            # Team sharing
+│   │   │   └── websocket/       # Real-time events
 │   │   ├── dashboard/          # Dashboard stats
 │   │   ├── homepage/           # Homepage statistics
 │   │   ├── langchain/           # AI analysis endpoints
 │   │   ├── metrics/            # Performance metrics
 │   │   ├── ml/                 # Machine learning endpoints
+│   │   │   ├── threats/         # Threat detection
+│   │   │   ├── behavior/        # Behavioral analysis
+│   │   │   └── models/          # Model management
 │   │   ├── patterns/            # Pattern detection
 │   │   ├── report/             # Report generation
 │   │   ├── sandbox/            # Code sandbox analysis
@@ -48,10 +56,18 @@ trusthire/
 │   ├── OnboardingFlow.tsx     # User onboarding
 │   └── [various components]  # All other UI components
 ├── lib/                      # Utility libraries
-│   ├── performance.ts         # Performance utilities
-│   ├── prisma.ts            # Database client
-│   ├── rateLimit.ts         # Rate limiting
-│   └── [other utilities]   # Helper functions
+│   ├── collaboration/         # Collaboration system
+│   │   ├── review-system.ts  # Review management
+│   ├── ml/                   # Machine learning
+│   │   ├── model-manager.ts   # ML model management
+│   │   ├── custom-threat-detector.ts  # Threat detection
+│   │   ├── behavioral-analyzer.ts    # Behavioral analysis
+│   ├── real-time/            # Real-time features
+│   │   ├── websocket-manager.ts     # WebSocket management
+│   ├── performance.ts        # Performance utilities
+│   ├── prisma.ts           # Database client
+│   ├── rateLimit.ts        # Rate limiting
+│   └── [other utilities]  # Helper functions
 ├── prisma/                   # Database schema
 │   └── schema.prisma        # Database definition
 ├── public/                   # Static assets
@@ -112,6 +128,30 @@ trusthire/
   - PDF export functionality
   - Rate limiting (5 req/min) for security
   - Integration with assessment results page
+
+#### **Advanced ML Models**
+- **Location**: `lib/ml/`
+- **Components**: Model manager, threat detector, behavioral analyzer
+- **API**: `/api/ml/threats/detect`, `/api/ml/behavior/analyze`, `/api/ml/models`
+- **Features**:
+  - Custom threat detection with 6 advanced patterns
+  - Behavioral analysis and anomaly detection
+  - Predictive analytics for threat trends
+  - Model training and evaluation
+  - Real-time risk scoring
+  - Pattern recognition engine
+
+#### **Real-time Collaboration**
+- **Location**: `lib/collaboration/`, `lib/real-time/`
+- **Components**: Review system, team sharing, WebSocket manager
+- **API**: `/api/collaboration/reviews/create`, `/api/collaboration/comments/add`, `/api/collaboration/team/share`
+- **Features**:
+  - Collaborative assessment reviews with assignments
+  - Threaded comment system with reactions
+  - Team sharing with granular permissions
+  - Real-time WebSocket notifications
+  - Review workflow management
+  - Activity tracking and analytics
 
 ## 🎨 Design System
 
@@ -194,7 +234,30 @@ interface DesignSystem {
 /assess                  # Assessment center
 /share/[token]           # Public report sharing
 /results/[id]            # Assessment results
-/api/*                   # API routes
+/api/*                   # API routes (49 total)
+```
+
+### **API Endpoints Summary**
+```typescript
+# ML & AI (6 endpoints)
+/api/ml/threats/detect       # Advanced threat detection
+/api/ml/behavior/analyze    # Behavioral analysis
+/api/ml/models              # Model management
+/api/ai/analyze             # AI analysis
+/api/ai/advanced-analyze    # Advanced AI analysis
+/api/langchain/analyze      # LangChain integration
+
+# Collaboration (6 endpoints)
+/api/collaboration/reviews/create    # Collaborative reviews
+/api/collaboration/comments/add     # Comment system
+/api/collaboration/team/share         # Team sharing
+/api/collaboration/websocket/events   # Real-time events
+
+# Core Security (30+ endpoints)
+/api/assessment/*        # Assessment management
+/api/scan/*               # Security scanning
+/api/share/*              # Report sharing
+/api/admin/*              # Admin functions
 ```
 
 ## 🔐 Security Implementation
@@ -354,7 +417,7 @@ jobs:
 
 ## 📋 Development Tasks
 
-### **Current Status**: Production Ready
+### **Current Status**: Production Ready + Advanced AI Features
 - [x] Design system implementation
 - [x] Enhanced dashboard with real-time updates
 - [x] Comprehensive assessment center
@@ -366,19 +429,33 @@ jobs:
   - [x] View tracking analytics
   - [x] PDF export functionality
   - [x] Rate limiting & security
+- [x] Advanced ML Model Integration (NEW)
+  - [x] Custom threat detection models
+  - [x] Behavioral analysis engine
+  - [x] Predictive analytics system
+  - [x] Model management infrastructure
+  - [x] 6 advanced threat patterns
+  - [x] Real-time anomaly detection
+- [x] Real-time Collaboration Features (NEW)
+  - [x] WebSocket real-time infrastructure
+  - [x] Collaborative assessment reviews
+  - [x] Team sharing with permissions
+  - [x] Threaded comment system
+  - [x] Assignment workflow management
+  - [x] Real-time notifications
 - [x] User onboarding flow
 - [x] Performance optimizations
 - [x] TypeScript strict mode
 - [x] Production deployment ready
 
 ### **Next Phase Opportunities**
-- [ ] Advanced ML model integration
-- [ ] Real-time collaboration features
 - [ ] Mobile app development
 - [ ] API rate limiting enhancements
 - [ ] Advanced analytics dashboard
 - [ ] Internationalization (i18n)
 - [ ] Accessibility audit and improvements
+- [ ] Voice-based threat analysis
+- [ ] Blockchain integration for verification
 
 ---
 
