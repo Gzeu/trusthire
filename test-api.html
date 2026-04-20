@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TrustHire API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>TrustHire API Test - Date Reale</h1>
+    
+    <div class="test-section">
+        <h2>1. Colectare Date Recruitment</h2>
+        <button onclick="testCollect()">Testează Colectare</button>
+        <div id="collectResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Validare Date</h2>
+        <button onclick="testValidate()">Testează Validare</button>
+        <div id="validateResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Analytics</h2>
+        <button onclick="testAnalytics()">Testează Analytics</button>
+        <div id="analyticsResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Export Date</h2>
+        <button onclick="testExport()">Testează Export</button>
+        <div id="exportResult" class="result"></div>
+    </div>
+
+    <script>
+        const testData = {
+            type: "recruitment",
+            data: {
+                companyName: "Test Corp",
+                position: "Software Engineer",
+                location: "Bucharest",
+                contactEmail: "test@testcorp.com",
+                contactPhone: "+40-123-4567",
+                website: "https://testcorp.com",
+                requirements: ["3+ years experience", "Computer Science degree"],
+                postedDate: "2024-01-15",
+                deadline: "2024-02-15",
+                status: "active",
+                source: "web_form",
+                confidence: 0.9,
+                notes: "Test recruitment post"
+            }
+        };
+
+        async function testCollect() {
+            try {
+                const response = await fetch('/api/data/collect', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const result = await response.json();
+                const resultDiv = document.getElementById('collectResult');
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Colectare Reușită!</h3>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ Eroare Colectare</h3>
+                        <p>Status: ${response.status}</p>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('collectResult').className = 'result error';
+                document.getElementById('collectResult').innerHTML = `
+                    <h3>❌ Eroare de Conexiune</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+
+        async function testValidate() {
+            try {
+                const response = await fetch('/api/data/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const result = await response.json();
+                const resultDiv = document.getElementById('validateResult');
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Validare Reușită!</h3>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ Eroare Validare</h3>
+                        <p>Status: ${response.status}</p>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('validateResult').className = 'result error';
+                document.getElementById('validateResult').innerHTML = `
+                    <h3>❌ Eroare de Conexiune</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+
+        async function testAnalytics() {
+            try {
+                const response = await fetch('/api/data/analytics', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        type: 'overview',
+                        filters: {
+                            startDate: '2024-01-01',
+                            endDate: '2024-12-31'
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                const resultDiv = document.getElementById('analyticsResult');
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Analytics Reușit!</h3>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ Eroare Analytics</h3>
+                        <p>Status: ${response.status}</p>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('analyticsResult').className = 'result error';
+                document.getElementById('analyticsResult').innerHTML = `
+                    <h3>❌ Eroare de Conexiune</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+
+        async function testExport() {
+            try {
+                const response = await fetch('/api/data/export', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        format: 'json',
+                        filters: {
+                            type: 'recruitment',
+                            startDate: '2024-01-01',
+                            endDate: '2024-12-31'
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                const resultDiv = document.getElementById('exportResult');
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Export Reușit!</h3>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ Eroare Export</h3>
+                        <p>Status: ${response.status}</p>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('exportResult').className = 'result error';
+                document.getElementById('exportResult').innerHTML = `
+                    <h3>❌ Eroare de Conexiune</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
