@@ -572,9 +572,9 @@ Look for urgency, authority impersonation, social proof, scarcity, and other man
   }
 }
 
-// Initialize with Mistral API
+// Initialize with Mistral API from environment
 export const mistralIntegration = new MistralIntegration({
-  apiKey: process.env.MISTRAL_API_KEY || 'LUuX3tTpa9Kru3bzRQH1Osfxow6XcdVQ',
+  apiKey: process.env.MISTRAL_API_KEY || '',
   model: 'mistral-medium',
   temperature: 0.1,
   maxTokens: 2000,
