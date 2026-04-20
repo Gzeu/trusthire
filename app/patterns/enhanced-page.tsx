@@ -21,7 +21,7 @@ const mockPatterns: ScamPattern[] = [
   {
     id: '1',
     category: 'Technical Assessment',
-    description: 'Fake recruiters share malicious repositories under the guise of technical assessments',
+    description: 'Fake recruiters share malicious repositories under guise of technical assessments',
     indicators: [
       'Unsolicited technical assessment requests',
       'Repositories with postinstall scripts',
@@ -47,56 +47,6 @@ const mockPatterns: ScamPattern[] = [
     id: '2',
     category: 'Social Engineering',
     description: 'Psychological manipulation tactics to create urgency and bypass security concerns',
-    indicators: [
-      'High salary offers with minimal requirements',
-      'Pressure to act immediately',
-      'Vague job descriptions with buzzwords',
-      'Requests for sensitive information early'
-    ],
-    ecosystem: 'General Tech',
-    verified: true,
-    severity: 'high',
-    examples: [
-      '"$300k salary for junior developer"',
-      'Start tomorrow, no interview needed',
-      'Exclusive opportunity, only for you'
-    ],
-    prevention: [
-      'Be skeptical of offers that seem too good',
-      'Never share personal data prematurely',
-      'Verify company existence independently',
-      'Follow standard recruitment processes'
-    ]
-  },
-  {
-    id: '3',
-    category: 'Identity Impersonation',
-    description: 'Attackers impersonate legitimate recruiters or companies to gain trust',
-    indicators: [
-      'Fake LinkedIn profiles with stolen photos',
-      'Impersonating well-known companies',
-      'Inconsistent profile information',
-      'Recently created accounts'
-    ],
-    ecosystem: 'Professional Networks',
-    verified: true,
-    severity: 'medium',
-    examples: [
-      'Fake profiles from real company recruiters',
-      'Stolen professional photos',
-      'Copied company descriptions'
-    ],
-    prevention: [
-      'Reverse search profile pictures',
-      'Verify through official company websites',
-      'Check account creation dates',
-      'Contact companies through official channels'
-    ]
-  },
-  {
-    id: '4',
-    category: 'Malicious Dependencies',
-    description: 'Supply chain attacks through compromised npm packages or dependencies',
     indicators: [
       'Unusual or unnecessary dependencies',
       'Packages with similar names to popular ones',
@@ -200,36 +150,48 @@ export default function EnhancedPatternsPage() {
               THREAT INTELLIGENCE
             </Badge>
           </div>
-          <h1 className="text-4xl font-mono font-bold text-white mb-4">
+          <h1 className="text-4xl font-mono font-bold text-gradient mb-4">
             Recruitment Scam Patterns
           </h1>
-          <p className="text-lg font-mono text-white/60 max-w-3xl">
+          <p className="text-lg font-mono text-muted-foreground">
             Learn to identify and protect against common attack patterns used in Web3 recruitment scams. 
             Knowledge is your best defense.
           </p>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-mono font-bold text-red-400 mb-1">{patterns.length}</div>
-            <div className="text-xs font-mono text-white/40 uppercase tracking-wider">Known Patterns</div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-mono font-bold text-orange-400 mb-1">
-              {patterns.filter(p => p.severity === 'critical' || p.severity === 'high').length}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Card className="trusthire-card p-4 text-center">
+            <div className="text-2xl font-mono font-bold text-red-400 mb-1">
+              {patterns.length}
             </div>
-            <div className="text-xs font-mono text-white/40 uppercase tracking-wider">High Risk</div>
+            <div className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+              Total Patterns
+            </div>
           </Card>
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-mono font-bold text-emerald-400 mb-1">
+          <Card className="trusthire-card p-4 text-center">
+            <div className="text-2xl font-mono font-bold text-yellow-400 mb-1">
+              {patterns.filter(p => p.severity === 'critical').length}
+            </div>
+            <div className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+              Critical
+            </div>
+          </Card>
+          <Card className="trusthire-card p-4 text-center">
+            <div className="text-2xl font-mono font-bold text-green-400 mb-1">
               {patterns.filter(p => p.verified).length}
             </div>
-            <div className="text-xs font-mono text-white/40 uppercase tracking-wider">Verified</div>
+            <div className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+              Verified
+            </div>
           </Card>
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-mono font-bold text-blue-400 mb-1">24/7</div>
-            <div className="text-xs font-mono text-white/40 uppercase tracking-wider">Monitoring</div>
+          <Card className="trusthire-card p-4 text-center">
+            <div className="text-2xl font-mono font-bold text-blue-400 mb-1">
+              24/7
+            </div>
+            <div className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+              Monitoring
+            </div>
           </Card>
         </div>
 
@@ -275,118 +237,90 @@ export default function EnhancedPatternsPage() {
               </select>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Patterns Grid */}
         <div className="space-y-6">
           {filteredPatterns.map((pattern) => (
-            <Card key={pattern.id} className="p-6 hover:scale-[1.02] transition-transform duration-200">
+            <Card key={pattern.id} className="trusthire-card p-6 hover:scale-[1.02] transition-transform duration-200">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
                     {getCategoryIcon(pattern.category)}
                   </div>
                   <div>
-                    <h3 className="text-lg font-mono font-semibold text-white mb-1">
+                    <h3 className="text-lg font-semibold text-foreground font-mono">
                       {pattern.category}
                     </h3>
-                    <Badge className={getSeverityColor(pattern.severity)}>
-                      {pattern.severity.toUpperCase()}
-                    </Badge>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant={pattern.verified ? 'success' : 'secondary'}>
+                        {pattern.verified ? 'Verified' : 'Unverified'}
+                      </Badge>
+                      <Badge className={getSeverityColor(pattern.severity)}>
+                        {pattern.severity.toUpperCase()}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-                {pattern.verified && (
-                  <div className="flex items-center gap-1 text-emerald-400">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="text-xs font-mono">Verified</span>
+                <div className="text-xs text-muted-foreground">
+                  {pattern.ecosystem}
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-foreground mb-2">Description</h4>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {pattern.description}
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-foreground mb-2">Indicators</h4>
+                  <ul className="space-y-1">
+                    {pattern.indicators.map((indicator, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                        <span className="text-muted-foreground text-sm">
+                          {indicator}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {pattern.examples && (
+                  <div>
+                    <h4 className="font-semibold text-foreground mb-2">Examples</h4>
+                    <ul className="space-y-1">
+                      {pattern.examples.map((example, index) => (
+                        <li key={index} className="text-muted-foreground text-sm">
+                          • {example}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {pattern.prevention && (
+                  <div>
+                    <h4 className="font-semibold text-foreground mb-2">Prevention</h4>
+                    <ul className="space-y-1">
+                      {pattern.prevention.map((prevention, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <Shield className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                          <span className="text-muted-foreground text-sm">
+                            {prevention}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>
-
-              <p className="text-sm font-mono text-white/70 mb-4 leading-relaxed">
-                {pattern.description}
-              </p>
-
-              {/* Indicators */}
-              <div className="mb-4">
-                <h4 className="text-sm font-mono font-semibold text-white mb-2">Key Indicators:</h4>
-                <div className="space-y-1">
-                  {pattern.indicators.map((indicator, index) => (
-                    <div key={index} className="flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 flex-shrink-0" />
-                      <p className="text-xs font-mono text-white/60">{indicator}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Examples */}
-              {pattern.examples && pattern.examples.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm font-mono font-semibold text-white mb-2">Examples:</h4>
-                  <div className="space-y-1">
-                    {pattern.examples.map((example, index) => (
-                      <div key={index} className="p-2 rounded-lg bg-white/5 border border-white/10">
-                        <p className="text-xs font-mono text-white/60 italic">"{example}"</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Prevention */}
-              {pattern.prevention && pattern.prevention.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-mono font-semibold text-white mb-2">Prevention:</h4>
-                  <div className="space-y-1">
-                    {pattern.prevention.map((tip, index) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 flex-shrink-0" />
-                        <p className="text-xs font-mono text-white/60">{tip}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </Card>
           ))}
         </div>
-
-        {/* Call to Action */}
-        {filteredPatterns.length === 0 && (
-          <Card className="p-8 text-center">
-            <AlertTriangle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-            <h3 className="text-lg font-mono font-semibold text-white mb-2">No patterns found</h3>
-            <p className="text-sm font-mono text-white/60 mb-4">
-              Try adjusting your search or filters to find relevant patterns.
-            </p>
-            <Button onClick={() => { setSearchTerm(''); setSelectedCategory('all'); setSelectedSeverity('all'); }}>
-              Clear Filters
-            </Button>
-          </Card>
-        )}
-
-        {/* Footer CTA */}
-        <Card className="p-8 text-center mt-12" glow="red">
-          <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-mono font-bold text-white mb-4">
-            Think You've Found a New Pattern?
-          </h2>
-          <p className="text-sm font-mono text-white/60 mb-6 max-w-2xl mx-auto">
-            Help the community by reporting suspicious recruitment patterns. 
-            Your contribution could protect other developers from falling victim to scams.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button href="/assess" variant="outline">
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Report Suspicious Activity
-            </Button>
-            <Button href="/dashboard">
-              <Activity className="w-4 h-4 mr-2" />
-              View Community Reports
-            </Button>
-          </div>
-        </Card>
       </Container>
     </div>
   );
