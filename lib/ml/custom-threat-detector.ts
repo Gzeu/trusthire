@@ -126,8 +126,8 @@ class CustomThreatDetector {
         name: 'High Urgency with Payment Request',
         conditions: [
           { field: 'urgency_score', operator: 'greater_than', value: 0.7 },
-          { field: 'payment_mentioned', operator: 'equals', value: true },
-          { field: 'verification_required', operator: 'equals', value: false }
+          { field: 'payment_mentioned', operator: 'equals', value: 1 },
+          { field: 'verification_required', operator: 'equals', value: 0 }
         ],
         severity: 'critical',
         action: 'block',
@@ -137,9 +137,9 @@ class CustomThreatDetector {
         id: 'technical_assessment_required',
         name: 'Technical Assessment Required',
         conditions: [
-          { field: 'job_related', operator: 'equals', value: true },
-          { field: 'technical_test_requested', operator: 'equals', value: true },
-          { field: 'company_verified', operator: 'equals', value: false }
+          { field: 'job_related', operator: 'equals', value: 1 },
+          { field: 'technical_test_requested', operator: 'equals', value: 1 },
+          { field: 'company_verified', operator: 'equals', value: 0 }
         ],
         severity: 'high',
         action: 'flag',
@@ -151,7 +151,7 @@ class CustomThreatDetector {
         conditions: [
           { field: 'domain_age_days', operator: 'less_than', value: 30 },
           { field: 'domain_tld', operator: 'contains', value: '.xyz' },
-          { field: 'brand_impersonation', operator: 'equals', value: true }
+          { field: 'brand_impersonation', operator: 'equals', value: 1 }
         ],
         severity: 'medium',
         action: 'monitor',

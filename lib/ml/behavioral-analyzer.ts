@@ -215,7 +215,9 @@ class BehavioralAnalyzer {
           severity: a.severity,
           description: a.description,
           confidence: a.confidence,
-          timestamp: new Date()
+          timestamp: new Date(),
+          evidence: a.evidence,
+          recommendations: a.recommendations
         })),
         overallRiskScore,
         recommendations

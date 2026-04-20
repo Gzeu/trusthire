@@ -69,7 +69,7 @@ export class PredictiveThreatAnalyzer {
     const features = this.extractFeatures(profile);
     
     // Make prediction using the AI model
-    const threatScore = await this.model.predict(features);
+    const threatScore = await this.model.analyze(features);
     
     // Analyze historical patterns
     const patternMatches = this.matchPatterns(profile);
@@ -123,7 +123,7 @@ export class PredictiveThreatAnalyzer {
   }
 
   private patternMatches(profile: RecruiterProfile, pattern: ThreatPattern): boolean {
-    return pattern.indicators.some(indicator => 
+    return pattern.indicators.some((indicator: string) => 
       profile.description.toLowerCase().includes(indicator.toLowerCase()) ||
       profile.experience?.toLowerCase().includes(indicator.toLowerCase())
     );
@@ -283,7 +283,7 @@ class TensorFlowModel implements PredictiveModel {
     // In a real implementation, this would train the neural network
   }
 
-  async predict(features: any[]): Promise<number> {
+  async analyze(features: any[]): Promise<number> {
     if (!this.trained) {
       throw new Error('Model not trained yet');
     }
@@ -295,6 +295,20 @@ class TensorFlowModel implements PredictiveModel {
     
     // Apply sigmoid activation function
     return 1 / (1 + Math.exp(-weightedSum));
+  }
+
+  async predict(input: any): Promise<PredictionResult> {
+    const features = Array.isArray(input) ? input : [input];
+    const threatScore = await this.analyze(features);
+    
+    return {
+      threatScore,
+      riskLevel: threatScore > 0.7 ? 'critical' : threatScore > 0.5 ? 'high' : threatScore > 0.3 ? 'medium' : 'low',
+      confidence: 0.85,
+      predictions: ['Threat detected based on analysis'],
+      recommendations: ['Review the input carefully'],
+      timeframe: 'Immediate'
+    };
   }
 
   async getAccuracy(): Promise<number> {
