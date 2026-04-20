@@ -1,0 +1,455 @@
+services:
+  # TrustHire Autonomous Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      # Database Configuration
+      - DATABASE_URL=postgresql://trusthire:password@postgres:5432/trusthire
+      - REDIS_URL=redis://redis:6379
+      
+      # Security APIs
+      - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      
+      # Application Configuration
+      - NODE_ENV=production
+      - NEXT_PUBLIC_APP_URL=https://trusthire.yourdomain.com
+      
+      # Autonomous System Configuration
+      - AUTONOMY_LEVEL=full
+      - DECISION_THRESHOLD=0.8
+      - RESPONSE_SPEED=immediate
+      - LEARNING_RATE=adaptive
+      - HEALING_AGGRESSIVENESS=moderate
+      - COMPLIANCE_MODE=balanced
+      - RESOURCE_OPTIMIZATION=balanced
+      
+      # Safety Configuration
+      - HUMAN_OVERSIGHT=true
+      - APPROVAL_REQUIRED=false
+      - ROLLBACK_ENABLED=true
+      - MAX_AUTONOMY_TIME=30
+      - EMERGENCY_STOP=true
+      - AUDIT_TRAIL=true
+      
+      # Monitoring Configuration
+      - MONITORING_FREQUENCY=60
+      - ALERT_CHANNELS=slack,email
+      - RETENTION_DAYS=30
+      
+      # Performance Configuration
+      - MAX_CONCURRENT_DECISIONS=10
+      - MAX_LEARNING_SESSIONS=5
+      - MAX_OPERATIONS=20
+      
+      # Debug Configuration
+      - DEBUG=false
+      - LOG_LEVEL=info
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    networks:
+      - trusthire-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/autonomous/health-check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 60s
+        max_failure_ratio: 0.3
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: trusthire-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=trusthire
+      - POSTGRES_USER=trusthire
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - trusthire-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trusthire -d trusthire"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: trusthire-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+      - ./redis.conf:/etc/redis/redis.conf:ro
+    command: redis-server /etc/redis/redis.conf --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
+    networks:
+      - trusthire-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+  # Nginx Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: trusthire-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+    networks:
+      - trusthire-network
+    restart: unless-stopped
+    depends_on:
+      - app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: trusthire-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - trusthire-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: trusthire-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=trusthire123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - trusthire-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+  # AlertManager
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: trusthire-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    networks:
+      - trusthire-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Node Exporter (System Metrics)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: trusthire-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - trusthire-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+
+  # cAdvisor (Container Metrics)
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: trusthire-cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - trusthire-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Logstash (Log Processing)
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: trusthire-logstash
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    environment:
+      - "LS_JAVA_OPTS=-Xmx1g -Xms1g"
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - logstash-data:/usr/share/logstash/data
+    networks:
+      - trusthire-network
+    restart: unless-stopped
+    depends_on:
+      - app
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9600"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # Elasticsearch (Log Storage)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: trusthire-elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - trusthire-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  # Kibana (Log Visualization)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: trusthire-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_SECURITY_ENABLED=false
+    networks:
+      - trusthire-network
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  alertmanager-data:
+    driver: local
+  logstash-data:
+    driver: local
+  elasticsearch-data:
+    driver: local
+
+networks:
+  trusthire-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

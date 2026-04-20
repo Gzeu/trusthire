@@ -1,349 +1,241 @@
-// TrustHire Monitoring Service
-// Analytics, metrics, and performance monitoring
-
-export interface MetricData {
-  name: string;
-  value: number;
-  labels?: Record<string, string>;
-  timestamp: number;
+// Monitoring service for TrustHire Autonomous System
+export interface SystemMetrics {
+  cpu: number;
+  memory: number;
+  disk: number;
+  network: number;
+  uptime: number;
+  timestamp: string;
 }
 
-export interface PerformanceMetrics {
-  requestDuration: number;
-  responseSize: number;
-  statusCode: number;
-  endpoint: string;
-  userId?: string;
-  timestamp: number;
+export interface HealthCheck {
+  service: string;
+  status: 'healthy' | 'unhealthy' | 'degraded';
+  responseTime: number;
+  lastCheck: string;
+  error?: string;
 }
 
-export interface SecurityMetrics {
-  threatsDetected: number;
-  falsePositives: number;
-  analysisTime: number;
-  patternMatches: Record<string, number>;
-  timestamp: number;
-}
-
-export interface UserMetrics {
-  userId: string;
-  sessionDuration: number;
-  assessmentsCreated: number;
-  scansPerformed: number;
-  lastActivity: number;
+export interface Alert {
+  id: string;
+  type: 'error' | 'warning' | 'info';
+  service: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  timestamp: string;
+  resolved: boolean;
+  resolvedAt?: string;
 }
 
 export class MonitoringService {
-  private metrics: Map<string, MetricData[]> = new Map();
-  private performanceMetrics: PerformanceMetrics[] = [];
-  private securityMetrics: SecurityMetrics[] = [];
-  private userMetrics: Map<string, UserMetrics> = new Map();
+  private metrics: SystemMetrics[] = [];
+  private healthChecks = new Map<string, HealthCheck>();
+  private alerts = new Map<string, Alert>();
+  private alertThresholds = {
+    cpu: 80,
+    memory: 85,
+    disk: 90,
+    responseTime: 5000
+  };
 
-  // Metrics collection
-  recordMetric(name: string, value: number, labels?: Record<string, string>): void {
-    const metric: MetricData = {
-      name,
-      value,
-      labels,
-      timestamp: Date.now(),
+  constructor() {
+    // Start monitoring
+    this.startMonitoring();
+    // Clean up old data periodically
+    setInterval(() => this.cleanupOldData(), 300000); // Every 5 minutes
+  }
+
+  private startMonitoring(): void {
+    setInterval(async () => {
+      await this.collectMetrics();
+      await this.performHealthChecks();
+    }, 30000); // Every 30 seconds
+  }
+
+  private async collectMetrics(): Promise<void> {
+    const metrics: SystemMetrics = {
+      cpu: this.getCpuUsage(),
+      memory: this.getMemoryUsage(),
+      disk: this.getDiskUsage(),
+      network: this.getNetworkUsage(),
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString()
     };
 
-    if (!this.metrics.has(name)) {
-      this.metrics.set(name, []);
-    }
+    this.metrics.push(metrics);
     
-    const metricArray = this.metrics.get(name)!;
-    metricArray.push(metric);
-
-    // Keep only last 1000 metrics per type
-    if (metricArray.length > 1000) {
-      metricArray.shift();
-    }
-  }
-
-  recordPerformance(data: Omit<PerformanceMetrics, 'timestamp'>): void {
-    const metric: PerformanceMetrics = {
-      ...data,
-      timestamp: Date.now(),
-    };
-
-    this.performanceMetrics.push(metric);
-
-    // Keep only last 5000 performance metrics
-    if (this.performanceMetrics.length > 5000) {
-      this.performanceMetrics.shift();
+    // Keep only last 1000 entries
+    if (this.metrics.length > 1000) {
+      this.metrics = this.metrics.slice(-1000);
     }
 
-    // Record specific metrics
-    this.recordMetric('request_duration', data.requestDuration, {
-      endpoint: data.endpoint,
-      status_code: data.statusCode.toString(),
-    });
-
-    this.recordMetric('response_size', data.responseSize, {
-      endpoint: data.endpoint,
-    });
+    // Check for alerts
+    this.checkAlerts(metrics);
   }
 
-  recordSecurity(data: Omit<SecurityMetrics, 'timestamp'>): void {
-    const metric: SecurityMetrics = {
-      ...data,
-      timestamp: Date.now(),
-    };
-
-    this.securityMetrics.push(metric);
-
-    // Keep only last 1000 security metrics
-    if (this.securityMetrics.length > 1000) {
-      this.securityMetrics.shift();
-    }
-
-    // Record specific metrics
-    this.recordMetric('threats_detected', data.threatsDetected);
-    this.recordMetric('false_positives', data.falsePositives);
-    this.recordMetric('analysis_time', data.analysisTime);
-
-    // Record pattern matches
-    Object.entries(data.patternMatches).forEach(([pattern, count]) => {
-      this.recordMetric('pattern_matches', count, { pattern });
-    });
-  }
-
-  recordUserActivity(userId: string, activity: Partial<UserMetrics>): void {
-    const existing = this.userMetrics.get(userId) || {
-      userId,
-      sessionDuration: 0,
-      assessmentsCreated: 0,
-      scansPerformed: 0,
-      lastActivity: Date.now(),
-    };
-
-    const updated: UserMetrics = {
-      ...existing,
-      ...activity,
-      lastActivity: Date.now(),
-    };
-
-    this.userMetrics.set(userId, updated);
-
-    // Record specific metrics
-    this.recordMetric('assessments_created', updated.assessmentsCreated, {
-      user_id: userId,
-    });
-
-    this.recordMetric('scans_performed', updated.scansPerformed, {
-      user_id: userId,
-    });
-  }
-
-  // Metrics retrieval
-  getMetrics(name: string, timeRange?: number): MetricData[] {
-    const metrics = this.metrics.get(name) || [];
+  private async performHealthChecks(): Promise<void> {
+    const services = ['database', 'redis', 'api', 'autonomous-system'];
     
-    if (!timeRange) {
-      return metrics;
+    for (const service of services) {
+      const healthCheck = await this.checkServiceHealth(service);
+      this.healthChecks.set(service, healthCheck);
     }
-
-    const cutoff = Date.now() - timeRange;
-    return metrics.filter(metric => metric.timestamp >= cutoff);
   }
 
-  getPerformanceMetrics(timeRange?: number): PerformanceMetrics[] {
-    if (!timeRange) {
-      return this.performanceMetrics;
+  private async checkServiceHealth(service: string): Promise<HealthCheck> {
+    const startTime = Date.now();
+    
+    try {
+      // Mock health check - in production, this would actually ping the service
+      const responseTime = Math.random() * 1000;
+      const isHealthy = responseTime < this.alertThresholds.responseTime;
+
+      return {
+        service,
+        status: isHealthy ? 'healthy' : Math.random() > 0.8 ? 'degraded' : 'unhealthy',
+        responseTime,
+        lastCheck: new Date().toISOString()
+      };
+    } catch (error) {
+      return {
+        service,
+        status: 'unhealthy',
+        responseTime: Date.now() - startTime,
+        lastCheck: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
-
-    const cutoff = Date.now() - timeRange;
-    return this.performanceMetrics.filter(metric => metric.timestamp >= cutoff);
   }
 
-  getSecurityMetrics(timeRange?: number): SecurityMetrics[] {
-    if (!timeRange) {
-      return this.securityMetrics;
-    }
-
-    const cutoff = Date.now() - timeRange;
-    return this.securityMetrics.filter(metric => metric.timestamp >= cutoff);
-  }
-
-  getUserMetrics(userId: string): UserMetrics | undefined {
-    return this.userMetrics.get(userId);
-  }
-
-  getAllUserMetrics(): UserMetrics[] {
-    return Array.from(this.userMetrics.values());
-  }
-
-  // Analytics and aggregations
-  getAverageResponseTime(endpoint?: string, timeRange?: number): number {
-    const metrics = this.getPerformanceMetrics(timeRange);
-    const filtered = endpoint ? metrics.filter(m => m.endpoint === endpoint) : metrics;
-    
-    if (filtered.length === 0) return 0;
-    
-    const total = filtered.reduce((sum, m) => sum + m.requestDuration, 0);
-    return total / filtered.length;
-  }
-
-  getSuccessRate(endpoint?: string, timeRange?: number): number {
-    const metrics = this.getPerformanceMetrics(timeRange);
-    const filtered = endpoint ? metrics.filter(m => m.endpoint === endpoint) : metrics;
-    
-    if (filtered.length === 0) return 0;
-    
-    const successful = filtered.filter(m => m.statusCode >= 200 && m.statusCode < 400).length;
-    return (successful / filtered.length) * 100;
-  }
-
-  getTopEndpoints(timeRange?: number): Array<{ endpoint: string; count: number; avgResponseTime: number }> {
-    const metrics = this.getPerformanceMetrics(timeRange);
-    const endpointStats = new Map<string, { count: number; totalTime: number }>();
-
-    metrics.forEach(metric => {
-      const existing = endpointStats.get(metric.endpoint) || { count: 0, totalTime: 0 };
-      endpointStats.set(metric.endpoint, {
-        count: existing.count + 1,
-        totalTime: existing.totalTime + metric.requestDuration,
+  private checkAlerts(metrics: SystemMetrics): void {
+    if (metrics.cpu > this.alertThresholds.cpu) {
+      this.createAlert({
+        type: 'warning',
+        service: 'system',
+        message: `CPU usage is ${metrics.cpu.toFixed(1)}%`,
+        severity: metrics.cpu > 95 ? 'critical' : 'high'
       });
-    });
+    }
 
-    return Array.from(endpointStats.entries())
-      .map(([endpoint, stats]) => ({
-        endpoint,
-        count: stats.count,
-        avgResponseTime: stats.totalTime / stats.count,
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+    if (metrics.memory > this.alertThresholds.memory) {
+      this.createAlert({
+        type: 'warning',
+        service: 'system',
+        message: `Memory usage is ${metrics.memory.toFixed(1)}%`,
+        severity: metrics.memory > 95 ? 'critical' : 'high'
+      });
+    }
+
+    if (metrics.disk > this.alertThresholds.disk) {
+      this.createAlert({
+        type: 'error',
+        service: 'system',
+        message: `Disk usage is ${metrics.disk.toFixed(1)}%`,
+        severity: 'critical'
+      });
+    }
   }
 
-  getThreatDetectionRate(timeRange?: number): number {
-    const metrics = this.getSecurityMetrics(timeRange);
-    
-    if (metrics.length === 0) return 0;
-    
-    const totalThreats = metrics.reduce((sum, m) => sum + m.threatsDetected, 0);
-    const totalAssessments = metrics.length;
-    
-    return totalAssessments > 0 ? (totalThreats / totalAssessments) * 100 : 0;
-  }
-
-  getFalsePositiveRate(timeRange?: number): number {
-    const metrics = this.getSecurityMetrics(timeRange);
-    
-    if (metrics.length === 0) return 0;
-    
-    const totalThreats = metrics.reduce((sum, m) => sum + m.threatsDetected, 0);
-    const totalFalsePositives = metrics.reduce((sum, m) => sum + m.falsePositives, 0);
-    
-    return totalThreats > 0 ? (totalFalsePositives / totalThreats) * 100 : 0;
-  }
-
-  // Health checks
-  getSystemHealth(): {
-    status: 'healthy' | 'degraded' | 'unhealthy';
-    metrics: {
-      avgResponseTime: number;
-      successRate: number;
-      activeUsers: number;
-      threatDetectionRate: number;
+  private createAlert(alertData: Omit<Alert, 'id' | 'timestamp' | 'resolved'>): void {
+    const alert: Alert = {
+      ...alertData,
+      id: this.generateId(),
+      timestamp: new Date().toISOString(),
+      resolved: false
     };
+
+    this.alerts.set(alert.id, alert);
+  }
+
+  getMetrics(limit: number = 100): SystemMetrics[] {
+    return this.metrics.slice(-limit);
+  }
+
+  getHealthChecks(): HealthCheck[] {
+    return Array.from(this.healthChecks.values());
+  }
+
+  getAlerts(resolved?: boolean): Alert[] {
+    const alerts = Array.from(this.alerts.values());
+    return alerts.filter(alert => resolved === undefined || alert.resolved === resolved);
+  }
+
+  resolveAlert(alertId: string): boolean {
+    const alert = this.alerts.get(alertId);
+    if (!alert) return false;
+
+    alert.resolved = true;
+    alert.resolvedAt = new Date().toISOString();
+    this.alerts.set(alertId, alert);
+    return true;
+  }
+
+  getSystemStatus(): {
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    uptime: number;
+    activeAlerts: number;
+    healthScore: number;
   } {
-    const avgResponseTime = this.getAverageResponseTime(undefined, 300000); // Last 5 minutes
-    const successRate = this.getSuccessRate(undefined, 300000);
-    const activeUsers = this.getAllUserMetrics().filter(u => Date.now() - u.lastActivity < 300000).length;
-    const threatDetectionRate = this.getThreatDetectionRate(300000);
+    const healthChecks = this.getHealthChecks();
+    const activeAlerts = this.getAlerts(false);
+    const latestMetrics = this.getMetrics(1)[0];
+
+    const unhealthyServices = healthChecks.filter(hc => hc.status === 'unhealthy').length;
+    const degradedServices = healthChecks.filter(hc => hc.status === 'degraded').length;
+    const criticalAlerts = activeAlerts.filter(a => a.severity === 'critical').length;
 
     let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-
-    if (avgResponseTime > 5000 || successRate < 95) {
+    if (unhealthyServices > 0 || criticalAlerts > 0) {
+      status = 'unhealthy';
+    } else if (degradedServices > 0 || activeAlerts.length > 0) {
       status = 'degraded';
     }
 
-    if (avgResponseTime > 10000 || successRate < 90) {
-      status = 'unhealthy';
-    }
+    const healthScore = Math.max(0, 100 - (unhealthyServices * 40) - (degradedServices * 20) - (activeAlerts.length * 10));
 
     return {
       status,
-      metrics: {
-        avgResponseTime,
-        successRate,
-        activeUsers,
-        threatDetectionRate,
-      },
+      uptime: latestMetrics?.uptime || 0,
+      activeAlerts: activeAlerts.length,
+      healthScore
     };
   }
 
-  // Export metrics for Prometheus
-  getPrometheusMetrics(): string {
-    const lines: string[] = [];
-
-    // Request duration metrics
-    const durationMetrics = this.getMetrics('request_duration');
-    const durationByEndpoint = new Map<string, number[]>();
-
-    durationMetrics.forEach(metric => {
-      const endpoint = metric.labels?.endpoint || 'unknown';
-      if (!durationByEndpoint.has(endpoint)) {
-        durationByEndpoint.set(endpoint, []);
-      }
-      durationByEndpoint.get(endpoint)!.push(metric.value);
-    });
-
-    lines.push('# HELP trusthire_request_duration_seconds Request duration in seconds');
-    lines.push('# TYPE trusthire_request_duration_seconds histogram');
-
-    durationByEndpoint.forEach((durations, endpoint) => {
-      const avg = durations.reduce((sum, d) => sum + d, 0) / durations.length;
-      lines.push(`trusthire_request_duration_seconds{endpoint="${endpoint}"} ${avg}`);
-    });
-
-    // Success rate metrics
-    const successRate = this.getSuccessRate();
-    lines.push('# HELP trusthire_success_rate Percentage of successful requests');
-    lines.push('# TYPE trusthire_success_rate gauge');
-    lines.push(`trusthire_success_rate ${successRate}`);
-
-    // Threat detection metrics
-    const threatRate = this.getThreatDetectionRate();
-    lines.push('# HELP trusthire_threat_detection_rate Percentage of assessments with threats detected');
-    lines.push('# TYPE trusthire_threat_detection_rate gauge');
-    lines.push(`trusthire_threat_detection_rate ${threatRate}`);
-
-    return lines.join('\n');
-  }
-
-  // Cleanup old metrics
-  cleanup(): void {
-    const cutoff = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
-
-    // Clean up performance metrics
-    this.performanceMetrics = this.performanceMetrics.filter(m => m.timestamp >= cutoff);
-
-    // Clean up security metrics
-    this.securityMetrics = this.securityMetrics.filter(m => m.timestamp >= cutoff);
-
-    // Clean up other metrics
-    this.metrics.forEach((metrics, name) => {
-      const filtered = metrics.filter(m => m.timestamp >= cutoff);
-      this.metrics.set(name, filtered);
-    });
-
-    // Clean up inactive user metrics
-    const activeUsers = Array.from(this.userMetrics.entries())
-      .filter(([_, metrics]) => metrics.lastActivity >= cutoff);
+  private cleanupOldData(): void {
+    const cutoffTime = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
     
-    this.userMetrics = new Map(activeUsers);
+    // Clean up old metrics
+    this.metrics = this.metrics.filter(m => new Date(m.timestamp).getTime() > cutoffTime);
+    
+    // Clean up old resolved alerts
+    const alertEntries = Array.from(this.alerts.entries());
+    for (const [id, alert] of alertEntries) {
+      if (alert.resolved && alert.resolvedAt && new Date(alert.resolvedAt).getTime() < cutoffTime) {
+        this.alerts.delete(id);
+      }
+    }
+  }
+
+  private generateId(): string {
+    return `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // Mock methods for getting system metrics
+  private getCpuUsage(): number {
+    return Math.random() * 100;
+  }
+
+  private getMemoryUsage(): number {
+    return Math.random() * 100;
+  }
+
+  private getDiskUsage(): number {
+    return Math.random() * 100;
+  }
+
+  private getNetworkUsage(): number {
+    return Math.random() * 100;
   }
 }
 
-// Singleton instance
 export const monitoringService = new MonitoringService();
-
-// React hook for using monitoring service
-export function useMonitoringService() {
-  return monitoringService;
-}
-
-export default monitoringService;

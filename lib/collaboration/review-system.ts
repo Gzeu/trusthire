@@ -1,443 +1,217 @@
-/**
- * Collaborative Review System
- * Manages collaborative assessment reviews and team sharing
- */
-
-export interface CollaborativeReview {
+// Review system for TrustHire Autonomous System collaboration
+export interface Review {
   id: string;
-  assessmentId: string;
-  title: string;
-  description: string;
-  status: 'pending' | 'in_review' | 'completed' | 'rejected';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  createdBy: string;
-  reviewers: string[];
-  assignedReviewers: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  metadata: Record<string, any>;
+  type: 'comment' | 'review' | 'suggestion';
+  content: string;
+  authorId: string;
+  authorName: string;
+  targetId: string;
+  targetType: 'assessment' | 'candidate' | 'report';
+  status: 'pending' | 'approved' | 'rejected' | 'resolved';
+  createdAt: string;
+  updatedAt: string;
+  replies?: Review[];
+  tags?: string[];
+  priority: 'low' | 'medium' | 'high';
 }
 
-export interface ReviewComment {
+export interface Comment {
   id: string;
   reviewId: string;
-  authorId: string;
   content: string;
-  type: 'general' | 'security' | 'recommendation' | 'question' | 'issue';
-  severity: 'info' | 'warning' | 'error' | 'critical';
-  position?: {
-    line: number;
-    column: number;
-    section: string;
-  };
-  resolved: boolean;
-  resolvedBy?: string;
-  resolvedAt?: Date;
-  replies: ReviewComment[];
-  createdAt: Date;
-  updatedAt: Date;
-  reactions: {
-    emoji: string;
-    users: string[];
-    count: number;
-  }[];
+  authorId: string;
+  authorName: string;
+  createdAt: string;
+  updatedAt: string;
+  isReply: boolean;
+  parentCommentId?: string;
 }
 
 export interface TeamShare {
   id: string;
-  assessmentId: string;
-  teamId: string;
+  itemId: string;
+  itemType: 'assessment' | 'report' | 'candidate';
   sharedBy: string;
-  sharedAt: Date;
-  permissions: {
-    canView: boolean;
-    canComment: boolean;
-    canEdit: boolean;
-    canShare: boolean;
-    canExport: boolean;
-  };
-  expiresAt?: Date;
-  accessCount: number;
-  lastAccessed?: Date;
-  message?: string;
+  sharedWith: string[];
+  permissions: 'read' | 'write' | 'admin';
+  createdAt: string;
+  expiresAt?: string;
 }
 
-export interface ReviewAssignment {
-  id: string;
-  reviewId: string;
-  reviewerId: string;
-  assignedBy: string;
-  assignedAt: Date;
-  dueDate?: Date;
-  status: 'pending' | 'accepted' | 'declined' | 'completed';
-  completedAt?: Date;
-  notes?: string;
-}
+export class ReviewSystem {
+  private reviews = new Map<string, Review>();
+  private comments = new Map<string, Comment>();
+  private shares = new Map<string, TeamShare>();
 
-class ReviewSystem {
-  private reviews: Map<string, CollaborativeReview> = new Map();
-  private comments: Map<string, ReviewComment[]> = new Map();
-  private teamShares: Map<string, TeamShare> = new Map();
-  private assignments: Map<string, ReviewAssignment[]> = new Map();
-
-  // Create a new collaborative review
-  createReview(reviewData: Omit<CollaborativeReview, 'id' | 'createdAt' | 'updatedAt'>): CollaborativeReview {
-    const review: CollaborativeReview = {
+  async createReview(reviewData: Omit<Review, 'id' | 'createdAt' | 'updatedAt'>): Promise<Review> {
+    const review: Review = {
       ...reviewData,
-      id: this.generateId('review'),
-      createdAt: new Date(),
-      updatedAt: new Date()
+      id: this.generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      replies: []
     };
 
     this.reviews.set(review.id, review);
-    this.comments.set(review.id, []);
-
-    // Create assignments for reviewers
-    review.assignedReviewers.forEach(reviewerId => {
-      this.createAssignment({
-        reviewId: review.id,
-        reviewerId,
-        assignedBy: review.createdBy,
-        assignedAt: new Date(),
-        dueDate: review.dueDate,
-        status: 'pending'
-      });
-    });
-
-    console.log(`Collaborative review created: ${review.id}`);
     return review;
   }
 
-  // Get review by ID
-  getReview(reviewId: string): CollaborativeReview | undefined {
-    return this.reviews.get(reviewId);
-  }
-
-  // Get all reviews for a user
-  getUserReviews(userId: string, role: 'creator' | 'reviewer' | 'all' = 'all'): CollaborativeReview[] {
-    const reviews = Array.from(this.reviews.values());
-
-    switch (role) {
-      case 'creator':
-        return reviews.filter(review => review.createdBy === userId);
-      case 'reviewer':
-        return reviews.filter(review => 
-          review.assignedReviewers.includes(userId) || review.reviewers.includes(userId)
-        );
-      case 'all':
-      default:
-        return reviews.filter(review => 
-          review.createdBy === userId || 
-          review.assignedReviewers.includes(userId) || 
-          review.reviewers.includes(userId)
-        );
-    }
-  }
-
-  // Update review status
-  updateReviewStatus(reviewId: string, status: CollaborativeReview['status'], updatedBy: string): boolean {
+  async updateReview(reviewId: string, updates: Partial<Review>): Promise<Review | null> {
     const review = this.reviews.get(reviewId);
-    if (!review) return false;
+    if (!review) return null;
 
-    review.status = status;
-    review.updatedAt = new Date();
-
-    // Update assignment status if completed
-    if (status === 'completed') {
-      const assignments = this.assignments.get(reviewId) || [];
-      assignments.forEach(assignment => {
-        if (assignment.reviewerId === updatedBy && assignment.status === 'accepted') {
-          assignment.status = 'completed';
-          assignment.completedAt = new Date();
-        }
-      });
-    }
-
-    console.log(`Review ${reviewId} status updated to ${status} by ${updatedBy}`);
-    return true;
-  }
-
-  // Add comment to review
-  addComment(commentData: Omit<ReviewComment, 'id' | 'replies' | 'createdAt' | 'updatedAt' | 'reactions'>): ReviewComment {
-    const comment: ReviewComment = {
-      ...commentData,
-      id: this.generateId('comment'),
-      replies: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      reactions: []
+    const updatedReview = {
+      ...review,
+      ...updates,
+      updatedAt: new Date().toISOString()
     };
 
-    const comments = this.comments.get(comment.reviewId) || [];
-    comments.push(comment);
-    this.comments.set(comment.reviewId, comments);
+    this.reviews.set(reviewId, updatedReview);
+    return updatedReview;
+  }
 
-    // Update review timestamp
-    const review = this.reviews.get(comment.reviewId);
-    if (review) {
-      review.updatedAt = new Date();
+  async deleteReview(reviewId: string): Promise<boolean> {
+    return this.reviews.delete(reviewId);
+  }
+
+  async getReview(reviewId: string): Promise<Review | null> {
+    return this.reviews.get(reviewId) || null;
+  }
+
+  async getReviewsByTarget(targetId: string, targetType: string): Promise<Review[]> {
+    const reviews: Review[] = [];
+    const entries = Array.from(this.reviews.entries());
+    
+    for (const [, review] of entries) {
+      if (review.targetId === targetId && review.targetType === targetType) {
+        reviews.push(review);
+      }
     }
 
-    console.log(`Comment added to review ${comment.reviewId}: ${comment.id}`);
+    return reviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async addComment(commentData: Omit<Comment, 'id' | 'createdAt' | 'updatedAt'>): Promise<Comment> {
+    const comment: Comment = {
+      ...commentData,
+      id: this.generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    this.comments.set(comment.id, comment);
+
+    // Add comment to review's replies if it's a reply to a review
+    if (!comment.isReply) {
+      const review = this.reviews.get(comment.reviewId);
+      if (review) {
+        review.replies = review.replies || [];
+        review.replies.push({
+          ...comment,
+          id: comment.id,
+          type: 'comment' as const,
+          content: comment.content,
+          authorId: comment.authorId,
+          authorName: comment.authorName,
+          targetId: '',
+          targetType: 'assessment' as const,
+          status: 'pending' as const,
+          createdAt: comment.createdAt,
+          updatedAt: comment.updatedAt,
+          priority: 'medium' as const
+        });
+        this.reviews.set(comment.reviewId, review);
+      }
+    }
+
     return comment;
   }
 
-  // Get comments for a review
-  getReviewComments(reviewId: string): ReviewComment[] {
-    return this.comments.get(reviewId) || [];
-  }
-
-  // Reply to comment
-  replyToComment(parentCommentId: string, replyData: Omit<ReviewComment, 'id' | 'replies' | 'createdAt' | 'updatedAt' | 'reactions'>): ReviewComment | null {
-    // Find parent comment
-    for (const [reviewId, comments] of this.comments.entries()) {
-      const parentComment = comments.find(c => c.id === parentCommentId);
-      if (parentComment) {
-        const reply: ReviewComment = {
-          ...replyData,
-          id: this.generateId('comment'),
-          replies: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          reactions: []
-        };
-
-        parentComment.replies.push(reply);
-        parentComment.updatedAt = new Date();
-
-        // Update review timestamp
-        const review = this.reviews.get(reviewId);
-        if (review) {
-          review.updatedAt = new Date();
-        }
-
-        console.log(`Reply added to comment ${parentCommentId}: ${reply.id}`);
-        return reply;
+  async getCommentsByReview(reviewId: string): Promise<Comment[]> {
+    const comments: Comment[] = [];
+    const entries = Array.from(this.comments.entries());
+    
+    for (const [, comment] of entries) {
+      if (comment.reviewId === reviewId) {
+        comments.push(comment);
       }
     }
 
-    return null;
+    return comments.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
 
-  // Resolve comment
-  resolveComment(commentId: string, resolvedBy: string): boolean {
-    for (const [reviewId, comments] of this.comments.entries()) {
-      const comment = comments.find(c => c.id === commentId);
-      if (comment) {
-        comment.resolved = true;
-        comment.resolvedBy = resolvedBy;
-        comment.resolvedAt = new Date();
-        comment.updatedAt = new Date();
-
-        // Update review timestamp
-        const review = this.reviews.get(reviewId);
-        if (review) {
-          review.updatedAt = new Date();
-        }
-
-        console.log(`Comment ${commentId} resolved by ${resolvedBy}`);
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  // Create team share
-  createTeamShare(shareData: Omit<TeamShare, 'id' | 'sharedAt' | 'accessCount'>): TeamShare {
+  async shareWithTeam(shareData: Omit<TeamShare, 'id' | 'createdAt'>): Promise<TeamShare> {
     const share: TeamShare = {
       ...shareData,
-      id: this.generateId('share'),
-      sharedAt: new Date(),
-      accessCount: 0
+      id: this.generateId(),
+      createdAt: new Date().toISOString()
     };
 
-    this.teamShares.set(share.id, share);
-    console.log(`Team share created: ${share.id} for assessment ${share.assessmentId}`);
+    this.shares.set(share.id, share);
     return share;
   }
 
-  // Get team shares for assessment
-  getAssessmentShares(assessmentId: string): TeamShare[] {
-    return Array.from(this.teamShares.values())
-      .filter(share => share.assessmentId === assessmentId);
+  async getSharedItems(userId: string): Promise<TeamShare[]> {
+    const shares: TeamShare[] = [];
+    const entries = Array.from(this.shares.entries());
+    
+    for (const [, share] of entries) {
+      if (share.sharedWith.includes(userId) || share.sharedBy === userId) {
+        shares.push(share);
+      }
+    }
+
+    return shares;
   }
 
-  // Get team shares for user
-  getUserTeamShares(userId: string): TeamShare[] {
-    return Array.from(this.teamShares.values())
-      .filter(share => share.sharedBy === userId);
+  async updateSharePermissions(shareId: string, permissions: 'read' | 'write' | 'admin'): Promise<TeamShare | null> {
+    const share = this.shares.get(shareId);
+    if (!share) return null;
+
+    const updatedShare = {
+      ...share,
+      permissions
+    };
+
+    this.shares.set(shareId, updatedShare);
+    return updatedShare;
   }
 
-  // Record share access
-  recordShareAccess(shareId: string): boolean {
-    const share = this.teamShares.get(shareId);
+  async revokeAccess(shareId: string, userId?: string): Promise<boolean> {
+    const share = this.shares.get(shareId);
     if (!share) return false;
 
-    share.accessCount++;
-    share.lastAccessed = new Date();
-
-    // Check if share has expired
-    if (share.expiresAt && share.expiresAt < new Date()) {
-      this.teamShares.delete(shareId);
-      return false;
+    if (userId) {
+      share.sharedWith = share.sharedWith.filter(id => id !== userId);
+      this.shares.set(shareId, share);
+      return true;
+    } else {
+      return this.shares.delete(shareId);
     }
-
-    return true;
   }
 
-  // Create assignment
-  private createAssignment(assignmentData: Omit<ReviewAssignment, 'id'>): ReviewAssignment {
-    const assignment: ReviewAssignment = {
-      ...assignmentData,
-      id: this.generateId('assignment')
-    };
-
-    const assignments = this.assignments.get(assignment.reviewId) || [];
-    assignments.push(assignment);
-    this.assignments.set(assignment.reviewId, assignments);
-
-    return assignment;
+  private generateId(): string {
+    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  // Get assignments for user
-  getUserAssignments(userId: string): ReviewAssignment[] {
-    const allAssignments = Array.from(this.assignments.values()).flat();
-    return allAssignments.filter(assignment => assignment.reviewerId === userId);
-  }
-
-  // Accept assignment
-  acceptAssignment(assignmentId: string, userId: string): boolean {
-    for (const [reviewId, assignments] of this.assignments.entries()) {
-      const assignment = assignments.find(a => a.id === assignmentId && a.reviewerId === userId);
-      if (assignment && assignment.status === 'pending') {
-        assignment.status = 'accepted';
-        console.log(`Assignment ${assignmentId} accepted by ${userId}`);
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  // Decline assignment
-  declineAssignment(assignmentId: string, userId: string, notes?: string): boolean {
-    for (const [reviewId, assignments] of this.assignments.entries()) {
-      const assignment = assignments.find(a => a.id === assignmentId && a.reviewerId === userId);
-      if (assignment && assignment.status === 'pending') {
-        assignment.status = 'declined';
-        assignment.notes = notes;
-        console.log(`Assignment ${assignmentId} declined by ${userId}`);
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  // Get review statistics
-  getReviewStatistics(userId?: string): {
+  getReviewStats(): {
     totalReviews: number;
     pendingReviews: number;
-    inProgressReviews: number;
-    completedReviews: number;
-    averageCompletionTime: number;
-    assignedToMe: number;
-    createdByMe: number;
+    approvedReviews: number;
+    rejectedReviews: number;
+    totalComments: number;
   } {
-    const reviews = userId ? this.getUserReviews(userId) : Array.from(this.reviews.values());
-    const assignments = userId ? this.getUserAssignments(userId) : Array.from(this.assignments.values()).flat();
-
-    const totalReviews = reviews.length;
-    const pendingReviews = reviews.filter(r => r.status === 'pending').length;
-    const inProgressReviews = reviews.filter(r => r.status === 'in_review').length;
-    const completedReviews = reviews.filter(r => r.status === 'completed').length;
-
-    // Calculate average completion time
-    const completedReviewTimes = reviews
-      .filter(r => r.status === 'completed')
-      .map(r => r.updatedAt.getTime() - r.createdAt.getTime());
-    const averageCompletionTime = completedReviewTimes.length > 0
-      ? completedReviewTimes.reduce((sum, time) => sum + time, 0) / completedReviewTimes.length
-      : 0;
+    const reviews = Array.from(this.reviews.values());
+    const comments = Array.from(this.comments.values());
 
     return {
-      totalReviews,
-      pendingReviews,
-      inProgressReviews,
-      completedReviews,
-      averageCompletionTime,
-      assignedToMe: assignments.filter(a => a.status === 'pending' || a.status === 'accepted').length,
-      createdByMe: reviews.filter(r => r.createdBy === userId).length
+      totalReviews: reviews.length,
+      pendingReviews: reviews.filter(r => r.status === 'pending').length,
+      approvedReviews: reviews.filter(r => r.status === 'approved').length,
+      rejectedReviews: reviews.filter(r => r.status === 'rejected').length,
+      totalComments: comments.length
     };
-  }
-
-  // Search reviews
-  searchReviews(query: string, filters?: {
-    status?: CollaborativeReview['status'];
-    priority?: CollaborativeReview['priority'];
-    createdBy?: string;
-    assignedTo?: string;
-    tags?: string[];
-  }): CollaborativeReview[] {
-    const reviews = Array.from(this.reviews.values());
-    const lowerQuery = query.toLowerCase();
-
-    return reviews.filter(review => {
-      // Text search
-      const matchesQuery = !query || 
-        review.title.toLowerCase().includes(lowerQuery) ||
-        review.description.toLowerCase().includes(lowerQuery) ||
-        review.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
-
-      // Filter by status
-      const matchesStatus = !filters?.status || review.status === filters.status;
-
-      // Filter by priority
-      const matchesPriority = !filters?.priority || review.priority === filters.priority;
-
-      // Filter by creator
-      const matchesCreator = !filters?.createdBy || review.createdBy === filters.createdBy;
-
-      // Filter by assigned reviewer
-      const matchesAssigned = !filters?.assignedTo || 
-        review.assignedReviewers.includes(filters.assignedTo) ||
-        review.reviewers.includes(filters.assignedTo);
-
-      // Filter by tags
-      const matchesTags = !filters?.tags?.length || 
-        filters.tags.some(tag => review.tags.includes(tag));
-
-      return matchesQuery && matchesStatus && matchesPriority && matchesCreator && matchesAssigned && matchesTags;
-    });
-  }
-
-  // Generate unique ID
-  private generateId(prefix: string): string {
-    return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  // Clean up expired shares
-  cleanupExpiredShares(): number {
-    const now = new Date();
-    let cleanedCount = 0;
-
-    for (const [shareId, share] of this.teamShares.entries()) {
-      if (share.expiresAt && share.expiresAt < now) {
-        this.teamShares.delete(shareId);
-        cleanedCount++;
-      }
-    }
-
-    if (cleanedCount > 0) {
-      console.log(`Cleaned up ${cleanedCount} expired team shares`);
-    }
-
-    return cleanedCount;
   }
 }
 
 export const reviewSystem = new ReviewSystem();
-export default ReviewSystem;
