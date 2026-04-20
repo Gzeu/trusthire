@@ -39,31 +39,31 @@ export default function MonitoringPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen">
+      <div className="container-trusthire py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
-                <Activity className="w-6 h-6 text-blue-400" />
+              <div className="w-12 h-12 bg-gradient-red rounded-full flex items-center justify-center">
+                <Activity className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white font-mono">TrustHire Monitoring</h1>
-                <p className="text-white/60 font-mono">System monitoring, debugging, and analytics</p>
+                <h1 className="text-3xl font-bold text-gradient font-mono">TrustHire Monitoring</h1>
+                <p className="text-muted-foreground font-mono">System monitoring, debugging, and analytics</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <a
                 href="/"
-                className="px-4 py-2 bg-white/5 border border-white/10 text-white font-mono text-sm rounded-lg hover:bg-white/10 transition-colors flex items-center gap-2"
+                className="btn-secondary flex items-center gap-2"
               >
                 <Shield className="w-4 h-4" />
                 Back to Main
               </a>
               <a
                 href="/assess"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-mono text-sm rounded-lg transition-colors flex items-center gap-2"
+                className="btn-primary flex items-center gap-2"
               >
                 <Brain className="w-4 h-4" />
                 Quick Assessment
@@ -74,15 +74,13 @@ export default function MonitoringPage() {
 
         {/* Tab Navigation */}
         <div className="mb-8">
-          <div className="flex flex-wrap gap-2 bg-[#111113] border border-white/5 rounded-lg p-2">
+          <div className="flex flex-wrap gap-2 glass-card p-2">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-blue-600 text-white'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                className={`nav-item text-sm font-mono ${
+                  activeTab === tab.id ? 'active' : ''
                 }`}
               >
                 {tab.icon}
@@ -90,7 +88,7 @@ export default function MonitoringPage() {
               </button>
             ))}
           </div>
-          <p className="text-white/40 font-mono text-sm mt-2">
+          <p className="text-muted-foreground font-mono text-sm mt-2">
             {tabs.find(tab => tab.id === activeTab)?.description}
           </p>
         </div>
@@ -104,29 +102,53 @@ export default function MonitoringPage() {
               {/* Additional Dashboard Components */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                 {/* AI Analysis Stats */}
-                <div className="bg-[#111113] border border-white/5 rounded-xl p-6">
+                <div className="trusthire-card metric-card">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
-                      <Brain className="w-4 h-4 text-purple-400" />
+                    <div className="w-8 h-8 bg-gradient-red rounded-full flex items-center justify-center">
+                      <Brain className="w-4 h-4 text-white" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white font-mono">AI Analysis Stats</h3>
+                    <h3 className="text-lg font-semibold text-gradient font-mono">AI Analysis Stats</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-white/5 rounded-lg">
-                      <div className="text-2xl font-mono font-bold text-purple-400">856</div>
-                      <div className="text-xs text-white/60 font-mono">Total Analyses</div>
+                    <div className="glass-card p-3">
+                      <div className="text-2xl font-mono font-bold text-gradient">856</div>
+                      <div className="text-xs text-muted-foreground font-mono">Total Analyses</div>
                     </div>
-                    <div className="p-3 bg-white/5 rounded-lg">
+                    <div className="glass-card p-3">
                       <div className="text-2xl font-mono font-bold text-green-400">94.2%</div>
-                      <div className="text-xs text-white/60 font-mono">Success Rate</div>
+                      <div className="text-xs text-muted-foreground font-mono">Success Rate</div>
                     </div>
-                    <div className="p-3 bg-white/5 rounded-lg">
+                    <div className="glass-card p-3">
                       <div className="text-2xl font-mono font-bold text-blue-400">1.2s</div>
                       <div className="text-xs text-white/60 font-mono">Avg Response</div>
                     </div>
-                    <div className="p-3 bg-white/5 rounded-lg">
+                    <div className="glass-card p-3">
                       <div className="text-2xl font-mono font-bold text-yellow-400">87%</div>
-                      <div className="text-xs text-white/60 font-mono">Accuracy</div>
+                      <div className="text-xs text-muted-foreground font-mono">Accuracy</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* System Health */}
+                <div className="trusthire-card metric-card">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-gradient-red rounded-full flex items-center justify-center">
+                      <Activity className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gradient font-mono">System Health</h3>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between glass-card p-3">
+                      <span className="text-sm text-foreground font-mono">API Response</span>
+                      <span className="status-badge success">Healthy</span>
+                    </div>
+                    <div className="flex items-center justify-between glass-card p-3">
+                      <span className="text-sm text-foreground font-mono">Database</span>
+                      <span className="status-badge success">Connected</span>
+                    </div>
+                    <div className="flex items-center justify-between glass-card p-3">
+                      <span className="text-sm text-foreground font-mono">Cache</span>
+                      <span className="status-badge warning">75% Used</span>
                     </div>
                   </div>
                 </div>

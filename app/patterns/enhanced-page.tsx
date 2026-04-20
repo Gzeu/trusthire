@@ -169,14 +169,14 @@ export default function EnhancedPatternsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0B] text-white">
+      <div className="min-h-screen">
         <Container size="lg" className="py-10">
           <div className="space-y-8">
             <Skeleton className="h-8 w-64" />
             <Skeleton className="h-4 w-96" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="p-6">
+                <Card key={i} className="trusthire-card p-6">
                   <Skeleton className="h-6 w-48 mb-4" />
                   <Skeleton className="h-4 w-full mb-2" />
                   <Skeleton className="h-4 w-3/4" />
@@ -190,7 +190,7 @@ export default function EnhancedPatternsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-white">
+    <div className="min-h-screen">
       <Container size="lg" className="py-10">
         {/* Header */}
         <div className="mb-8">
@@ -233,46 +233,47 @@ export default function EnhancedPatternsPage() {
           </Card>
         </div>
 
-        {/* Filters */}
-        <Card className="p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/40" />
-              <input
-                type="text"
-                placeholder="Search patterns..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 font-mono text-sm focus:outline-none focus:border-white/20"
-              />
+        {/* Search and Filters */}
+        <div className="glass-card p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search patterns, indicators, or examples..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="input-field pl-10"
+                />
+              </div>
             </div>
-
-            {/* Category Filter */}
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white font-mono text-sm focus:outline-none focus:border-white/20"
-            >
-              {categories.map(category => (
-                <option key={category} value={category} className="bg-[#0A0A0B]">
-                  {category === 'all' ? 'All Categories' : category}
-                </option>
-              ))}
-            </select>
-
-            {/* Severity Filter */}
-            <select
-              value={selectedSeverity}
-              onChange={(e) => setSelectedSeverity(e.target.value)}
-              className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white font-mono text-sm focus:outline-none focus:border-white/20"
-            >
-              {severities.map(severity => (
-                <option key={severity} value={severity} className="bg-[#0A0A0B]">
-                  {severity === 'all' ? 'All Severities' : severity.charAt(0).toUpperCase() + severity.slice(1)}
-                </option>
-              ))}
-            </select>
+            <div>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="input-field"
+              >
+                {categories.map(category => (
+                  <option key={category} value={category} className="bg-[#0A0A0B]">
+                    {category === 'all' ? 'All Categories' : category}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <select
+                value={selectedSeverity}
+                onChange={(e) => setSelectedSeverity(e.target.value)}
+                className="input-field"
+              >
+                {severities.map(severity => (
+                  <option key={severity} value={severity} className="bg-[#0A0A0B]">
+                    {severity === 'all' ? 'All Severities' : severity.charAt(0).toUpperCase() + severity.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </Card>
 
