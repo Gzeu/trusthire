@@ -810,4 +810,4 @@ MIT License - see [LICENSE](./LICENSE) for details.
 </p>
 
 ---
-*Last updated: April 2026*
+*Last updated: April 20, 2026*
