@@ -16,7 +16,8 @@
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "test:report": "playwright show report",
-    "test:install": "playwright install"
+    "test:install": "playwright install",
+    "agent:test": "node scripts/run-agent-simple.js"
   },
   "dependencies": {
     "@langchain/community": "^1.1.27",
