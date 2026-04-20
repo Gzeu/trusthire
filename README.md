@@ -196,7 +196,17 @@ TrustHire automates the detection of these patterns while providing enterprise-g
 - **Instant Results** - Complete report generation without multi-step navigation
 - **Enhanced UX** - Reduced friction and faster completion time
 
-### 📊 Scoring & Verdict Engine
+### � Shareable Reports (NEW)
+- **Secure Share Links** - Generate unique tokens for assessment sharing
+- **30-Day Expiration** - Automatic security lifecycle management
+- **Privacy Controls** - Public/private sharing with granular settings
+- **View Analytics** - Real-time engagement tracking and metrics
+- **Professional UI** - Beautiful, mobile-responsive share pages
+- **PDF Export** - Downloadable assessment reports for documentation
+- **Rate Limiting** - 5 requests/minute abuse protection
+- **Custom Messages** - Personalized sharing context for recipients
+
+### � Scoring & Verdict Engine
 | Score | Verdict | Meaning |
 |-------|---------|------------------------------------------------------------|
 | 80–100 | 🟢 LOW RISK | Safe to proceed with standard caution |
@@ -462,7 +472,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### **Comprehensive Documentation**
 - **[Main Documentation](./docs/README.md)** - Complete documentation overview
-- **[API Documentation](./docs/api/README.md)** - 26 API endpoints with examples
+- **[API Documentation](./docs/api/README.md)** - 30 API endpoints with examples
 - **[Phase 6 AI Services](./docs/phase6/README.md)** - Detailed AI services documentation
 - **[Deployment Guide](./docs/deployment/README.md)** - Complete deployment instructions
 - **[FAQ](./docs/faq.md)** - 100+ frequently asked questions

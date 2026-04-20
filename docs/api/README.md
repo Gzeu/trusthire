@@ -503,6 +503,38 @@ Generate security assessment report.
 
 ### Sharing
 
+#### Generate Share Link
+```http
+POST /api/share/generate
+```
+
+Generate a secure share link for an assessment.
+
+**Request Body:**
+```json
+{
+  "assessmentId": "assessment_123",
+  "settings": {
+    "isPublic": true,
+    "includeDetails": true,
+    "includeRecommendations": true,
+    "customMessage": "Check out this security assessment"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "token": "abc123def456",
+    "url": "https://trusthire.example.com/share/abc123def456",
+    "expiresAt": "2026-05-19T12:00:00.000Z"
+  }
+}
+```
+
 #### Get Shared Report
 ```http
 GET /api/share/{token}
@@ -515,16 +547,64 @@ Access shared assessment report.
 {
   "success": true,
   "data": {
+    "id": "share_123",
+    "assessmentId": "assessment_123",
+    "isPublic": true,
+    "includeDetails": true,
+    "includeRecommendations": true,
+    "customMessage": "Check out this security assessment",
+    "createdAt": "2026-04-19T12:00:00.000Z",
+    "expiresAt": "2026-05-19T12:00:00.000Z",
+    "viewCount": 15,
+    "lastViewedAt": "2026-04-20T08:30:00.000Z",
     "assessment": {
-      "id": "assessment_123",
-      "score": 85,
-      "risk_level": "low",
-      "findings": [...],
-      "shared_by": "user@example.com",
-      "shared_at": "2026-04-19T12:00:00.000Z"
+      "recruiter": {
+        "name": "John Doe",
+        "claimedCompany": "TechCorp",
+        "linkedinUrl": "https://linkedin.com/in/johndoe"
+      },
+      "verdict": {
+        "overallScore": 85,
+        "riskLevel": "low",
+        "recommendation": "Safe to proceed with standard verification"
+      },
+      "redFlags": [...]
     }
   }
 }
+```
+
+#### Track Share View
+```http
+POST /api/share/{token}/view
+```
+
+Track when a shared assessment is viewed (increments view count).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "viewCount": 16,
+    "lastViewedAt": "2026-04-20T12:00:00.000Z"
+  }
+}
+```
+
+#### Export Assessment PDF
+```http
+GET /api/assessment/{id}/report
+```
+
+Export assessment as downloadable PDF report.
+
+**Response:**
+```http
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="trusthire-report-assessment_123.pdf"
+
+[PDF binary data]
 ```
 
 ### Sandbox
