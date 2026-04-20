@@ -48,7 +48,7 @@ export default function EnhancedNavbar() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0A0A0B]/95 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 bg-glass border-b border-border/50 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -56,10 +56,10 @@ export default function EnhancedNavbar() {
             href="/" 
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-red rounded-lg flex items-center justify-center">
               <Shield className="w-5 h-5 text-white" />
             </div>
-            <span className="font-mono font-bold text-lg tracking-tight text-white">TrustHire</span>
+            <span className="font-mono font-bold text-lg tracking-tight text-gradient">TrustHire</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -70,10 +70,8 @@ export default function EnhancedNavbar() {
                 onClick={() => setIsQuickToolsOpen(!isQuickToolsOpen)}
                 onMouseEnter={() => setIsQuickToolsOpen(true)}
                 onMouseLeave={() => setIsQuickToolsOpen(false)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-mono transition-all duration-200 ${
-                  pathname.startsWith('/scan') 
-                    ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                    : 'text-white/70 hover:text-white hover:bg-white/5'
+                className={`nav-item text-sm font-mono ${
+                  pathname.startsWith('/scan') ? 'active' : ''
                 }`}
               >
                 <Zap className="w-4 h-4" />
@@ -84,7 +82,7 @@ export default function EnhancedNavbar() {
               {/* Dropdown Menu */}
               {isQuickToolsOpen && (
                 <div 
-                  className="absolute top-full left-0 mt-2 w-80 bg-[#111113] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+                  className="absolute top-full left-0 mt-2 w-96 glass-card z-50"
                   onMouseEnter={() => setIsQuickToolsOpen(true)}
                   onMouseLeave={() => setIsQuickToolsOpen(false)}
                 >

@@ -2,93 +2,377 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===================================
+   TRUSTHIRE UNIFIED DESIGN SYSTEM
+   =================================== */
+
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-    --radius: 0.5rem;
+    /* Dark Theme - Default for TrustHire */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 72% 51%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 0 72.8% 50.6%;
+    --radius: 0.75rem;
+    
+    /* TrustHire Brand Colors */
+    --trusthire-red: 0 72% 51%;
+    --trusthire-dark: 240 10% 3.9%;
+    --trusthire-darker: 240 6% 2%;
+    --trusthire-light: 240 3.7% 15.9%;
+    --trusthire-success: 142 71% 45%;
+    --trusthire-warning: 38 92% 50%;
+    --trusthire-info: 199 89% 48%;
+    
+    /* Performance Optimized Gradients */
+    --gradient-red: linear-gradient(135deg, hsl(var(--trusthire-red)) 0%, hsl(0 71% 45%) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(var(--trusthire-darker)) 0%, hsl(var(--trusthire-dark)) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(240 10% 4.5%) 0%, hsl(240 10% 3.5%) 100%);
+    
+    /* Glass Morphism */
+    --glass-bg: rgba(10, 10, 11, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    
+    /* Animation Variables */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .dark {
-    --background: 222 47% 4%;
-    --foreground: 213 31% 91%;
-    --card: 222 47% 6%;
-    --card-foreground: 213 31% 91%;
-    --popover: 222 47% 6%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 222 47% 10%;
-    --secondary-foreground: 213 31% 91%;
-    --muted: 222 47% 10%;
-    --muted-foreground: 215 16% 57%;
-    --accent: 222 47% 10%;
-    --accent-foreground: 213 31% 91%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 213 31% 91%;
-    --border: 222 47% 12%;
-    --input: 222 47% 12%;
-    --ring: 221 83% 53%;
+  /* Force dark mode */
+  html {
+    color-scheme: dark;
   }
-}
-
-@layer base {
+  
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background: hsl(var(--trusthire-dark));
+    background-image: 
+      radial-gradient(circle at 20% 50%, rgba(239, 68, 68, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 40% 20%, rgba(34, 197, 94, 0.1) 0%, transparent 50%);
   }
 }
 
-/* Custom scrollbar */
+/* ===================================
+   PERFORMANCE OPTIMIZED COMPONENTS
+   =================================== */
+
+@layer components {
+  /* Glass Card Component */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: calc(var(--radius) * 2);
+    box-shadow: var(--glass-shadow);
+    transition: all var(--transition-normal);
+  }
+  
+  .glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  }
+  
+  /* TrustHire Button Variants */
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    background: var(--gradient-red);
+    color: hsl(var(--primary-foreground));
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    background: hsl(var(--trusthire-light));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+  }
+  
+  .btn-secondary:hover {
+    background: hsl(240 3.7% 20%);
+    transform: translateY(-1px);
+  }
+  
+  /* Enhanced Input Fields */
+  .input-field {
+    @apply w-full rounded-xl px-4 py-3 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    background: hsl(var(--trusthire-light));
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--foreground));
+  }
+  
+  .input-field:focus {
+    border-color: hsl(var(--trusthire-red));
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+  }
+  
+  /* Status Badges */
+  .status-badge {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium;
+    background: hsl(var(--trusthire-light));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+  }
+  
+  .status-badge.success {
+    background: rgba(34, 197, 94, 0.2);
+    color: hsl(var(--trusthire-success));
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+  
+  .status-badge.warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: hsl(var(--trusthire-warning));
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+  
+  .status-badge.error {
+    background: rgba(239, 68, 68, 0.2);
+    color: hsl(var(--trusthire-red));
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+  
+  /* Navigation Items */
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200;
+    color: hsl(var(--muted-foreground));
+  }
+  
+  .nav-item:hover {
+    background: hsl(var(--trusthire-light));
+    color: hsl(var(--foreground));
+  }
+  
+  .nav-item.active {
+    background: rgba(239, 68, 68, 0.2);
+    color: hsl(var(--trusthire-red));
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+  
+  /* Card Component */
+  .trusthire-card {
+    @apply rounded-xl p-6 transition-all duration-200;
+    background: var(--gradient-card);
+    border: 1px solid hsl(var(--border));
+  }
+  
+  .trusthire-card:hover {
+    border-color: rgba(239, 68, 68, 0.3);
+    transform: translateY(-1px);
+  }
+  
+  /* Metric Cards */
+  .metric-card {
+    @apply trusthire-card;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gradient-red);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+  }
+  
+  .metric-card:hover::before {
+    opacity: 1;
+  }
+}
+
+/* ===================================
+   PERFORMANCE OPTIMIZED ANIMATIONS
+   =================================== */
+
+@layer utilities {
+  /* Smooth Transitions */
+  .transition-gpu {
+    @apply transition-all duration-200;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  /* Hover Effects */
+  .hover-lift {
+    @apply transition-gpu;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px) translateZ(0);
+  }
+  
+  /* Glow Effects */
+  .glow-red {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+  }
+  
+  .glow-red:hover {
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+  }
+  
+  /* Pulse Animation */
+  @keyframes pulse-subtle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+  
+  .pulse-subtle {
+    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* Loading Animation */
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  .spin-slow {
+    animation: spin-slow 1s linear infinite;
+  }
+  
+  /* Score Gauge Animation */
+  @keyframes score-fill {
+    from { stroke-dashoffset: 251; }
+    to { stroke-dashoffset: var(--target-offset); }
+  }
+  
+  .score-arc {
+    animation: score-fill 1.2s ease-out forwards;
+  }
+  
+  /* Critical Verdict Pulse */
+  @keyframes critical-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  
+  .verdict-critical {
+    animation: critical-pulse 2s ease-in-out infinite;
+  }
+}
+
+/* ===================================
+   CUSTOM SCROLLBAR
+   =================================== */
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
+
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: hsl(var(--trusthire-dark));
 }
+
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 3px;
+  background: hsl(var(--trusthire-light));
+  border-radius: 4px;
+  border: 2px solid hsl(var(--trusthire-dark));
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  background: hsl(240 3.7% 25%);
 }
 
-/* Score gauge animation */
-@keyframes score-fill {
-  from { stroke-dashoffset: 251; }
-  to { stroke-dashoffset: var(--target-offset); }
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--trusthire-light)) hsl(var(--trusthire-dark));
 }
 
-.score-arc {
-  animation: score-fill 1.2s ease-out forwards;
+/* ===================================
+   FOCUS & ACCESSIBILITY
+   =================================== */
+
+@layer base {
+  *:focus-visible {
+    outline: 2px solid hsl(var(--trusthire-red));
+    outline-offset: 2px;
+  }
+  
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    :root {
+      --border: 240 3.7% 25%;
+      --trusthire-light: 240 3.7% 20%;
+    }
+  }
 }
 
-/* Pulse for critical verdict */
-@keyframes critical-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-.verdict-critical {
-  animation: critical-pulse 2s ease-in-out infinite;
+/* ===================================
+   RESPONSIVE DESIGN HELPERS
+   =================================== */
+
+@layer utilities {
+  .container-trusthire {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .text-gradient {
+    background: var(--gradient-red);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .bg-gradient-red {
+    background: var(--gradient-red);
+  }
+  
+  .bg-gradient-dark {
+    background: var(--gradient-dark);
+  }
+  
+  .bg-glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+  }
 }

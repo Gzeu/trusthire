@@ -296,19 +296,19 @@ export default function AutonomousAgentPanel() {
         </TabsList>
 
         <TabsContent value="control" className="space-y-4">
-          <Card>
+          <Card className="trusthire-card">
             <CardHeader>
-              <CardTitle>Agent Control</CardTitle>
+              <CardTitle className="text-gradient">Agent Control</CardTitle>
               <CardDescription>
                 Start, stop, and control the autonomous agent
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center space-x-4">
-                <Button 
+                <button 
                   onClick={startAgent} 
                   disabled={isStarting || agentStatus?.status === 'thinking' || agentStatus?.status === 'analyzing'}
-                  className="flex-1"
+                  className="btn-primary flex-1 disabled:opacity-50"
                 >
                   {isStarting ? (
                     <>
@@ -321,12 +321,11 @@ export default function AutonomousAgentPanel() {
                       Start Agent
                     </>
                   )}
-                </Button>
-                <Button 
+                </button>
+                <button 
                   onClick={stopAgent} 
                   disabled={isStopping || agentStatus?.status === 'idle'}
-                  variant="outline"
-                  className="flex-1"
+                  className="btn-secondary flex-1 disabled:opacity-50"
                 >
                   {isStopping ? (
                     <>
@@ -339,7 +338,7 @@ export default function AutonomousAgentPanel() {
                       Stop Agent
                     </>
                   )}
-                </Button>
+                </button>
               </div>
 
               <Separator />
