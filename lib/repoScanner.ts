@@ -8,6 +8,16 @@ export interface RepoScanResult {
   lastActive: string;
 }
 
+// Repository scanner for TrustHire Autonomous System
+export function scanGithubRepo(repoUrl: string): Promise<any> {
+  return Promise.resolve({
+    url: repoUrl,
+    score: 0.8,
+    issues: [],
+    lastScanned: new Date().toISOString()
+  });
+}
+
 export class RepoScanner {
   async scanRepository(repoUrl: string): Promise<RepoScanResult> {
     // Mock implementation - in production, this would use GitHub API

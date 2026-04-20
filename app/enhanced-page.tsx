@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Database, Search, FileText, BarChart3, Download, Users, Building, UserCheck, TrendingUp, Shield, Zap, Clock, CheckCircle } from 'lucide-react';
+import { Database, Search, FileText, BarChart3, Download, Users, Building, UserCheck, TrendingUp, Shield, Zap, Clock, CheckCircle, ChevronRight } from 'lucide-react';
 import { Card, Button, Badge, Container, Section } from '@/components/ui/DesignSystem';
 
 export default function EnhancedHomePage() {

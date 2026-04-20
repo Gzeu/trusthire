@@ -1,4 +1,6 @@
 // Turso client for TrustHire Autonomous System
+export const dbInitialized = Promise.resolve(true);
+
 export interface TursoConfig {
   url: string;
   authToken: string;

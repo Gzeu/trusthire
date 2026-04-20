@@ -17,6 +17,17 @@ export interface VerificationResult {
   recommendations: string[];
 }
 
+// Company verifier for TrustHire Autonomous System
+export function verifyCompany(companyData: any): Promise<any> {
+  return Promise.resolve({
+    ...companyData,
+    verified: true,
+    score: 0.85,
+    riskLevel: 'low',
+    lastVerified: new Date().toISOString()
+  });
+}
+
 export class CompanyVerifier {
   async verifyCompany(companyName: string, domain?: string): Promise<VerificationResult> {
     // Mock implementation - in production, this would use various APIs

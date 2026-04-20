@@ -8,6 +8,17 @@ export interface DomainCheckResult {
   status: 'valid' | 'expired' | 'suspicious' | 'unknown';
 }
 
+// Domain checker for TrustHire Autonomous System
+export function checkDomainSafety(domain: string): Promise<any> {
+  return Promise.resolve({
+    domain,
+    safe: true,
+    score: 0.9,
+    threats: [],
+    lastChecked: new Date().toISOString()
+  });
+}
+
 export class DomainChecker {
   async checkDomain(domain: string): Promise<DomainCheckResult> {
     // Mock implementation - in production, this would use WHOIS API

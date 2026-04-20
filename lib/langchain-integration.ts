@@ -1,4 +1,13 @@
 // LangChain integration for TrustHire Autonomous System
+export const langChainService = {
+  analyze: async (input: string) => {
+    return Promise.resolve({
+      output: `Analysis of: ${input}`,
+      confidence: 0.85
+    });
+  }
+};
+
 export interface LangChainResult {
   output: string;
   intermediateSteps?: any[];

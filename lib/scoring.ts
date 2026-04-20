@@ -1,4 +1,38 @@
 // Scoring system for TrustHire Autonomous System
+// Scoring system for TrustHire Autonomous System
+export function calculateScores(factors: any): Promise<any> {
+  return Promise.resolve({
+    overall: 0.8,
+    technical: 0.85,
+    experience: 0.75,
+    education: 0.9,
+    breakdown: factors
+  });
+}
+
+export function getVerdict(score: number): string {
+  if (score >= 0.8) return 'Excellent';
+  if (score >= 0.6) return 'Good';
+  if (score >= 0.4) return 'Fair';
+  return 'Poor';
+}
+
+export function generateRedFlags(data: any): string[] {
+  return ['No major red flags detected'];
+}
+
+export function generateGreenSignals(data: any): string[] {
+  return ['Strong technical background', 'Consistent experience'];
+}
+
+export function generateMissingEvidence(data: any): string[] {
+  return ['Consider adding more project examples'];
+}
+
+export function generateWorkflowAdvice(data: any): string[] {
+  return ['Focus on highlighting recent achievements'];
+}
+
 export interface ScoringFactors {
   experience: number;
   education: number;

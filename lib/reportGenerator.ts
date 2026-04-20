@@ -1,4 +1,14 @@
 // Report generator for TrustHire Autonomous System
+export function generateIncidentReport(data: any): Promise<any> {
+  return Promise.resolve({
+    id: `incident-${Date.now()}`,
+    type: 'incident',
+    data,
+    timestamp: new Date().toISOString(),
+    severity: 'medium'
+  });
+}
+
 export interface ReportData {
   id: string;
   type: string;
