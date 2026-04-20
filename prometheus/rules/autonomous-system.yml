@@ -1,0 +1,367 @@
+# Autonomous System Alerting Rules
+groups:
+  - name: autonomous_system
+    rules:
+      # System Health Alerts
+      - alert: AutonomousSystemDown
+        expr: up{job="autonomous-system"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: autonomous-system
+        annotations:
+          summary: "Autonomous system is down"
+          description: "The autonomous system has been down for more than 1 minute"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/autonomous-system-down"
+
+      - alert: SystemHealthCritical
+        expr: autonomous_system_health_score < 50
+        for: 2m
+        labels:
+          severity: critical
+          service: autonomous-system
+        annotations:
+          summary: "System health is critical"
+          description: "System health score is {{ $value }}% (threshold: 50%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/health-critical"
+
+      - alert: SystemHealthWarning
+        expr: autonomous_system_health_score < 70
+        for: 5m
+        labels:
+          severity: warning
+          service: autonomous-system
+        annotations:
+          summary: "System health is degraded"
+          description: "System health score is {{ $value }}% (threshold: 70%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/health-degraded"
+
+      # Performance Alerts
+      - alert: HighResponseTime
+        expr: autonomous_system_response_time > 5000
+        for: 2m
+        labels:
+          severity: warning
+          service: autonomous-system
+        annotations:
+          summary: "High response time detected"
+          description: "Response time is {{ $value }}ms (threshold: 5000ms)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/high-response-time"
+
+      - alert: LowSuccessRate
+        expr: autonomous_system_success_rate < 0.8
+        for: 3m
+        labels:
+          severity: warning
+          service: autonomous-system
+        annotations:
+          summary: "Low success rate detected"
+          description: "Success rate is {{ $value | humanizePercentage }} (threshold: 80%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/low-success-rate"
+
+      - alert: CriticalPerformanceDegradation
+        expr: autonomous_system_performance_overall < 70
+        for: 1m
+        labels:
+          severity: critical
+          service: autonomous-system
+        annotations:
+          summary: "Critical performance degradation"
+          description: "Overall performance is {{ $value }}% (threshold: 70%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/performance-critical"
+
+      # Decision Engine Alerts
+      - alert: DecisionEngineDown
+        expr: autonomous_service_status{service="decision_engine"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: decision-engine
+        annotations:
+          summary: "Decision engine is down"
+          description: "Decision engine service has been down for more than 1 minute"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/decision-engine-down"
+
+      - alert: LowDecisionConfidence
+        expr: autonomous_decision_confidence_average < 0.7
+        for: 5m
+        labels:
+          severity: warning
+          service: decision-engine
+        annotations:
+          summary: "Low decision confidence detected"
+          description: "Average decision confidence is {{ $value | humanizePercentage }} (threshold: 70%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/low-decision-confidence"
+
+      - alert: HighDecisionLatency
+        expr: autonomous_decision_response_time_average > 3000
+        for: 2m
+        labels:
+          severity: warning
+          service: decision-engine
+        annotations:
+          summary: "High decision latency detected"
+          description: "Decision response time is {{ $value }}ms (threshold: 3000ms)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/high-decision-latency"
+
+      # Self-Healing Alerts
+      - alert: SelfHealingDown
+        expr: autonomous_service_status{service="self_healing"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: self-healing
+        annotations:
+          summary: "Self-healing system is down"
+          description: "Self-healing service has been down for more than 1 minute"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/self-healing-down"
+
+      - alert: HighActiveIssues
+        expr: autonomous_healing_active_issues > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: self-healing
+        annotations:
+          summary: "High number of active issues"
+          description: "{{ $value }} active issues detected (threshold: 10)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/high-active-issues"
+
+      - alert: HealingActionsFailing
+        expr: rate(autonomous_healing_actions_failed_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          service: self-healing
+        annotations:
+          summary: "High failure rate for healing actions"
+          description: "Healing action failure rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/healing-actions-failing"
+
+      # Threat Response Alerts
+      - alert: ThreatResponseDown
+        expr: autonomous_service_status{service="threat_response"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: threat-response
+        annotations:
+          summary: "Threat response system is down"
+          description: "Threat response service has been down for more than 1 minute"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/threat-response-down"
+
+      - alert: HighThreatResponseTime
+        expr: autonomous_threat_response_time_average > 10000
+        for: 2m
+        labels:
+          severity: warning
+          service: threat-response
+        annotations:
+          summary: "High threat response time"
+          description: "Threat response time is {{ $value }}ms (threshold: 10000ms)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/high-threat-response-time"
+
+      - alert: LowContainmentRate
+        expr: autonomous_threat_containment_rate < 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: threat-response
+        annotations:
+          summary: "Low threat containment rate"
+          description: "Threat containment rate is {{ $value | humanizePercentage }} (threshold: 80%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/low-containment-rate"
+
+      # Learning & Evolution Alerts
+      - alert: LearningSystemDown
+        expr: autonomous_service_status{service="learning_evolution"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: learning-evolution
+        annotations:
+          summary: "Learning system is down"
+          description: "Learning & evolution service has been down for more than 1 minute"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/learning-system-down"
+
+      - alert: LowLearningImprovement
+        expr: autonomous_learning_improvement_average < 0.02
+        for: 10m
+        labels:
+          severity: warning
+          service: learning-evolution
+        annotations:
+          summary: "Low learning improvement rate"
+          description: "Learning improvement rate is {{ $value | humanizePercentage }} (threshold: 2%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/low-learning-improvement"
+
+      - alert: HighActiveLearningSessions
+        expr: autonomous_learning_active_sessions > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: learning-evolution
+        annotations:
+          summary: "High number of active learning sessions"
+          description: "{{ $value }} active learning sessions (threshold: 5)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/high-learning-sessions"
+
+      # Operations Management Alerts
+      - alert: OperationsManagementDown
+        expr: autonomous_service_status{service="operations_management"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: operations-management
+        annotations:
+          summary: "Operations management is down"
+          description: "Operations management service has been down for more than 1 minute"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/operations-management-down"
+
+      - alert: LowAutomationRate
+        expr: autonomous_operations_automation_rate < 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: operations-management
+        annotations:
+          summary: "Low automation rate"
+          description: "Operations automation rate is {{ $value | humanizePercentage }} (threshold: 80%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/low-automation-rate"
+
+      - alert: HighHumanInterventionRate
+        expr: autonomous_operations_human_interventions_rate > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          service: operations-management
+        annotations:
+          summary: "High human intervention rate"
+          description: "Human intervention rate is {{ $value | humanizePercentage }} (threshold: 20%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/high-human-intervention"
+
+      # Autonomy Level Alerts
+      - alert: AutonomyLevelReduced
+        expr: autonomous_system_autonomy_level != "full"
+        for: 0m
+        labels:
+          severity: warning
+          service: autonomous-system
+        annotations:
+          summary: "Autonomy level reduced"
+          description: "System autonomy level has been reduced to {{ $value }}"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/autonomy-level-reduced"
+
+      - alert: EmergencyStopTriggered
+        expr: autonomous_system_emergency_stop == 1
+        for: 0m
+        labels:
+          severity: critical
+          service: autonomous-system
+        annotations:
+          summary: "Emergency stop triggered"
+          description: "Emergency stop has been triggered for the autonomous system"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/emergency-stop"
+
+      # Resource Alerts
+      - alert: HighCPUUsage
+        expr: rate(cpu_usage_total[5m]) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% (threshold: 80%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/high-cpu-usage"
+
+      - alert: HighMemoryUsage
+        expr: rate(memory_usage_total[5m]) > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% (threshold: 85%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/high-memory-usage"
+
+      - alert: HighDiskUsage
+        expr: rate(disk_usage_total[5m]) > 90
+        for: 5m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is {{ $value }}% (threshold: 90%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/high-disk-usage"
+
+      # Database Alerts
+      - alert: DatabaseConnectionFailure
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database connection failure"
+          description: "Cannot connect to PostgreSQL database"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/database-connection-failure"
+
+      - alert: HighDatabaseConnections
+        expr: pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "High database connections"
+          description: "{{ $value }} database connections (threshold: 80)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/high-database-connections"
+
+      # Redis Alerts
+      - alert: RedisConnectionFailure
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: cache
+        annotations:
+          summary: "Redis connection failure"
+          description: "Cannot connect to Redis cache"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/redis-connection-failure"
+
+      - alert: HighRedisMemoryUsage
+        expr: redis_memory_usage_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: cache
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }} (threshold: 90%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/high-redis-memory"
+
+      # Business Impact Alerts
+      - alert: HighCostSavingsLost
+        expr: autonomous_operations_cost_savings < 500
+        for: 10m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "Low cost savings"
+          description: "Cost savings are ${{ $value }} (threshold: $500)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/low-cost-savings"
+
+      - alert: LowComplianceScore
+        expr: autonomous_system_compliance_score < 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: compliance
+        annotations:
+          summary: "Low compliance score"
+          description: "Compliance score is {{ $value | humanizePercentage }} (threshold: 80%)"
+          runbook_url: "https://docs.trusthire.com/troubleshooting/low-compliance-score"

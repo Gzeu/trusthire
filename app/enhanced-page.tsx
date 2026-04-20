@@ -371,11 +371,11 @@ export default function EnhancedHomePage() {
                   Quick API Test:
                 </p>
                 <code className="text-xs font-mono text-gray-500">
-                  curl -X POST http://localhost:3000/api/data/collect \
+                  curl -X POST http://localhost:3000/api/data/collect
                   <br />
-                  -H "Content-Type: application/json" \
+                  -H "Content-Type: application/json"
                   <br />
-                  -d '{"type": "recruitment", "data": {...}}'
+                  -d '{`{"type": "recruitment", "data": {...}}`}'
                 </code>
               </div>
             </Card>

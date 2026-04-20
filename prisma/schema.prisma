@@ -920,10 +920,121 @@ model AssessmentShare {
   expiresAt       DateTime @default(dbgenerated("(datetime('now', '+30 days'))"))
   viewCount       Int      @default(0)
   lastViewedAt    DateTime?
-  settings        String   // JSON with share settings
+}
 
-  @@index([assessmentId])
+// Autonomous Decision Engine Models
+model AutonomousDecision {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  type            String   // contain, eradicate, monitor, escalate, ignore
+  priority        String   // low, medium, high, critical
+  confidence      Float    // 0-1
+  reasoning       String   // JSON with decision reasoning
+  actions         String   // JSON array of autonomous actions
+  expectedOutcome String   // JSON with expected outcome
+  riskAssessment  String   // JSON with risk assessment
+  alternatives    String   // JSON array of alternative decisions
+  status          String   @default("pending") // pending, executing, completed, failed, cancelled
+  timestamp       DateTime @default(now())
+  expiresAt       DateTime?
+  context         String?  // JSON with decision context
+  actualOutcome   String?  // JSON with actual outcome
+  effectiveness    Float?   // 0-1
+  
+  @@index([status])
+  @@index([priority])
+  @@index([timestamp])
   @@index([expiresAt])
+}
+
+model DecisionFeedback {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  decisionId      String
+  actualOutcome   String   // JSON with actual outcome
+  effectiveness    Float    // 0-1
+  lessons         String   // JSON array of lessons learned
+  modelUpdates    String   // JSON array of model updates
+  timestamp       DateTime @default(now())
+  
+  @@index([decisionId])
+  @@index([timestamp])
+}
+
+model SelfHealingAction {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  type            String   // recovery, optimization, scaling, maintenance
+  target          String   // system, service, resource, process
+  severity        String   // info, low, medium, high, critical
+  confidence      Float    @default(0.5) // 0-1
+  description     String
+  indicators      String   // JSON array of indicators
+  actions         String   // JSON array of healing actions
+  rollbackPlan    String?  // JSON with rollback plan
+  status          String   @default("pending") // pending, executing, completed, failed, cancelled
+  triggeredAt     DateTime @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  errorMessage    String?
+  results         String?  // JSON with execution results
+  effectiveness    Float?   // 0-1
+  
+  @@index([status])
+  @@index([type])
+  @@index([severity])
+  @@index([triggeredAt])
+}
+
+model AutonomousLearning {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  learningType    String   // reinforcement, supervised, unsupervised, transfer
+  modelId         String?
+  algorithm       String
+  parameters      String   // JSON with algorithm parameters
+  trainingData    String   // JSON with training data info
+  performance     String   // JSON with performance metrics
+  improvements    String   // JSON with improvements made
+  status          String   @default("training") // training, ready, failed, deprecated
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+  nextTrainingAt  DateTime?
+  
+  @@index([status])
+  @@index([learningType])
+  @@index([startedAt])
+}
+
+model AutonomousOperation {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  operationType   String   // security, compliance, performance, maintenance
+  category        String   // threat_response, system_healing, resource_optimization, policy_adaptation
+  name            String
+  description     String
+  enabled         Boolean  @default(true)
+  autonomyLevel   String   // assisted, shared, supervised, full
+  confidence      Float    @default(0.5) // 0-1
+  triggers        String   // JSON array of triggers
+  conditions      String   // JSON array of conditions
+  actions         String   // JSON array of actions
+  constraints     String   // JSON array of constraints
+  metrics         String   // JSON with operation metrics
+  lastExecutedAt  DateTime?
+  executionCount  Int      @default(0)
+  successCount    Int      @default(0)
+  failureCount    Int      @default(0)
+  
+  @@index([enabled])
+  @@index([operationType])
+  @@index([category])
+  @@index([autonomyLevel])
+  @@index([lastExecutedAt])
 }
 
 model ThreatActor {

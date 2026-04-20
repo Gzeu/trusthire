@@ -1,0 +1,139 @@
+# Prometheus Configuration for TrustHire Autonomous System
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'trusthire-autonomous'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Rule files
+rule_files:
+  - "/etc/prometheus/rules/autonomous-system.yml"
+  - "/etc/prometheus/rules/performance.yml"
+  - "/etc/prometheus/rules/security.yml"
+  - "/etc/prometheus/rules/health.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 5s
+    metrics_path: '/metrics'
+
+  # TrustHire Autonomous Application
+  - job_name: 'autonomous-system'
+    static_configs:
+      - targets: ['app:3000']
+    scrape_interval: 15s
+    metrics_path: '/api/autonomous/metrics'
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+
+  # Node Exporter (System Metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # cAdvisor (Container Metrics)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # Redis Metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    params:
+      format: ['prometheus']
+
+  # PostgreSQL Metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    params:
+      format: ['prometheus']
+
+  # Nginx Metrics
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:80']
+    scrape_interval: 30s
+    metrics_path: '/nginx_status'
+    params:
+      format: ['prometheus']
+
+  # Logstash Metrics
+  - job_name: 'logstash'
+    static_configs:
+      - targets: ['logstash:9600']
+    scrape_interval: 30s
+    metrics_path: '/_node/stats'
+    params:
+      format: ['prometheus']
+
+  # Elasticsearch Metrics
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch:9200']
+    scrape_interval: 30s
+    metrics_path: '/_prometheus/metrics'
+    params:
+      format: ['prometheus']
+
+  # Kibana Metrics
+  - job_name: 'kibana'
+    static_configs:
+      - targets: ['kibana:5601']
+    scrape_interval: 30s
+    metrics_path: '/api/stats'
+    params:
+      format: ['prometheus']
+
+  # AlertManager Metrics
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # Grafana Metrics
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    params:
+      format: ['prometheus']
+
+# Remote write configuration (optional)
+# remote_write:
+#   - url: "https://your-remote-prometheus.example.com/api/v1/write"
+#     basic_auth:
+#       username: your_username
+#       password: your_password
+
+# Remote read configuration (optional)
+# remote_read:
+#   - url: "https://your-remote-prometheus.example.com/api/v1/read"
+#     basic_auth:
+#       username: your_username
+#       password: your_password
