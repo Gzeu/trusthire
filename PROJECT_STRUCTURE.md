@@ -69,9 +69,10 @@ trusthire/
 
 ### **Backend Architecture**
 - **API Routes**: Next.js API routes with TypeScript
-- **Database**: Prisma ORM with PostgreSQL
+- **Database**: Prisma ORM with Turso SQLite
 - **Authentication**: Session-based with rate limiting
 - **Security**: Input validation, sanitization, CORS
+- **AI Integration**: LangChain + Groq for advanced analysis
 
 ### **Key Features by Module**
 
@@ -99,11 +100,18 @@ trusthire/
 - **API**: `/api/sandbox/analyze/`
 - **Features**: Isolated containers, VM emulation, WebAssembly
 
-#### **📤 Report Sharing**
+#### **📤 Shareable Reports**
 - **Location**: `app/share/[token]/`
-- **Components**: Public report viewer, sharing controls
-- **API**: `/api/share/[token]/`
-- **Features**: Token-based access, download options, team collaboration
+- **Components**: Professional UI, mobile-responsive design, analytics dashboard
+- **API**: `/api/share/generate`, `/api/share/[token]`, `/api/share/[token]/view`
+- **Features**: 
+  - Secure token generation with 30-day expiration
+  - Privacy controls (public/private sharing)
+  - Real-time view tracking and analytics
+  - Custom messaging for shared reports
+  - PDF export functionality
+  - Rate limiting (5 req/min) for security
+  - Integration with assessment results page
 
 ## 🎨 Design System
 
@@ -157,14 +165,15 @@ interface DesignSystem {
 ### **Backend**
 - **Node.js**: Runtime environment
 - **Prisma**: Type-safe database ORM
-- **PostgreSQL**: Primary database
+- **Turso SQLite**: Serverless database
 - **Redis**: Caching and session storage
 - **Groq**: AI/ML model integration
+- **LangChain**: Advanced AI orchestration
 
 ### **Infrastructure**
 - **Vercel**: Deployment platform
+- **Turso**: Serverless SQLite database
 - **Vercel KV**: Edge caching
-- **Vercel Postgres**: Managed database
 - **Cloudflare**: CDN and security
 
 ## 📱 Page Routing Structure
@@ -221,6 +230,22 @@ model Assessment {
   isPublic     Boolean   @default(false)
 }
 
+model AssessmentShare {
+  id                      String   @id @default(cuid())
+  assessmentId            String
+  token                   String   @unique
+  isPublic                Boolean  @default(false)
+  includeDetails          Boolean  @default(true)
+  includeRecommendations  Boolean  @default(true)
+  customMessage           String?
+  createdAt               DateTime @default(now())
+  expiresAt               DateTime @default(datetime('now', '+30 days'))
+  viewCount               Int      @default(0)
+  lastViewedAt            DateTime?
+  
+  assessment Assessment @relation(fields: [assessmentId], references: [id])
+}
+
 model BlacklistedRecruiter {
   id        String   @id @default(cuid())
   name      String
@@ -236,8 +261,9 @@ model BlacklistedRecruiter {
 ### **Environment Variables**
 ```env
 # Database
-DATABASE_URL="postgresql://..."
-DIRECT_URL="..."
+DATABASE_URL="file:./dev.db"
+TURSO_AUTH_TOKEN="..."
+TURSO_DATABASE_URL="..."
 
 # AI/ML
 GROQ_API_KEY="..."
@@ -246,6 +272,9 @@ OPENAI_API_KEY="..."
 # Security
 NEXTAUTH_SECRET="..."
 NEXTAUTH_URL="..."
+
+# External APIs
+VIRUSTOTAL_API_KEY="..."
 
 # Performance
 REDIS_URL="..."
@@ -325,13 +354,18 @@ jobs:
 
 ## 📋 Development Tasks
 
-### **Current Status**: ✅ Production Ready
+### **Current Status**: Production Ready
 - [x] Design system implementation
 - [x] Enhanced dashboard with real-time updates
 - [x] Comprehensive assessment center
 - [x] Threat intelligence patterns
 - [x] Secure sandbox environments
-- [x] Shareable report system
+- [x] Shareable reports system
+  - [x] Secure token generation
+  - [x] Professional share UI
+  - [x] View tracking analytics
+  - [x] PDF export functionality
+  - [x] Rate limiting & security
 - [x] User onboarding flow
 - [x] Performance optimizations
 - [x] TypeScript strict mode
