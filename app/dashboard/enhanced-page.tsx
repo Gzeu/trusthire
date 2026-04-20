@@ -17,6 +17,7 @@ import {
   Clock,
   Zap,
   Eye,
+  Brain,
 } from 'lucide-react';
 import { Card, Button, Badge, Skeleton, EmptyState, Container } from '@/components/ui/DesignSystem';
 import type { DashboardStats, RecentAssessment } from '@/app/api/dashboard/stats/route';
@@ -375,7 +376,7 @@ export default function EnhancedDashboardPage() {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
           <Card className="p-4 hover" glow="purple">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
@@ -386,6 +387,20 @@ export default function EnhancedDashboardPage() {
                 <p className="font-mono text-xs text-white/40">Fast repository check</p>
               </div>
             </div>
+          </Card>
+
+          <Card className="p-4 hover" glow="purple">
+            <Link href="/agent" className="block">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                  <Brain className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-mono text-sm font-medium text-white">AI Agent</p>
+                  <p className="font-mono text-xs text-white/40">Autonomous analysis</p>
+                </div>
+              </div>
+            </Link>
           </Card>
 
           <Card className="p-4 hover" glow="green">

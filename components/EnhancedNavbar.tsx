@@ -20,7 +20,8 @@ import {
   X,
   Zap,
   Eye,
-  AlertTriangle
+  AlertTriangle,
+  Brain
 } from 'lucide-react';
 
 const quickTools = [
@@ -36,6 +37,7 @@ const mainNav = [
   { href: '/patterns', label: 'Patterns', icon: Database },
   { href: '/sandbox', label: 'Sandbox', icon: FlaskConical },
   { href: '/monitoring', label: 'Monitoring', icon: Activity },
+  { href: '/agent', label: 'AI Agent', icon: Brain },
 ];
 
 export default function EnhancedNavbar() {

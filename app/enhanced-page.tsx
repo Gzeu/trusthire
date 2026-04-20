@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Shield, AlertTriangle, Search, FileText, ChevronRight, Lock, Eye, Zap, BarChart3, Users, TrendingUp } from 'lucide-react';
+import { Shield, AlertTriangle, Search, FileText, ChevronRight, Lock, Eye, Zap, BarChart3, Users, TrendingUp, Brain } from 'lucide-react';
 import { Card, Button, Badge, Container, Section } from '@/components/ui/DesignSystem';
 import OnboardingFlow, { useOnboarding } from '@/components/OnboardingFlow';
 
@@ -70,6 +70,14 @@ export default function EnhancedHomePage() {
       description: 'Comprehensive security evaluation for complete peace of mind',
       color: 'from-red-600 to-red-700',
       stats: '5min total'
+    },
+    {
+      href: '/agent',
+      icon: <Brain className="w-5 h-5" />,
+      title: 'AI Agent',
+      description: 'Autonomous security agent with personality and learning capabilities',
+      color: 'from-indigo-600 to-indigo-700',
+      stats: 'Always learning'
     }
   ];
 
