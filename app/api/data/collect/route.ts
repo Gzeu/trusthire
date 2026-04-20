@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { sanitizeInput, validateApiKey, addSecurityHeaders, logSecurityEvent } from '@/lib/security/api-security';
 
 interface RecruitmentData {
   companyName: string;
@@ -154,23 +155,38 @@ function cleanData(data: any): any {
 
 export async function POST(req: NextRequest) {
   try {
+    // Validate API key in production
+    if (!validateApiKey(req)) {
+      logSecurityEvent('INVALID_API_KEY', { endpoint: '/api/data/collect' }, req);
+      return NextResponse.json({ error: 'Invalid API key' }, { 
+        status: 401,
+        headers: addSecurityHeaders({})
+      });
+    }
+    
     const body = await req.json();
-    const { type } = body;
+    
+    // Sanitize input
+    const sanitizedBody = sanitizeInput(body);
+    const { type } = sanitizedBody;
     
     let dataRecord: DataRecord;
     
     switch (type) {
       case 'recruitment':
-        dataRecord = await handleRecruitmentData(body.data);
+        dataRecord = await handleRecruitmentData(sanitizedBody.data);
         break;
       case 'company':
-        dataRecord = await handleCompanyData(body.data);
+        dataRecord = await handleCompanyData(sanitizedBody.data);
         break;
       case 'candidate':
-        dataRecord = await handleCandidateData(body.data);
+        dataRecord = await handleCandidateData(sanitizedBody.data);
         break;
       default:
-        return NextResponse.json({ error: 'Invalid data type' }, { status: 400 });
+        return NextResponse.json({ error: 'Invalid data type' }, { 
+          status: 400,
+          headers: addSecurityHeaders({})
+        });
     }
     
     // Add to store
@@ -183,11 +199,17 @@ export async function POST(req: NextRequest) {
       id: dataRecord.id,
       type,
       message: 'Data collected successfully'
+    }, {
+      headers: addSecurityHeaders({})
     });
     
   } catch (error) {
     console.error('Data collection error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    logSecurityEvent('DATA_COLLECTION_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' }, req);
+    return NextResponse.json({ error: 'Internal server error' }, { 
+      status: 500,
+      headers: addSecurityHeaders({})
+    });
   }
 }
 

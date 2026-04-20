@@ -137,10 +137,14 @@ function generateAnalytics(type: string, filters?: any): AnalyticsData {
   });
   
   // Determine quality levels
+  const highQualityItems = qualityIssues.filter(issue => issue.count >= 3);
+  const mediumQualityItems = qualityIssues.filter(issue => issue.count >= 2 && issue.count < 3);
+  const lowQualityItems = qualityIssues.filter(issue => issue.count < 2);
+  
   const quality = {
-    high: qualityIssues.filter(issue => issue.count >= 3).length,
-    medium: qualityIssues.filter(issue => issue.count >= 2 && issue.count < 3).length,
-    low: qualityIssues.filter(issue => issue.count < 2).length
+    high: highQualityItems.length,
+    medium: mediumQualityItems.length,
+    low: lowQualityItems.length
   };
   
   return {
@@ -156,23 +160,27 @@ function generateAnalytics(type: string, filters?: any): AnalyticsData {
     },
     trends: {
       topPositions: Object.entries(positionCounts)
-        .sort(([, a], b) => b[1] - a[1])
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
-        .map(([key, count]) => ({ position: key, count })),
+        .map(([key, count]) => ({ position: key, count: Number(count) })),
       topLocations: Object.entries(locationCounts)
-        .sort(([, a], b) => b[1] - a[1])
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
-        .map(([key, count]) => ({ location: key, count })),
+        .map(([key, count]) => ({ location: key, count: Number(count) })),
       topCompanies: Object.entries(companyCounts)
-        .sort(([, a], b) => b[1] - a[1])
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
-        .map(([key, count]) => ({ company: key, count }))
+        .map(([key, count]) => ({ company: key, count: Number(count) }))
     },
     quality: {
       high: quality.high.length,
       medium: quality.medium.length,
       low: quality.low.length,
-      issues: qualityIssuesByType
+      issues: Object.entries(qualityIssuesByType).map(([type, count]) => ({
+        type,
+        count: Number(count),
+        description: `${type} issues found`
+      }))
     }
   };
 }
@@ -278,10 +286,10 @@ export async function GET(req: NextRequest) {
     
     if (query) {
       const queryLower = query.toLowerCase();
-      filteredData = dataStore.filter(record => 
+      filteredData = dataStore.filter((record: any) => 
         record.searchable.title.toLowerCase().includes(queryLower) ||
         record.searchable.description.toLowerCase().includes(queryLower) ||
-        record.searchable.keywords.some(keyword => keyword.toLowerCase().includes(queryLower))
+        record.searchable.keywords.some((keyword: string) => keyword.toLowerCase().includes(queryLower))
       );
     }
     
@@ -299,6 +307,5 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Analytics search error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
   }
 }

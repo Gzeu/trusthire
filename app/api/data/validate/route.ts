@@ -146,7 +146,13 @@ function validateCompanyData(data: any): ValidationResult {
   const validation = validateRequired(data, requiredFields);
   
   if (!validation.isValid) {
-    return validation;
+    return {
+      isValid: validation.isValid,
+      errors: validation.errors,
+      warnings: [],
+      qualityScore: 0.3,
+      confidence: 0.3
+    };
   }
   
   errors.push(...validation.errors);
@@ -313,70 +319,69 @@ function cleanData(data: any): any {
 
 export async function POST(req: NextRequest) {
   try {
-    const body: ValidationRequest = await req.json();
-    const { type, data } = body;
+    const body = await req.json();
+    const { action, type, data, options } = body;
     
-    let result: ValidationResult;
-    
-    switch (type) {
-      case 'recruitment':
-        result = validateRecruitmentData(data);
-        break;
-      case 'company':
-        result = validateCompanyData(data);
-        break;
-      case 'candidate':
-        result = validateCandidateData(data);
-        break;
-      default:
-        return NextResponse.json({ error: 'Invalid validation type' }, { status: 400 });
+    // Handle validation
+    if (action === 'validate') {
+      let result: ValidationResult;
+      
+      switch (type) {
+        case 'recruitment':
+          result = validateRecruitmentData(data);
+          break;
+        case 'company':
+          result = validateCompanyData(data);
+          break;
+        case 'candidate':
+          result = validateCandidateData(data);
+          break;
+        default:
+          return NextResponse.json({ error: 'Invalid validation type' }, { status: 400 });
+      }
+      
+      console.log(`Validation completed: ${result.isValid ? 'valid' : 'invalid'}, type: ${type}`);
+      
+      return NextResponse.json({
+        success: true,
+        action: 'validate',
+        type,
+        result
+      });
     }
     
-    console.log(`Validation completed: ${result.isValid ? 'valid' : 'invalid'}, type: ${type}`);
-    
-    return NextResponse.json({
-      success: true,
-      type,
-      result
-    });
-    
-  } catch (error) {
-    console.error('Validation error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const body: CleaningRequest = await req.json();
-    const { type, data, options } = body;
-    
-    let result: CleaningResult;
-    
-    switch (type) {
-      case 'deduplication':
-        result = performDeduplication(data);
-        break;
-      case 'standardization':
-        result = performStandardization(data);
-        break;
-      case 'quality':
-        result = performQualityCheck(data);
-        break;
-      default:
-        return NextResponse.json({ error: 'Invalid cleaning type' }, { status: 400 });
+    // Handle cleaning
+    if (action === 'clean') {
+      let result: CleaningResult;
+      
+      switch (type) {
+        case 'deduplication':
+          result = performDeduplication(data);
+          break;
+        case 'standardization':
+          result = performStandardization(data);
+          break;
+        case 'quality':
+          result = performQualityCheck(data);
+          break;
+        default:
+          return NextResponse.json({ error: 'Invalid cleaning type' }, { status: 400 });
+      }
+      
+      console.log(`Cleaning completed: ${type}, processed: ${result.processed}`);
+      
+      return NextResponse.json({
+        success: true,
+        action: 'clean',
+        type,
+        result
+      });
     }
     
-    console.log(`Cleaning completed: ${type}, processed: ${result.processed}`);
-    
-    return NextResponse.json({
-      success: true,
-      type,
-      result
-    });
+    return NextResponse.json({ error: 'Invalid action. Use "validate" or "clean"' }, { status: 400 });
     
   } catch (error) {
-    console.error('Cleaning error:', error);
+    console.error('Validation/Cleaning error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

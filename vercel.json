@@ -4,11 +4,17 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "functions": {
-    "app/api/assessment/create/route.ts": {
+    "app/api/data/collect/route.ts": {
       "maxDuration": 30
     },
-    "app/api/assessment/[id]/route.ts": {
-      "maxDuration": 10
+    "app/api/data/validate/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/data/analytics/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/data/export/route.ts": {
+      "maxDuration": 120
     },
     "app/api/scan/repo/route.ts": {
       "maxDuration": 30
@@ -16,5 +22,25 @@
     "app/api/scan/url/route.ts": {
       "maxDuration": 30
     }
-  }
+  },
+  "headers": [
+    {
+      "source": "/api/data/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, X-API-Key"
+        }
+      ]
+    }
+  ],
+  "regions": ["iad1"]
 }
