@@ -211,3 +211,5 @@ export function EnhancedNavbar({ user, notifications = 0 }: EnhancedNavbarProps)
     </nav>
   );
 }
+
+export default EnhancedNavbar;

@@ -1,4 +1,9 @@
 // Blacklist cache service for TrustHire Autonomous System
+export function refreshBlacklist() {
+  const cache = new BlacklistCache();
+  return cache.refreshCache();
+}
+
 export class BlacklistCache {
   private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
   
@@ -41,12 +46,15 @@ export class BlacklistCache {
   
   cleanup(): void {
     const now = Date.now();
-    const entries = Array.from(this.cache.entries());
-    for (const [key, entry] of entries) {
+    for (const [key, entry] of Array.from(this.cache.entries())) {
       if (now - entry.timestamp > entry.ttl) {
         this.cache.delete(key);
       }
     }
+  }
+
+  refreshCache(): Promise<boolean> {
+    return Promise.resolve(true);
   }
   
   size(): number {

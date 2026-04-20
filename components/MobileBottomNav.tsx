@@ -96,3 +96,5 @@ export function MobileBottomNav({ notifications = 0 }: MobileBottomNavProps) {
     </div>
   );
 }
+
+export default MobileBottomNav;

@@ -1,4 +1,20 @@
 // Rate limiting for TrustHire Autonomous System
+export function getClientIp(request: any): string {
+  return request.headers['x-forwarded-for'] || 
+         request.headers['x-real-ip'] || 
+         request.connection?.remoteAddress || 
+         '127.0.0.1';
+}
+
+export function checkRateLimit(ip: string, limit: number = 100): Promise<boolean> {
+  const service = new RateLimit({
+    windowMs: 60000,
+    maxRequests: limit
+  });
+  const result = service.checkLimit(ip);
+  return Promise.resolve(result.allowed);
+}
+
 export interface RateLimitConfig {
   windowMs: number;
   maxRequests: number;
