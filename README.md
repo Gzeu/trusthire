@@ -7,6 +7,7 @@
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License" />
   <img src="https://img.shields.io/badge/version-1.0.0-blue?style=flat-square" alt="Version 1.0.0" />
   <img src="https://img.shields.io/badge/Phase%206-Complete-brightgreen?style=flat-square" alt="Phase 6 Complete" />
+  <a href="https://trusthire.vercel.app"><img src="https://trusthire.vercel.app/api/badge/Gzeu/trusthire" alt="TrustHire" /></a>
 </p>
 
 <h1 align="center">🛡️ TrustHire - AI-Powered Security Operations Platform</h1>
